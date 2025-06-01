@@ -7,50 +7,116 @@
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      background-color: #000; /* Set page background to black */
+      background-color: #000;
     }
     h1 {
-      color: #fff; /* Make header text white for contrast */
+      color: #fff;
     }
     p {
-      color: #ccc; /* Make paragraph text lighter */
+      color: #ccc;
+    }
+    .main-flex {
+      display: flex;
+      align-items: flex-start;
+      gap: 40px;
+    }
+    .grid-outer {
+      position: relative;
+      width: 480px;
+      height: 480px;
+      display: flex;
+      flex-direction: column;
+    }
+    .grid-label-row {
+      display: flex;
+      flex-direction: row;
+    }
+    .grid-label-col {
+      display: flex;
+      flex-direction: column-reverse;
+      height: 450px;
+      margin-top: 30px;
+    }
+    .grid-label {
+      width: 30px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      background-color: rgba(30,30,30,0.7);
+      color: #fff;
+      font-size: 16px;
+    }
+    .grid-label-top {
+      width: 50px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      background-color: rgba(30,30,30,0.7);
+      color: #fff;
+      font-size: 16px;
     }
     .grid-container {
+      position: absolute;
+      left: 30px;
+      top: 30px;
       display: grid;
-      grid-template-columns: 30px repeat(9, 50px);
-      grid-template-rows: 30px repeat(9, 50px);
+      grid-template-columns: repeat(9, 50px);
+      grid-template-rows: repeat(9, 50px);
       gap: 2px;
-      margin-bottom: 20px;
-      background-image: url('background.jpg'); /* Use your actual filename */
-      background-size: 450px 450px; /* 9 cells * 50px = 450px */
+      background-image: url('background.jpg');
+      background-size: 450px 450px;
       background-position: top left;
       background-repeat: no-repeat;
-      background-color: transparent; /* Ensure transparency */
-      box-shadow: 0 0 20px #222; /* Optional: subtle glow */
-      width: 480px; /* 9*50 + 30 for label */
-      height: 480px;
-    }
-    .label {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-weight: bold;
-      background-color: rgba(30,30,30,0.7); /* Slightly transparent label background */
-      color: #fff;
+      background-color: transparent;
+      box-shadow: 0 0 20px #222;
+      width: 450px;
+      height: 450px;
+      z-index: 1;
     }
     .cell {
       border: 1px solid #999;
       display: flex;
       justify-content: center;
       align-items: center;
-      background-color: transparent; /* Make grid cells transparent */
+      background-color: transparent;
       font-size: 12px;
       cursor: pointer;
       user-select: none;
       transition: background-color 0.2s;
     }
     .cell:hover {
-      background-color: rgba(255,255,255,0.1); /* Slight highlight on hover */
+      background-color: rgba(255,255,255,0.1);
+    }
+    .legend {
+      margin-top: 30px;
+      color: #fff;
+      background: rgba(30,30,30,0.7);
+      padding: 16px 20px;
+      border-radius: 8px;
+      min-width: 180px;
+    }
+    .legend-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+    .legend-item img {
+      width: 28px;
+      height: 28px;
+      margin-right: 10px;
+      background: #222;
+      border-radius: 4px;
+      border: 1px solid #444;
     }
     .controls button {
       margin-right: 10px;
@@ -63,7 +129,25 @@
 <body>
   <h1>Dune Awakening Deep Desert Mapping</h1>
   <p>Click on any cell to set its content. When you’re finished updating the map, use the export button to review your grid or clear to start over.</p>
-  <div class="grid-container" id="gridContainer"></div>
+  <div class="main-flex">
+    <div class="grid-outer">
+      <div class="grid-label-row">
+        <div style="width:30px;height:30px;"></div>
+        <!-- Top column labels -->
+        <div id="topColLabels" style="display:flex;"></div>
+      </div>
+      <div style="display:flex;">
+        <!-- Left row labels -->
+        <div class="grid-label-col" id="leftRowLabels"></div>
+        <!-- The grid itself -->
+        <div class="grid-container" id="gridContainer"></div>
+      </div>
+    </div>
+    <div class="legend">
+      <div class="legend-title">Legend</div>
+      <div id="legendIcons"></div>
+    </div>
+  </div>
   <div class="controls">
     <button id="exportButton">Export Map Data</button>
     <button id="clearButton">Clear Map</button>
@@ -96,38 +180,69 @@
       "IconTestingStation.png",
       "IconTitanium.png"
     ];
-    const iconPath = "Icons/"; // Use your PNG/SVG folder
+    const iconNames = [
+      "Authorized Base",
+      "Cave",
+      "Home Base",
+      "POI",
+      "Shipwreck",
+      "Shipwreck x2",
+      "Spice",
+      "Stravidium",
+      "Testing Station",
+      "Titanium"
+    ];
+    const iconPath = "Icons/";
 
     let currentCell = null;
+
+    // Render the legend
+    function renderLegend() {
+      const legend = document.getElementById('legendIcons');
+      legend.innerHTML = '';
+      iconList.forEach((icon, idx) => {
+        legend.innerHTML += `
+          <div class="legend-item">
+            <img src="${iconPath + icon}" alt="${iconNames[idx]}">
+            <span>${iconNames[idx]}</span>
+          </div>
+        `;
+      });
+    }
+
+    // Render top column labels (1-9)
+    function renderTopColLabels() {
+      const topColLabels = document.getElementById('topColLabels');
+      topColLabels.innerHTML = '';
+      for (let col = 1; col <= 9; col++) {
+        const div = document.createElement('div');
+        div.className = 'grid-label-top';
+        div.textContent = col;
+        topColLabels.appendChild(div);
+      }
+    }
+
+    // Render left row labels (I-A, top to bottom)
+    function renderLeftRowLabels() {
+      const leftRowLabels = document.getElementById('leftRowLabels');
+      leftRowLabels.innerHTML = '';
+      for (let row = 8; row >= 0; row--) {
+        const div = document.createElement('div');
+        div.className = 'grid-label';
+        div.textContent = String.fromCharCode(65 + row); // I (73) to A (65)
+        leftRowLabels.appendChild(div);
+      }
+    }
 
     // Initializes a 9x9 grid with labels and resets the gridData
     function initializeGrid() {
       gridContainer.innerHTML = "";
       gridData = [];
-
-      // Add top-left empty corner
-      const corner = document.createElement('div');
-      corner.classList.add('label');
-      gridContainer.appendChild(corner);
-
-      // Add column labels (1-9)
-      for (let col = 1; col <= 9; col++) {
-        const colLabel = document.createElement('div');
-        colLabel.classList.add('label');
-        colLabel.textContent = col;
-        gridContainer.appendChild(colLabel);
-      }
-
-      for (let row = 0; row < 9; row++) {
-        // Add row label (A-I)
-        const rowLabel = document.createElement('div');
-        rowLabel.classList.add('label');
-        rowLabel.textContent = String.fromCharCode(65 + row); // Convert 0-8 to A-I
-        gridContainer.appendChild(rowLabel);
-
+      // Reverse row order: 8 (I) at top, 0 (A) at bottom
+      for (let row = 8; row >= 0; row--) {
         gridData[row] = [];
         for (let col = 0; col < 9; col++) {
-          gridData[row][col] = []; // Now an array for multiple icons
+          gridData[row][col] = [];
           const cell = document.createElement('div');
           cell.classList.add('cell');
           cell.setAttribute('data-row', row);
@@ -162,17 +277,20 @@
       });
     }
 
-    // When an icon is selected, place it in the cell
+    // When an icon is selected, add/remove it in the cell (toggle)
     function selectIcon(icon) {
       if (currentCell) {
         const row = currentCell.getAttribute('data-row');
         const col = currentCell.getAttribute('data-col');
-        if (!gridData[row][col].includes(icon)) {
-          gridData[row][col].push(icon); // Add icon to array
+        const idx = gridData[row][col].indexOf(icon);
+        if (idx === -1) {
+          gridData[row][col].push(icon); // Add icon
+        } else {
+          gridData[row][col].splice(idx, 1); // Remove icon if already present
         }
         renderCellIcons(currentCell, gridData[row][col]);
       }
-      closeIconPicker();
+      // Keep picker open for multi-select
     }
 
     // Helper to render all icons in a cell
@@ -192,7 +310,7 @@
     function exportMapData() {
       let output = "   1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9\n";
       output += "-----------------------------------\n";
-      for (let row = 0; row < 9; row++) {
+      for (let row = 8; row >= 0; row--) {
         output += String.fromCharCode(65 + row) + " | ";
         for (let col = 0; col < 9; col++) {
           output += gridData[row][col].length
@@ -221,10 +339,10 @@
       const cellSize = 50;
       const gap = 2;
       const gridSize = 9;
-      const backgroundSrc = 'background.jpg'; // Use your actual filename
+      const backgroundSrc = 'background.jpg';
 
-      canvas.width = gridSize * (cellSize + gap) + 30;
-      canvas.height = gridSize * (cellSize + gap) + 30;
+      canvas.width = gridSize * (cellSize + gap);
+      canvas.height = gridSize * (cellSize + gap);
 
       function loadImage(src) {
         return new Promise((resolve, reject) => {
@@ -262,25 +380,13 @@
         // Draw background
         ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
 
-        // Draw row and column labels
-        ctx.fillStyle = '#000';
-        ctx.font = '14px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        for (let row = 0; row < gridSize; row++) {
-          ctx.fillText(String.fromCharCode(65 + row), 15, 30 + row * (cellSize + gap) + cellSize / 2);
-        }
-        for (let col = 0; col < gridSize; col++) {
-          ctx.fillText(col + 1, 30 + col * (cellSize + gap) + cellSize / 2, 15);
-        }
-
-        // Draw the grid and icons
-        for (let row = 0; row < gridSize; row++) {
+        // Draw the grid and icons (row 8 at top, 0 at bottom)
+        for (let row = 8; row >= 0; row--) {
           for (let col = 0; col < gridSize; col++) {
-            const x = 30 + col * (cellSize + gap);
-            const y = 30 + row * (cellSize + gap);
+            const x = col * (cellSize + gap);
+            const y = (8 - row) * (cellSize + gap);
 
-            // Draw cell background (transparent, since background image is used)
+            // Draw cell border
             ctx.strokeStyle = '#999';
             ctx.strokeRect(x, y, cellSize, cellSize);
 
@@ -308,21 +414,25 @@
     function rerenderAllCells() {
       const cells = document.querySelectorAll('.cell');
       let idx = 0;
-      for (let row = 0; row < 9; row++) {
+      for (let row = 8; row >= 0; row--) {
         for (let col = 0; col < 9; col++) {
           renderCellIcons(cells[idx++], gridData[row][col]);
         }
       }
     }
 
-    // Initialize the grid when the page loads
+    // Initialize everything on page load
+    renderLegend();
+    renderTopColLabels();
+    renderLeftRowLabels();
     initializeGrid();
-
-    // Call this once on page load
     populateIconPicker();
-
-    // Re-render icons after grid is initialized (for clear/reset)
     rerenderAllCells();
+
+    // Button event listeners
+    document.getElementById('exportButton').onclick = exportMapData;
+    document.getElementById('clearButton').onclick = clearMap;
+    document.getElementById('exportPngButton').onclick = exportAsPng;
   </script>
 </body>
 </html>
