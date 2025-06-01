@@ -17,8 +17,8 @@
     }
     .main-flex {
       display: flex;
-      align-items: center; /* vertical center */
-      gap: 30px;
+      align-items: flex-start;
+      gap: 40px;
     }
     .grid-outer {
       position: relative;
@@ -27,43 +27,9 @@
       display: flex;
       flex-direction: column;
     }
-    .grid-label-row {
-      display: flex;
-      flex-direction: row;
-      height: 30px;
-      /* Ensure alignment with grid columns */
-    }
+    .grid-label-row,
     .grid-label-col {
-      display: flex;
-      flex-direction: column-reverse;
-      height: 900px;
-      margin-top: 30px;
-      /* Remove margin-top if it causes misalignment */
-      /* margin-top: 0; */
-    }
-    .grid-label {
-      width: 30px;
-      height: 100px; /* Match cell height */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      background-color: rgba(30,30,30,0.7);
-      color: #fff;
-      font-size: 18px;
-      box-sizing: border-box;
-    }
-    .grid-label-top {
-      width: 100px;  /* Match cell width */
-      height: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      background-color: rgba(30,30,30,0.7);
-      color: #fff;
-      font-size: 18px;
-      box-sizing: border-box;
+      display: none !important; /* Hide top and side labels */
     }
     .grid-container {
       position: absolute;
@@ -133,8 +99,8 @@
       border: 1px solid #444;
     }
     .legend {
-      margin-top: 0;
-      align-self: center;
+      margin-left: 40px;
+      align-self: flex-start;
       color: #fff;
       background: rgba(30,30,30,0.7);
       padding: 16px 20px;
@@ -173,18 +139,9 @@
   <p>Click on any cell to set its content. When you’re finished updating the map, use the export button to review your grid or clear to start over.</p>
   <div class="main-flex">
     <div class="grid-outer">
-      <div class="grid-label-row">
-        <div style="width:30px;height:30px;"></div>
-        <!-- Top column labels -->
-        <div id="topColLabels" style="display:flex;"></div>
-      </div>
       <div style="display:flex;">
-        <!-- Left row labels -->
-        <div class="grid-label-col" id="leftRowLabels"></div>
-        <!-- The grid itself -->
         <div class="grid-container" id="gridContainer"></div>
       </div>
-      <!-- Move controls here, below the grid -->
       <div class="controls" style="margin-top:30px; text-align:center;">
         <button id="exportButton">Export Map Data</button>
         <button id="clearButton">Clear Map</button>
@@ -265,36 +222,12 @@
       });
     }
 
-    // Render top column labels (1-9)
-    function renderTopColLabels() {
-      const topColLabels = document.getElementById('topColLabels');
-      topColLabels.innerHTML = '';
-      for (let col = 1; col <= 9; col++) {
-        const div = document.createElement('div');
-        div.className = 'grid-label-top';
-        div.textContent = col;
-        topColLabels.appendChild(div);
-      }
-    }
-
-    // Render left row labels (A at top, I at bottom)
-    function renderLeftRowLabels() {
-      const leftRowLabels = document.getElementById('leftRowLabels');
-      leftRowLabels.innerHTML = '';
-      for (let row = 0; row < 9; row++) { // A (0) at top, I (8) at bottom
-        const div = document.createElement('div');
-        div.className = 'grid-label';
-        div.textContent = String.fromCharCode(65 + row);
-        leftRowLabels.appendChild(div);
-      }
-    }
-
-    // Initializes a 9x9 grid with labels and resets the gridData
+    // Initializes a 9x9 grid with reversed letter labels (I at top, A at bottom)
     function initializeGrid() {
       gridContainer.innerHTML = "";
       gridData = [];
-      // Render from top (row 0) to bottom (row 8)
-      for (let row = 0; row < 9; row++) {
+      // Render from top (row 8, I) to bottom (row 0, A)
+      for (let row = 8; row >= 0; row--) {
         gridData[row] = [];
         for (let col = 0; col < 9; col++) {
           gridData[row][col] = [];
@@ -349,10 +282,11 @@
       // Keep picker open for multi-select
     }
 
-    // Helper to render all icons in a cell and show cell label
+    // Helper to render all icons in a cell and show cell label (I at top, A at bottom)
     function renderCellIcons(cell, icons) {
       const row = cell.getAttribute('data-row');
       const col = cell.getAttribute('data-col');
+      // Reverse: I (row 8) at top, A (row 0) at bottom
       const label = String.fromCharCode(65 + parseInt(row)) + (parseInt(col) + 1);
 
       // Arrange icons in a 3x3 grid
@@ -519,11 +453,11 @@
       });
     }
 
-    // When reloading the grid, re-render icons in each cell
+    // When reloading the grid, re-render icons in each cell (I at top, A at bottom)
     function rerenderAllCells() {
       const cells = document.querySelectorAll('.cell');
       let idx = 0;
-      for (let row = 0; row < 9; row++) {
+      for (let row = 8; row >= 0; row--) {
         for (let col = 0; col < 9; col++) {
           renderCellIcons(cells[idx++], gridData[row][col]);
         }
@@ -556,8 +490,6 @@
 
     // Initialize everything on page load
     renderLegend();
-    renderTopColLabels();
-    renderLeftRowLabels();
     initializeGrid();
     populateIconPicker();
     rerenderAllCells();
