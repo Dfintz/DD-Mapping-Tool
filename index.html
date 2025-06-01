@@ -17,8 +17,8 @@
     }
     .main-flex {
       display: flex;
-      align-items: flex-start;
-      gap: 40px;
+      align-items: center; /* vertical center */
+      gap: 30px;
     }
     .grid-outer {
       position: relative;
@@ -133,7 +133,8 @@
       border: 1px solid #444;
     }
     .legend {
-      margin-top: 30px;
+      margin-top: 0;
+      align-self: center;
       color: #fff;
       background: rgba(30,30,30,0.7);
       padding: 16px 20px;
@@ -276,14 +277,14 @@
       }
     }
 
-    // Render left row labels (I at top, A at bottom)
+    // Render left row labels (A at top, I at bottom)
     function renderLeftRowLabels() {
       const leftRowLabels = document.getElementById('leftRowLabels');
       leftRowLabels.innerHTML = '';
-      for (let row = 8; row >= 0; row--) {
+      for (let row = 0; row < 9; row++) { // A (0) at top, I (8) at bottom
         const div = document.createElement('div');
         div.className = 'grid-label';
-        div.textContent = String.fromCharCode(65 + row); // I (73) to A (65)
+        div.textContent = String.fromCharCode(65 + row);
         leftRowLabels.appendChild(div);
       }
     }
@@ -292,8 +293,8 @@
     function initializeGrid() {
       gridContainer.innerHTML = "";
       gridData = [];
-      // Render from top (row 8) to bottom (row 0)
-      for (let row = 8; row >= 0; row--) {
+      // Render from top (row 0) to bottom (row 8)
+      for (let row = 0; row < 9; row++) {
         gridData[row] = [];
         for (let col = 0; col < 9; col++) {
           gridData[row][col] = [];
@@ -350,19 +351,18 @@
 
     // Helper to render all icons in a cell and show cell label
     function renderCellIcons(cell, icons) {
-      // Get cell coordinates
       const row = cell.getAttribute('data-row');
       const col = cell.getAttribute('data-col');
       const label = String.fromCharCode(65 + parseInt(row)) + (parseInt(col) + 1);
 
-      // Arrange icons in multiple rows, 3 per row
-      let html = `<span class="cell-label">${label}</span><div class="cell-icons">`;
-      for (let i = 0; i < icons.length; i += 3) {
-        html += `<div class="cell-icon-row">` +
-          icons.slice(i, i + 3).map(icon =>
-            `<img src="${iconPath + icon}" alt="" draggable="false">`
-          ).join('') +
-          `</div>`;
+      // Arrange icons in a 3x3 grid
+      let html = `<span class="cell-label">${label}</span><div class="cell-icons" style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding-top:20px;">`;
+      for (let i = 0; i < 9; i++) {
+        if (icons[i]) {
+          html += `<div style="display:flex;align-items:center;justify-content:center;"><img src="${iconPath + icons[i]}" alt="" draggable="false" style="width:32px;height:32px;"></div>`;
+        } else {
+          html += `<div></div>`;
+        }
       }
       html += `</div>`;
       cell.innerHTML = html;
@@ -406,13 +406,13 @@
     function exportAsPng() {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const cellSize = 100;
+      const cellSize = 150; // ENLARGED
       const gap = 2;
       const gridSize = 9;
       const backgroundSrc = 'background.jpg';
 
       // Add extra space at the top for the date
-      const dateHeight = 40;
+      const dateHeight = 60;
       canvas.width = gridSize * (cellSize + gap);
       canvas.height = gridSize * (cellSize + gap) + dateHeight;
 
@@ -438,7 +438,6 @@
         iconPromises[icon] = loadImage(iconPath + icon);
       });
 
-      // Load background and icons
       Promise.all([
         loadImage(backgroundSrc),
         ...Object.values(iconPromises)
@@ -454,44 +453,43 @@
         ctx.fillRect(0, 0, canvas.width, dateHeight);
 
         // Draw date at the top
-        ctx.font = "bold 22px Arial";
+        ctx.font = "bold 32px Arial";
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "middle";
         const dateStr = new Date().toLocaleString();
-        ctx.fillText(dateStr, 12, dateHeight / 2);
+        ctx.fillText(dateStr, 20, dateHeight / 2);
 
         // Draw faded background image for grid area
-        ctx.globalAlpha = 0.4; // Fade the background
+        ctx.globalAlpha = 0.4;
         ctx.drawImage(backgroundImage, 0, dateHeight, canvas.width, canvas.height - dateHeight);
-        ctx.globalAlpha = 1.0; // Reset alpha for the rest
+        ctx.globalAlpha = 1.0;
 
-        // Draw the grid and icons (row 8 at top, 0 at bottom)
-        for (let row = 8; row >= 0; row--) {
+        // Draw the grid and icons (row 0 at top, 8 at bottom)
+        for (let row = 0; row < gridSize; row++) {
           for (let col = 0; col < gridSize; col++) {
             const x = col * (cellSize + gap);
-            const y = dateHeight + (8 - row) * (cellSize + gap);
+            const y = dateHeight + row * (cellSize + gap);
 
             // Draw cell border
-            ctx.strokeStyle = '#999';
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 2;
             ctx.strokeRect(x, y, cellSize, cellSize);
 
             // Draw cell label
-            ctx.font = "bold 16px Arial";
+            ctx.font = "bold 24px Arial";
             ctx.fillStyle = "rgba(255,255,255,0.8)";
             ctx.textBaseline = "top";
-            ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 4, y + 4);
+            ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
 
-            // Draw all icons in this cell, spaced horizontally
+            // Draw up to 9 icons in a 3x3 grid
             const icons = gridData[row][col];
-            const iconCount = icons.length;
-            icons.forEach((icon, idx) => {
-              if (iconMap[icon]) {
-                // Arrange icons in a row below the label
-                const totalWidth = iconCount * 36 + (iconCount - 1) * 2;
-                const startX = x + (cellSize - totalWidth) / 2;
-                ctx.drawImage(iconMap[icon], startX + idx * 38, y + 22, 36, 36);
+            for (let i = 0; i < 9; i++) {
+              if (icons[i] && iconMap[icons[i]]) {
+                const iconX = x + 16 + (i % 3) * 40;
+                const iconY = y + 40 + Math.floor(i / 3) * 40;
+                ctx.drawImage(iconMap[icons[i]], iconX, iconY, 36, 36);
               }
-            });
+            }
           }
         }
 
@@ -525,7 +523,7 @@
     function rerenderAllCells() {
       const cells = document.querySelectorAll('.cell');
       let idx = 0;
-      for (let row = 8; row >= 0; row--) {
+      for (let row = 0; row < 9; row++) {
         for (let col = 0; col < 9; col++) {
           renderCellIcons(cells[idx++], gridData[row][col]);
         }
