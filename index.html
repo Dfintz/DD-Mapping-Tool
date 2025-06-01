@@ -339,14 +339,14 @@
         { Name: "AuthorizedBase", IconName: "AuthorizedBase", Description: "Guild base" }
       ];
 
-      // Collect all placed icons as simple entries (e.g. "A1,Shipwreck")
+      // Collect all placed icons as simple entries (e.g. "I1,Shipwreck" for top row, "A1,..." for bottom)
       const simpleEntries = [];
       for (let row = 0; row < 9; row++) {
         for (let col = 0; col < 9; col++) {
           gridData[row][col].forEach(icon => {
-            // Remove "Icon" and ".png" from icon file name to match IconName
             let iconName = icon.replace(/^Icon/, '').replace(/\.png$/i, '');
-            const coord = String.fromCharCode(65 + row) + (col + 1);
+            // Reverse the letter order: I (row 0/top) ... A (row 8/bottom)
+            const coord = String.fromCharCode(65 + (8 - row)) + (col + 1);
             simpleEntries.push(`${coord},${iconName}`);
           });
         }
