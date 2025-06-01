@@ -30,16 +30,20 @@
     .grid-label-row {
       display: flex;
       flex-direction: row;
+      height: 30px;
+      /* Ensure alignment with grid columns */
     }
     .grid-label-col {
       display: flex;
       flex-direction: column-reverse;
-      height: 720px;
+      height: 900px;
       margin-top: 30px;
+      /* Remove margin-top if it causes misalignment */
+      /* margin-top: 0; */
     }
     .grid-label {
       width: 30px;
-      height: 75px;
+      height: 100px; /* Match cell height */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -47,9 +51,10 @@
       background-color: rgba(30,30,30,0.7);
       color: #fff;
       font-size: 18px;
+      box-sizing: border-box;
     }
     .grid-label-top {
-      width: 75px;
+      width: 100px;  /* Match cell width */
       height: 30px;
       display: flex;
       align-items: center;
@@ -58,23 +63,24 @@
       background-color: rgba(30,30,30,0.7);
       color: #fff;
       font-size: 18px;
+      box-sizing: border-box;
     }
     .grid-container {
       position: absolute;
       left: 30px;
       top: 30px;
       display: grid;
-      grid-template-columns: repeat(9, 75px);
-      grid-template-rows: repeat(9, 75px);
+      grid-template-columns: repeat(9, 100px);   /* Enlarged cells */
+      grid-template-rows: repeat(9, 100px);      /* Enlarged cells */
       gap: 2px;
       background: transparent;
       box-shadow: 0 0 20px #222;
-      width: 720px;
-      height: 720px;
+      width: 900px;
+      height: 900px;
       z-index: 1;
     }
     .cell {
-      border: 1.5px solid #222; /* Darker grid lines */
+      border: 1.5px solid #222;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
@@ -94,7 +100,7 @@
       position: absolute;
       top: 2px;
       left: 4px;
-      font-size: 13px;
+      font-size: 14px;
       color: #fff;
       opacity: 0.7;
       pointer-events: none;
@@ -104,17 +110,23 @@
     }
     .cell-icons {
       display: flex;
+      flex-direction: column; /* Stack rows vertically */
       flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
+      align-items: flex-start;
+      justify-content: flex-start;
       width: 100%;
       height: 100%;
-      padding-top: 18px;
+      padding-top: 20px;
       z-index: 1;
     }
+    .cell-icon-row {
+      display: flex;
+      flex-direction: row;
+      margin-bottom: 2px;
+    }
     .cell-icons img {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       margin: 2px;
       background: #222;
       border-radius: 4px;
@@ -343,13 +355,17 @@
       const col = cell.getAttribute('data-col');
       const label = String.fromCharCode(65 + parseInt(row)) + (parseInt(col) + 1);
 
-      // Add label in the corner and icons below it
-      cell.innerHTML = `<span class="cell-label">${label}</span>
-        <div class="cell-icons">${
-          icons.map(icon =>
+      // Arrange icons in multiple rows, 3 per row
+      let html = `<span class="cell-label">${label}</span><div class="cell-icons">`;
+      for (let i = 0; i < icons.length; i += 3) {
+        html += `<div class="cell-icon-row">` +
+          icons.slice(i, i + 3).map(icon =>
             `<img src="${iconPath + icon}" alt="" draggable="false">`
-          ).join('')
-        }</div>`;
+          ).join('') +
+          `</div>`;
+      }
+      html += `</div>`;
+      cell.innerHTML = html;
     }
 
     // Close the icon picker
@@ -390,7 +406,7 @@
     function exportAsPng() {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const cellSize = 75;
+      const cellSize = 100;
       const gap = 2;
       const gridSize = 9;
       const backgroundSrc = 'background.jpg';
@@ -471,9 +487,9 @@
             icons.forEach((icon, idx) => {
               if (iconMap[icon]) {
                 // Arrange icons in a row below the label
-                const totalWidth = iconCount * 32 + (iconCount - 1) * 2;
+                const totalWidth = iconCount * 36 + (iconCount - 1) * 2;
                 const startX = x + (cellSize - totalWidth) / 2;
-                ctx.drawImage(iconMap[icon], startX + idx * 34, y + 22, 32, 32);
+                ctx.drawImage(iconMap[icon], startX + idx * 38, y + 22, 36, 36);
               }
             });
           }
