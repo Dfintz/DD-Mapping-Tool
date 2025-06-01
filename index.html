@@ -7,10 +7,13 @@
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      background-color: #f9f9f9;
+      background-color: #000; /* Set page background to black */
     }
     h1 {
-      color: #333;
+      color: #fff; /* Make header text white for contrast */
+    }
+    p {
+      color: #ccc; /* Make paragraph text lighter */
     }
     .grid-container {
       display: grid;
@@ -19,29 +22,35 @@
       gap: 2px;
       margin-bottom: 20px;
       background-image: url('background.jpg'); /* Use your actual filename */
-      background-size: cover;
-      background-position: center;
+      background-size: 450px 450px; /* 9 cells * 50px = 450px */
+      background-position: top left;
+      background-repeat: no-repeat;
+      background-color: transparent; /* Ensure transparency */
+      box-shadow: 0 0 20px #222; /* Optional: subtle glow */
+      width: 480px; /* 9*50 + 30 for label */
+      height: 480px;
     }
     .label {
       display: flex;
       justify-content: center;
       align-items: center;
       font-weight: bold;
-      background-color: #f0f0f0;
+      background-color: rgba(30,30,30,0.7); /* Slightly transparent label background */
+      color: #fff;
     }
     .cell {
       border: 1px solid #999;
       display: flex;
       justify-content: center;
       align-items: center;
-      background-color: #fff;
+      background-color: transparent; /* Make grid cells transparent */
       font-size: 12px;
       cursor: pointer;
       user-select: none;
       transition: background-color 0.2s;
     }
     .cell:hover {
-      background-color: #e0e0e0;
+      background-color: rgba(255,255,255,0.1); /* Slight highlight on hover */
     }
     .controls button {
       margin-right: 10px;
