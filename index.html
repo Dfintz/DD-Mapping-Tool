@@ -74,7 +74,7 @@
       z-index: 1;
     }
     .cell {
-      border: 1px solid #999;
+      border: 1.5px solid #222; /* Darker grid lines */
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
@@ -264,14 +264,14 @@
       }
     }
 
-    // Render left row labels (A-I, top to bottom)
+    // Render left row labels (I at top, A at bottom)
     function renderLeftRowLabels() {
       const leftRowLabels = document.getElementById('leftRowLabels');
       leftRowLabels.innerHTML = '';
-      for (let row = 0; row < 9; row++) {
+      for (let row = 8; row >= 0; row--) {
         const div = document.createElement('div');
         div.className = 'grid-label';
-        div.textContent = String.fromCharCode(65 + row); // A (65) to I (73)
+        div.textContent = String.fromCharCode(65 + row); // I (73) to A (65)
         leftRowLabels.appendChild(div);
       }
     }
@@ -280,7 +280,8 @@
     function initializeGrid() {
       gridContainer.innerHTML = "";
       gridData = [];
-      for (let row = 0; row < 9; row++) { // A (0) at top, I (8) at bottom
+      // Render from top (row 8) to bottom (row 0)
+      for (let row = 8; row >= 0; row--) {
         gridData[row] = [];
         for (let col = 0; col < 9; col++) {
           gridData[row][col] = [];
@@ -357,7 +358,7 @@
       currentCell = null;
     }
 
-    // Outputs the grid data in a coordinate: icons format
+    // Outputs the grid data in a coordinate: icons format (from I to A)
     function exportMapData() {
       let output = "Cell\t\tIcons\n";
       output += "-------------------------\n";
@@ -385,7 +386,7 @@
       }
     }
 
-    // Exports the grid as a PNG image (draws SVG icons)
+    // Exports the grid as a PNG image (draws SVG icons, from I to A)
     function exportAsPng() {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -432,7 +433,7 @@
           iconMap[icon] = iconImages[i++];
         }
 
-        // Draw white background for date area
+        // Draw black background for date area
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, dateHeight);
 
@@ -443,14 +444,16 @@
         const dateStr = new Date().toLocaleString();
         ctx.fillText(dateStr, 12, dateHeight / 2);
 
-        // Draw background image for grid area
+        // Draw faded background image for grid area
+        ctx.globalAlpha = 0.4; // Fade the background
         ctx.drawImage(backgroundImage, 0, dateHeight, canvas.width, canvas.height - dateHeight);
+        ctx.globalAlpha = 1.0; // Reset alpha for the rest
 
-        // Draw the grid and icons (row 0 at top, 8 at bottom)
-        for (let row = 0; row < gridSize; row++) {
+        // Draw the grid and icons (row 8 at top, 0 at bottom)
+        for (let row = 8; row >= 0; row--) {
           for (let col = 0; col < gridSize; col++) {
             const x = col * (cellSize + gap);
-            const y = dateHeight + row * (cellSize + gap);
+            const y = dateHeight + (8 - row) * (cellSize + gap);
 
             // Draw cell border
             ctx.strokeStyle = '#999';
@@ -506,7 +509,7 @@
     function rerenderAllCells() {
       const cells = document.querySelectorAll('.cell');
       let idx = 0;
-      for (let row = 0; row < 9; row++) { // A (0) at top, I (8) at bottom
+      for (let row = 8; row >= 0; row--) {
         for (let col = 0; col < 9; col++) {
           renderCellIcons(cells[idx++], gridData[row][col]);
         }
