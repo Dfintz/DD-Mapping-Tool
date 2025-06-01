@@ -139,7 +139,6 @@
         <div class="grid-container" id="gridContainer"></div>
       </div>
       <div class="controls" style="margin-top:30px; text-align:center;">
-        <button id="exportButton">Export Map Data</button>
         <button id="clearButton">Clear Map</button>
         <button id="exportPngButton">Export as PNG</button>
         <button id="exportJsonButton">Export as JSON</button>
@@ -542,7 +541,6 @@
     rerenderAllCells();
 
     // Button event listeners
-    document.getElementById('exportButton').onclick = exportMapData;
     document.getElementById('clearButton').onclick = clearMap;
     document.getElementById('exportPngButton').onclick = exportAsPng;
     document.getElementById('exportJsonButton').onclick = exportMapDataAsJson;
