@@ -142,16 +142,17 @@
         <!-- The grid itself -->
         <div class="grid-container" id="gridContainer"></div>
       </div>
+      <!-- Move controls here, below the grid -->
+      <div class="controls" style="margin-top:30px; text-align:center;">
+        <button id="exportButton">Export Map Data</button>
+        <button id="clearButton">Clear Map</button>
+        <button id="exportPngButton">Export as PNG</button>
+      </div>
     </div>
     <div class="legend">
       <div class="legend-title">Legend</div>
       <div id="legendIcons"></div>
     </div>
-  </div>
-  <div class="controls">
-    <button id="exportButton">Export Map Data</button>
-    <button id="clearButton">Clear Map</button>
-    <button id="exportPngButton">Export as PNG</button>
   </div>
 
   <!-- Icon Picker Modal -->
@@ -159,7 +160,12 @@
     <div style="background:#fff; padding:20px; border-radius:8px; max-width:600px;">
       <h3>Select an Icon</h3>
       <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
-      <button onclick="closeIconPicker()">Cancel</button>
+      <!-- Add Check and Confirm buttons -->
+      <div style="margin-top:10px; display:flex; gap:10px;">
+        <button id="checkSelectionButton" type="button">Check</button>
+        <button id="confirmSelectionButton" type="button">Confirm</button>
+        <button onclick="closeIconPicker()">Cancel</button>
+      </div>
     </div>
   </div>
 
@@ -306,19 +312,21 @@
       currentCell = null;
     }
 
-    // Outputs the grid data in a simple text format
+    // Outputs the grid data in a coordinate: icons format
     function exportMapData() {
-      let output = "   1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9\n";
-      output += "-----------------------------------\n";
+      let output = "Cell\t\tIcons\n";
+      output += "-------------------------\n";
       for (let row = 8; row >= 0; row--) {
-        output += String.fromCharCode(65 + row) + " | ";
         for (let col = 0; col < 9; col++) {
-          output += gridData[row][col].length
-            ? gridData[row][col].join(',')
-            : ".";
-          if (col < 8) output += " | ";
+          if (gridData[row][col].length) {
+            const coord = String.fromCharCode(65 + row) + (col + 1);
+            const icons = gridData[row][col].map(i => iconNames[iconList.indexOf(i)]).join(", ");
+            output += coord + "\t" + icons + "\n";
+          }
         }
-        output += "\n";
+      }
+      if (output === "Cell\t\tIcons\n-------------------------\n") {
+        output += "(No icons placed on the map)";
       }
       alert("Exported Map Data:\n" + output);
       console.log("Exported Map Data:\n" + output);
@@ -421,6 +429,29 @@
       }
     }
 
+    // Add check and confirm button logic
+    document.getElementById('checkSelectionButton').onclick = function() {
+      if (currentCell) {
+        const row = currentCell.getAttribute('data-row');
+        const col = currentCell.getAttribute('data-col');
+        const icons = gridData[row][col];
+        if (icons.length === 0) {
+          alert("No icons selected for this cell.");
+        } else {
+          alert(
+            "Cell " +
+            String.fromCharCode(65 + parseInt(row)) +
+            (parseInt(col) + 1) +
+            " contains: " +
+            icons.map(i => iconNames[iconList.indexOf(i)]).join(", ")
+          );
+        }
+      }
+    };
+    document.getElementById('confirmSelectionButton').onclick = function() {
+      closeIconPicker();
+    };
+
     // Initialize everything on page load
     renderLegend();
     renderTopColLabels();
@@ -436,3 +467,4 @@
   </script>
 </body>
 </html>
+``` 
