@@ -142,6 +142,7 @@
         <button id="exportButton">Export Map Data</button>
         <button id="clearButton">Clear Map</button>
         <button id="exportPngButton">Export as PNG</button>
+        <button id="exportJsonButton">Export as JSON</button>
       </div>
     </div>
     <div class="legend">
@@ -304,11 +305,12 @@
       currentCell = null;
     }
 
-    // Outputs the grid data in a coordinate: icons format (from I to A)
+    // Outputs the grid data in a coordinate: icons format (from A at top to I at bottom)
     function exportMapData() {
       let output = "Cell\t\tIcons\n";
       output += "-------------------------\n";
-      for (let row = 8; row >= 0; row--) {
+      // Loop from row 0 (A/top) to row 8 (I/bottom)
+      for (let row = 0; row < 9; row++) {
         for (let col = 0; col < 9; col++) {
           if (gridData[row][col].length) {
             const coord = String.fromCharCode(65 + row) + (col + 1);
@@ -322,6 +324,55 @@
       }
       alert("Exported Map Data:\n" + output);
       console.log("Exported Map Data:\n" + output);
+    }
+
+    // Exports the grid data as JSON
+    function exportMapDataAsJson() {
+      // Define the layers as in your example
+      const layers = [
+        { Name: "Shipwreck", IconName: "Shipwreck", Description: "Shipwreck" },
+        { Name: "TestingStation", IconName: "TestingStation", Description: "Testing station" },
+        { Name: "Cave", IconName: "Cave", Description: "Cave" },
+        { Name: "Spice", IconName: "Spice", Description: "Spice ring" },
+        { Name: "Titanium", IconName: "Titanium", Description: "Titanium" },
+        { Name: "Stravidium", IconName: "Stravidium", Description: "Stravidium" },
+        { Name: "Poi", IconName: "Poi", Description: "Point of interest" },
+        { Name: "AuthorizedBase", IconName: "AuthorizedBase", Description: "Guild base" }
+      ];
+
+      // Collect all placed icons as simple entries (e.g. "A1,Shipwreck")
+      const simpleEntries = [];
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          gridData[row][col].forEach(icon => {
+            // Remove "Icon" and ".png" from icon file name to match IconName
+            let iconName = icon.replace(/^Icon/, '').replace(/\.png$/i, '');
+            const coord = String.fromCharCode(65 + row) + (col + 1);
+            simpleEntries.push(`${coord},${iconName}`);
+          });
+        }
+      }
+
+      const json = {
+        GridSize: 9,
+        IconSize: 48,
+        GridMapSize: 150,
+        IconsFolder: "Icons",
+        Layers: layers,
+        ActiveMap: {
+          Help: "This is a sample map. It contains a list of simple entries that is used for easy entering of map coordinates by using comma or semicolon separation of entries. Ex 'A1,G4'\r\nYou may also enter detailed entries that include a grid location, name, description and coordinates within the grid.\r\n",
+          ScoutedGrids: "",
+          SimpleEntries: simpleEntries,
+          DetailedEntries: []
+        }
+      };
+
+      // Download as JSON file
+      const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = "map_export.json";
+      link.click();
     }
 
     // Clears the grid after confirmation
@@ -494,6 +545,7 @@
     document.getElementById('exportButton').onclick = exportMapData;
     document.getElementById('clearButton').onclick = clearMap;
     document.getElementById('exportPngButton').onclick = exportAsPng;
+    document.getElementById('exportJsonButton').onclick = exportMapDataAsJson;
   </script>
 </body>
 </html>
