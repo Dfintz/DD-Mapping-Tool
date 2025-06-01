@@ -76,16 +76,16 @@
 
     // List of SVG icon filenames (relative to your project)
     const iconList = [
-      "IconAuthorizedBase.svg",
-      "IconCave.svg",
-      "IconHomeBase.svg",
-      "IconPoi.svg",
-      "IconShipwreck.svg",
-      "IconShipwreckX2.svg",
-      "IconSpice.svg",
-      "IconStravidium.svg",
-      "IconTestingStation.svg",
-      "IconTitanium.svg"
+      "IconAuthorizedBase.png",
+      "IconCave.png",
+      "IconHomeBase.png",
+      "IconPoi.png",
+      "IconShipwreck.png",
+      "IconShipwreckX2.png",
+      "IconSpice.png",
+      "IconStravidium.png",
+      "IconTestingStation.png",
+      "IconTitanium.png"
     ];
     const iconPath = "Icons/Svg/"; // Use your SVG folder
 
@@ -147,7 +147,7 @@
         img.style.width = "40px";
         img.style.height = "40px";
         img.style.cursor = "pointer";
-        img.title = icon.replace('.svg','').replace('Icon','');
+        img.title = icon.replace('.png','').replace('Icon','');
         img.onclick = () => selectIcon(icon);
         grid.appendChild(img);
       });
