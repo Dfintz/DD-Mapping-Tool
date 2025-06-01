@@ -12,12 +12,19 @@
     h1 {
       color: #333;
     }
-    .grid {
+    .grid-container {
       display: grid;
-      grid-template-columns: repeat(9, 50px);
-      grid-template-rows: repeat(9, 50px);
+      grid-template-columns: 30px repeat(9, 50px);
+      grid-template-rows: 30px repeat(9, 50px);
       gap: 2px;
       margin-bottom: 20px;
+    }
+    .label {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      background-color: #f0f0f0;
     }
     .cell {
       border: 1px solid #999;
@@ -44,22 +51,68 @@
 <body>
   <h1>Dune Awakening Deep Desert Mapping</h1>
   <p>Click on any cell to set its content. When you’re finished updating the map, use the export button to review your grid or clear to start over.</p>
-  <div class="grid" id="grid"></div>
+  <div class="grid-container" id="gridContainer"></div>
   <div class="controls">
     <button id="exportButton">Export Map Data</button>
     <button id="clearButton">Clear Map</button>
+    <button id="exportPngButton">Export as PNG</button>
+  </div>
+
+  <!-- Icon Picker Modal -->
+  <div id="iconPickerModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:1000;">
+    <div style="background:#fff; padding:20px; border-radius:8px; max-width:600px;">
+      <h3>Select an Icon</h3>
+      <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
+      <button onclick="closeIconPicker()">Cancel</button>
+    </div>
   </div>
 
   <script>
-    const gridContainer = document.getElementById('grid');
+    const gridContainer = document.getElementById('gridContainer');
     let gridData = [];
 
-    // Initializes a 9x9 grid and resets the gridData
+    // List of SVG icon filenames (relative to your project)
+    const iconList = [
+      "IconAuthorizedBase.svg",
+      "IconCave.svg",
+      "IconHomeBase.svg",
+      "IconPoi.svg",
+      "IconShipwreck.svg",
+      "IconShipwreckX2.svg",
+      "IconSpice.svg",
+      "IconStravidium.svg",
+      "IconTestingStation.svg",
+      "IconTitanium.svg"
+    ];
+    const iconPath = "Icons/Svg/"; // Use your SVG folder
+
+    let currentCell = null;
+
+    // Initializes a 9x9 grid with labels and resets the gridData
     function initializeGrid() {
       gridContainer.innerHTML = "";
       gridData = [];
-      // Create a 9x9 matrix
+
+      // Add top-left empty corner
+      const corner = document.createElement('div');
+      corner.classList.add('label');
+      gridContainer.appendChild(corner);
+
+      // Add column labels (1-9)
+      for (let col = 1; col <= 9; col++) {
+        const colLabel = document.createElement('div');
+        colLabel.classList.add('label');
+        colLabel.textContent = col;
+        gridContainer.appendChild(colLabel);
+      }
+
       for (let row = 0; row < 9; row++) {
+        // Add row label (A-I)
+        const rowLabel = document.createElement('div');
+        rowLabel.classList.add('label');
+        rowLabel.textContent = String.fromCharCode(65 + row); // Convert 0-8 to A-I
+        gridContainer.appendChild(rowLabel);
+
         gridData[row] = [];
         for (let col = 0; col < 9; col++) {
           gridData[row][col] = ""; // Default value is empty
@@ -67,32 +120,60 @@
           cell.classList.add('cell');
           cell.setAttribute('data-row', row);
           cell.setAttribute('data-col', col);
-          cell.textContent = "";
+          cell.innerHTML = ""; // Use innerHTML for icons
           cell.addEventListener('click', handleCellClick);
           gridContainer.appendChild(cell);
         }
       }
     }
 
-    // Handle cell clicks to input or update content
+    // Show icon picker when a cell is clicked
     function handleCellClick(event) {
-      const cellElement = event.currentTarget;
-      const row = cellElement.getAttribute('data-row');
-      const col = cellElement.getAttribute('data-col');
-      const currentValue = cellElement.textContent;
-      const newValue = prompt(`Enter content for grid cell (${parseInt(row) + 1}, ${parseInt(col) + 1}):`, currentValue);
-      if (newValue !== null) {
-        gridData[row][col] = newValue;
-        cellElement.textContent = newValue;
+      currentCell = event.currentTarget;
+      document.getElementById('iconPickerModal').style.display = 'flex';
+    }
+
+    // Populate icon picker grid
+    function populateIconPicker() {
+      const grid = document.getElementById('iconPickerGrid');
+      grid.innerHTML = "";
+      iconList.forEach(icon => {
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.alt = icon;
+        img.style.width = "40px";
+        img.style.height = "40px";
+        img.style.cursor = "pointer";
+        img.title = icon.replace('.svg','').replace('Icon','');
+        img.onclick = () => selectIcon(icon);
+        grid.appendChild(img);
+      });
+    }
+
+    // When an icon is selected, place it in the cell
+    function selectIcon(icon) {
+      if (currentCell) {
+        const row = currentCell.getAttribute('data-row');
+        const col = currentCell.getAttribute('data-col');
+        gridData[row][col] = icon; // Store icon filename
+        currentCell.innerHTML = `<img src="${iconPath + icon}" alt="" style="width:32px;height:32px;">`;
       }
+      closeIconPicker();
+    }
+
+    // Close the icon picker
+    function closeIconPicker() {
+      document.getElementById('iconPickerModal').style.display = 'none';
+      currentCell = null;
     }
 
     // Outputs the grid data in a simple text format
     function exportMapData() {
-      let output = "";
+      let output = "   1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9\n";
+      output += "-----------------------------------\n";
       for (let row = 0; row < 9; row++) {
+        output += String.fromCharCode(65 + row) + " | ";
         for (let col = 0; col < 9; col++) {
-          // Use a dot for empty cells to visualize the grid
           output += gridData[row][col] ? gridData[row][col] : ".";
           if (col < 8) output += " | ";
         }
@@ -109,12 +190,108 @@
       }
     }
 
+    // Exports the grid as a PNG image (draws SVG icons)
+    function exportAsPng() {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const cellSize = 50;
+      const gap = 2;
+      const gridSize = 9;
+
+      canvas.width = gridSize * (cellSize + gap) + 30;
+      canvas.height = gridSize * (cellSize + gap) + 30;
+
+      // Helper to load an image (SVG as PNG) as a Promise
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+        });
+      }
+
+      // Gather all unique icons used in the grid
+      const usedIcons = new Set();
+      for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+          const icon = gridData[row][col];
+          if (icon) usedIcons.add(icon);
+        }
+      }
+
+      // Preload all used SVG icons
+      const iconPromises = {};
+      usedIcons.forEach(icon => {
+        iconPromises[icon] = loadImage(iconPath + icon);
+      });
+
+      Promise.all(Object.values(iconPromises)).then(iconImages => {
+        // Map icon filenames to loaded Image objects
+        const iconMap = {};
+        let i = 0;
+        for (const icon of usedIcons) {
+          iconMap[icon] = iconImages[i++];
+        }
+
+        // Draw background
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw row labels (A-I)
+        ctx.fillStyle = '#000';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (let row = 0; row < gridSize; row++) {
+          ctx.fillText(String.fromCharCode(65 + row), 15, 30 + row * (cellSize + gap) + cellSize / 2);
+        }
+
+        // Draw column labels (1-9)
+        for (let col = 0; col < gridSize; col++) {
+          ctx.fillText(col + 1, 30 + col * (cellSize + gap) + cellSize / 2, 15);
+        }
+
+        // Draw the grid and icons
+        for (let row = 0; row < gridSize; row++) {
+          for (let col = 0; col < gridSize; col++) {
+            const x = 30 + col * (cellSize + gap);
+            const y = 30 + row * (cellSize + gap);
+
+            // Draw cell background
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(x, y, cellSize, cellSize);
+
+            // Draw cell border
+            ctx.strokeStyle = '#999';
+            ctx.strokeRect(x, y, cellSize, cellSize);
+
+            // Draw icon if present
+            const icon = gridData[row][col];
+            if (icon && iconMap[icon]) {
+              ctx.drawImage(iconMap[icon], x + 9, y + 9, 32, 32);
+            }
+          }
+        }
+
+        // Export the canvas as a PNG
+        const link = document.createElement('a');
+        link.download = 'grid.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
+
     // Event listeners for the control buttons
     document.getElementById('exportButton').addEventListener('click', exportMapData);
     document.getElementById('clearButton').addEventListener('click', clearMap);
+    document.getElementById('exportPngButton').addEventListener('click', exportAsPng);
 
     // Initialize the grid when the page loads
     initializeGrid();
+
+    // Call this once on page load
+    populateIconPicker();
   </script>
 </body>
 </html>
