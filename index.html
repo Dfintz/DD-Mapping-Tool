@@ -22,8 +22,8 @@
     }
     .grid-outer {
       position: relative;
-      width: 480px;
-      height: 480px;
+      width: 750px;
+      height: 750px;
       display: flex;
       flex-direction: column;
     }
@@ -34,22 +34,22 @@
     .grid-label-col {
       display: flex;
       flex-direction: column-reverse;
-      height: 450px;
+      height: 720px;
       margin-top: 30px;
     }
     .grid-label {
       width: 30px;
-      height: 50px;
+      height: 75px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
       background-color: rgba(30,30,30,0.7);
       color: #fff;
-      font-size: 16px;
+      font-size: 18px;
     }
     .grid-label-top {
-      width: 50px;
+      width: 75px;
       height: 30px;
       display: flex;
       align-items: center;
@@ -57,39 +57,68 @@
       font-weight: bold;
       background-color: rgba(30,30,30,0.7);
       color: #fff;
-      font-size: 16px;
+      font-size: 18px;
     }
     .grid-container {
       position: absolute;
       left: 30px;
       top: 30px;
       display: grid;
-      grid-template-columns: repeat(9, 50px);
-      grid-template-rows: repeat(9, 50px);
+      grid-template-columns: repeat(9, 75px);
+      grid-template-rows: repeat(9, 75px);
       gap: 2px;
-      background-image: url('background.jpg');
-      background-size: 450px 450px;
-      background-position: top left;
-      background-repeat: no-repeat;
-      background-color: transparent;
+      background: transparent;
       box-shadow: 0 0 20px #222;
-      width: 450px;
-      height: 450px;
+      width: 720px;
+      height: 720px;
       z-index: 1;
     }
     .cell {
       border: 1px solid #999;
       display: flex;
-      justify-content: center;
-      align-items: center;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-start;
       background-color: transparent;
       font-size: 12px;
       cursor: pointer;
       user-select: none;
       transition: background-color 0.2s;
+      position: relative;
+      overflow: hidden;
     }
     .cell:hover {
       background-color: rgba(255,255,255,0.1);
+    }
+    .cell-label {
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      font-size: 13px;
+      color: #fff;
+      opacity: 0.7;
+      pointer-events: none;
+      z-index: 2;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px #000;
+    }
+    .cell-icons {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      padding-top: 18px;
+      z-index: 1;
+    }
+    .cell-icons img {
+      width: 32px;
+      height: 32px;
+      margin: 2px;
+      background: #222;
+      border-radius: 4px;
+      border: 1px solid #444;
     }
     .legend {
       margin-top: 30px;
@@ -202,17 +231,24 @@
 
     let currentCell = null;
 
-    // Render the legend
+    // Make legend icons draggable
     function renderLegend() {
       const legend = document.getElementById('legendIcons');
       legend.innerHTML = '';
       iconList.forEach((icon, idx) => {
         legend.innerHTML += `
-          <div class="legend-item">
+          <div class="legend-item" draggable="true" data-icon="${icon}">
             <img src="${iconPath + icon}" alt="${iconNames[idx]}">
             <span>${iconNames[idx]}</span>
           </div>
         `;
+      });
+
+      // Add dragstart event to legend icons
+      document.querySelectorAll('.legend-item').forEach(item => {
+        item.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
+        });
       });
     }
 
@@ -228,14 +264,14 @@
       }
     }
 
-    // Render left row labels (I-A, top to bottom)
+    // Render left row labels (A-I, top to bottom)
     function renderLeftRowLabels() {
       const leftRowLabels = document.getElementById('leftRowLabels');
       leftRowLabels.innerHTML = '';
-      for (let row = 8; row >= 0; row--) {
+      for (let row = 0; row < 9; row++) {
         const div = document.createElement('div');
         div.className = 'grid-label';
-        div.textContent = String.fromCharCode(65 + row); // I (73) to A (65)
+        div.textContent = String.fromCharCode(65 + row); // A (65) to I (73)
         leftRowLabels.appendChild(div);
       }
     }
@@ -244,8 +280,7 @@
     function initializeGrid() {
       gridContainer.innerHTML = "";
       gridData = [];
-      // Reverse row order: 8 (I) at top, 0 (A) at bottom
-      for (let row = 8; row >= 0; row--) {
+      for (let row = 0; row < 9; row++) { // A (0) at top, I (8) at bottom
         gridData[row] = [];
         for (let col = 0; col < 9; col++) {
           gridData[row][col] = [];
@@ -258,6 +293,7 @@
           gridContainer.appendChild(cell);
         }
       }
+      makeCellsDroppable();
     }
 
     // Show icon picker when a cell is clicked
@@ -299,11 +335,20 @@
       // Keep picker open for multi-select
     }
 
-    // Helper to render all icons in a cell
+    // Helper to render all icons in a cell and show cell label
     function renderCellIcons(cell, icons) {
-      cell.innerHTML = icons.map(icon =>
-        `<img src="${iconPath + icon}" alt="" style="width:24px;height:24px;margin:1px;">`
-      ).join('');
+      // Get cell coordinates
+      const row = cell.getAttribute('data-row');
+      const col = cell.getAttribute('data-col');
+      const label = String.fromCharCode(65 + parseInt(row)) + (parseInt(col) + 1);
+
+      // Add label in the corner and icons below it
+      cell.innerHTML = `<span class="cell-label">${label}</span>
+        <div class="cell-icons">${
+          icons.map(icon =>
+            `<img src="${iconPath + icon}" alt="" draggable="false">`
+          ).join('')
+        }</div>`;
     }
 
     // Close the icon picker
@@ -344,13 +389,15 @@
     function exportAsPng() {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const cellSize = 50;
+      const cellSize = 75;
       const gap = 2;
       const gridSize = 9;
       const backgroundSrc = 'background.jpg';
 
+      // Add extra space at the top for the date
+      const dateHeight = 40;
       canvas.width = gridSize * (cellSize + gap);
-      canvas.height = gridSize * (cellSize + gap);
+      canvas.height = gridSize * (cellSize + gap) + dateHeight;
 
       function loadImage(src) {
         return new Promise((resolve, reject) => {
@@ -385,27 +432,45 @@
           iconMap[icon] = iconImages[i++];
         }
 
-        // Draw background
-        ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+        // Draw white background for date area
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, dateHeight);
 
-        // Draw the grid and icons (row 8 at top, 0 at bottom)
-        for (let row = 8; row >= 0; row--) {
+        // Draw date at the top
+        ctx.font = "bold 22px Arial";
+        ctx.fillStyle = "#fff";
+        ctx.textBaseline = "middle";
+        const dateStr = new Date().toLocaleString();
+        ctx.fillText(dateStr, 12, dateHeight / 2);
+
+        // Draw background image for grid area
+        ctx.drawImage(backgroundImage, 0, dateHeight, canvas.width, canvas.height - dateHeight);
+
+        // Draw the grid and icons (row 0 at top, 8 at bottom)
+        for (let row = 0; row < gridSize; row++) {
           for (let col = 0; col < gridSize; col++) {
             const x = col * (cellSize + gap);
-            const y = (8 - row) * (cellSize + gap);
+            const y = dateHeight + row * (cellSize + gap);
 
             // Draw cell border
             ctx.strokeStyle = '#999';
             ctx.strokeRect(x, y, cellSize, cellSize);
+
+            // Draw cell label
+            ctx.font = "bold 16px Arial";
+            ctx.fillStyle = "rgba(255,255,255,0.8)";
+            ctx.textBaseline = "top";
+            ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 4, y + 4);
 
             // Draw all icons in this cell, spaced horizontally
             const icons = gridData[row][col];
             const iconCount = icons.length;
             icons.forEach((icon, idx) => {
               if (iconMap[icon]) {
-                const totalWidth = iconCount * 24 + (iconCount - 1) * 2;
+                // Arrange icons in a row below the label
+                const totalWidth = iconCount * 32 + (iconCount - 1) * 2;
                 const startX = x + (cellSize - totalWidth) / 2;
-                ctx.drawImage(iconMap[icon], startX + idx * 26, y + 13, 24, 24);
+                ctx.drawImage(iconMap[icon], startX + idx * 34, y + 22, 32, 32);
               }
             });
           }
@@ -418,15 +483,35 @@
       });
     }
 
+    // Make grid cells droppable
+    function makeCellsDroppable() {
+      document.querySelectorAll('.cell').forEach(cell => {
+        cell.addEventListener('dragover', function (e) {
+          e.preventDefault();
+        });
+        cell.addEventListener('drop', function (e) {
+          e.preventDefault();
+          const icon = e.dataTransfer.getData('text/plain');
+          const row = this.getAttribute('data-row');
+          const col = this.getAttribute('data-col');
+          if (icon && gridData[row][col].indexOf(icon) === -1) {
+            gridData[row][col].push(icon);
+            renderCellIcons(this, gridData[row][col]);
+          }
+        });
+      });
+    }
+
     // When reloading the grid, re-render icons in each cell
     function rerenderAllCells() {
       const cells = document.querySelectorAll('.cell');
       let idx = 0;
-      for (let row = 8; row >= 0; row--) {
+      for (let row = 0; row < 9; row++) { // A (0) at top, I (8) at bottom
         for (let col = 0; col < 9; col++) {
           renderCellIcons(cells[idx++], gridData[row][col]);
         }
       }
+      makeCellsDroppable();
     }
 
     // Add check and confirm button logic
@@ -467,4 +552,3 @@
   </script>
 </body>
 </html>
-``` 
