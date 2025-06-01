@@ -461,13 +461,61 @@
             ctx.textBaseline = "top";
             ctx.fillText(String.fromCharCode(65 + (8 - row)) + (col + 1), x + 8, y + 8);
 
-            // Draw up to 9 icons in a 3x3 grid
+            // Draw up to 9 icons in a 3x3 grid, enlarge and center based on count
             const icons = gridData[row][col];
-            for (let i = 0; i < 9; i++) {
-              if (icons[i] && iconMap[icons[i]]) {
-                const iconX = x + 16 + (i % 3) * 40;
-                const iconY = y + 40 + Math.floor(i / 3) * 40;
-                ctx.drawImage(iconMap[icons[i]], iconX, iconY, 36, 36);
+            const n = icons.length;
+            if (n > 0) {
+              let iconSize, positions;
+              if (n === 1) {
+                iconSize = 90;
+                positions = [[cellSize / 2, cellSize / 2 + 10]];
+              } else if (n === 2) {
+                iconSize = 70;
+                positions = [
+                  [cellSize / 2 - 35, cellSize / 2 + 10],
+                  [cellSize / 2 + 35, cellSize / 2 + 10]
+                ];
+              } else if (n === 3) {
+                iconSize = 60;
+                positions = [
+                  [cellSize / 2, cellSize / 2 - 30],
+                  [cellSize / 2 - 38, cellSize / 2 + 32],
+                  [cellSize / 2 + 38, cellSize / 2 + 32]
+                ];
+              } else if (n === 4) {
+                iconSize = 54;
+                positions = [
+                  [cellSize / 2 - 32, cellSize / 2 - 24],
+                  [cellSize / 2 + 32, cellSize / 2 - 24],
+                  [cellSize / 2 - 32, cellSize / 2 + 32],
+                  [cellSize / 2 + 32, cellSize / 2 + 32]
+                ];
+              } else {
+                // Arrange in a 3x3 grid for 5-9 icons
+                iconSize = 40;
+                positions = [];
+                const grid = 3;
+                const offset = (cellSize - grid * iconSize) / 2;
+                for (let i = 0; i < Math.min(n, 9); i++) {
+                  const gx = i % 3;
+                  const gy = Math.floor(i / 3);
+                  positions.push([
+                    offset + gx * iconSize + iconSize / 2,
+                    30 + offset + gy * iconSize + iconSize / 2
+                  ]);
+                }
+              }
+              for (let i = 0; i < Math.min(n, 9); i++) {
+                const icon = icons[i];
+                if (icon && iconMap[icon]) {
+                  ctx.drawImage(
+                    iconMap[icon],
+                    x + positions[i][0] - iconSize / 2,
+                    y + positions[i][1] - iconSize / 2,
+                    iconSize,
+                    iconSize
+                  );
+                }
               }
             }
           }
