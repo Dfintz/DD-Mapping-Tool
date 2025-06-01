@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Dune Awakening Deep Desert Mapping</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      color: #333;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(9, 50px);
+      grid-template-rows: repeat(9, 50px);
+      gap: 2px;
+      margin-bottom: 20px;
+    }
+    .cell {
+      border: 1px solid #999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s;
+    }
+    .cell:hover {
+      background-color: #e0e0e0;
+    }
+    .controls button {
+      margin-right: 10px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dune Awakening Deep Desert Mapping</h1>
+  <p>Click on any cell to set its content. When you’re finished updating the map, use the export button to review your grid or clear to start over.</p>
+  <div class="grid" id="grid"></div>
+  <div class="controls">
+    <button id="exportButton">Export Map Data</button>
+    <button id="clearButton">Clear Map</button>
+  </div>
+
+  <script>
+    const gridContainer = document.getElementById('grid');
+    let gridData = [];
+
+    // Initializes a 9x9 grid and resets the gridData
+    function initializeGrid() {
+      gridContainer.innerHTML = "";
+      gridData = [];
+      // Create a 9x9 matrix
+      for (let row = 0; row < 9; row++) {
+        gridData[row] = [];
+        for (let col = 0; col < 9; col++) {
+          gridData[row][col] = ""; // Default value is empty
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.setAttribute('data-row', row);
+          cell.setAttribute('data-col', col);
+          cell.textContent = "";
+          cell.addEventListener('click', handleCellClick);
+          gridContainer.appendChild(cell);
+        }
+      }
+    }
+
+    // Handle cell clicks to input or update content
+    function handleCellClick(event) {
+      const cellElement = event.currentTarget;
+      const row = cellElement.getAttribute('data-row');
+      const col = cellElement.getAttribute('data-col');
+      const currentValue = cellElement.textContent;
+      const newValue = prompt(`Enter content for grid cell (${parseInt(row) + 1}, ${parseInt(col) + 1}):`, currentValue);
+      if (newValue !== null) {
+        gridData[row][col] = newValue;
+        cellElement.textContent = newValue;
+      }
+    }
+
+    // Outputs the grid data in a simple text format
+    function exportMapData() {
+      let output = "";
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          // Use a dot for empty cells to visualize the grid
+          output += gridData[row][col] ? gridData[row][col] : ".";
+          if (col < 8) output += " | ";
+        }
+        output += "\n";
+      }
+      alert("Exported Map Data:\n" + output);
+      console.log("Exported Map Data:\n" + output);
+    }
+
+    // Clears the grid after confirmation
+    function clearMap() {
+      if (confirm("This will clear all map data. Are you sure you want to continue?")) {
+        initializeGrid();
+      }
+    }
+
+    // Event listeners for the control buttons
+    document.getElementById('exportButton').addEventListener('click', exportMapData);
+    document.getElementById('clearButton').addEventListener('click', clearMap);
+
+    // Initialize the grid when the page loads
+    initializeGrid();
+  </script>
+</body>
+</html>
