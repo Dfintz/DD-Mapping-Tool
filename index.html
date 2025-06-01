@@ -386,7 +386,7 @@
         ctx.font = "bold 32px Arial";
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "middle";
-        const dateStr = new Date().toLocaleString();
+        const dateStr = new Date().toUTCString(); // Use UTC time
         ctx.fillText(dateStr, 20, dateHeight / 2);
 
         // Draw faded background image for grid area
@@ -497,4 +497,3 @@
   </script>
 </body>
 </html>
-``` 
