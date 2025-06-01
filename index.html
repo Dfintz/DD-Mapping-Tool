@@ -455,11 +455,11 @@
             ctx.lineWidth = 2;
             ctx.strokeRect(x, y, cellSize, cellSize);
 
-            // Draw cell label
+            // Draw cell label using I (top) to A (bottom)
             ctx.font = "bold 24px Arial";
             ctx.fillStyle = "rgba(255,255,255,0.8)";
             ctx.textBaseline = "top";
-            ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
+            ctx.fillText(String.fromCharCode(65 + (8 - row)) + (col + 1), x + 8, y + 8);
 
             // Draw up to 9 icons in a 3x3 grid
             const icons = gridData[row][col];
