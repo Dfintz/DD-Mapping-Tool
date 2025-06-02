@@ -801,58 +801,7 @@
       background: linear-gradient(90deg, #777 0%, #999 100%);
     }
 
-    body.high-contrast {
-      background: #000 !important;
-      color: #fff !important;
-    }
-    body.high-contrast .legend,
-    body.high-contrast .description-box,
-    body.high-contrast .side-controls,
-    body.high-contrast .controls {
-      background: #000 !important;
-      color: #fff !important;
-      border: 2px solid #fff700 !important;
-    }
-    body.high-contrast .cell {
-      border: 2px solid #fff700 !important;
-      background: #111 !important;
-      color: #fff !important;
-    }
-    body.high-contrast .cell-label {
-      color: #fff700 !important;
-      text-shadow: none !important;
-    }
-    body.high-contrast .pretty-btn {
-      background: #000 !important;
-      color: #fff700 !important;
-      border: 2px solid #fff700 !important;
-      box-shadow: none !important;
-    }
-    body.high-contrast .pretty-btn:hover, body.high-contrast .pretty-btn:focus {
-      background: #222 !important;
-      color: #fff !important;
-    }
-    body.high-contrast .legend-toggle {
-      color: #fff700 !important;
-    }    body.high-contrast .explored-toggle {
-      color: #fff700 !important;
-      text-shadow: none !important;
-    }
-    body.high-contrast .icon-picker-content {
-      background: #000 !important;
-      border: 3px solid #fff700 !important;
-    }
-    body.high-contrast .icon-picker-content h3 {
-      color: #fff700 !important;
-    }
-    body.high-contrast .icon-picker-btn {
-      background: #000 !important;
-      color: #fff700 !important;
-      border: 2px solid #fff700 !important;
-    }    body.high-contrast .icon-picker-btn:hover {
-      background: #222 !important;
-      color: #fff !important;
-    }    .main-controls {
+    .main-controls {
       position: absolute;
       top: 250px; /* Position below description box */
       left: 0;
@@ -942,7 +891,6 @@
       <button id="undoButton" class="pretty-btn" title="Undo (Ctrl+Z)">Undo</button>
       <button id="redoButton" class="pretty-btn" title="Redo (Ctrl+Y)">Redo</button>
       <button id="clearButton" class="pretty-btn">Clear Map</button>
-      <button id="highContrastBtn" class="pretty-btn" aria-pressed="false" title="Toggle high contrast mode">High Contrast</button>
     </div>
   </div>  <!-- Icon Picker Modal -->
   <div id="iconPickerModal">
@@ -2140,28 +2088,10 @@
         el.setAttribute('aria-label', el.textContent);
         el.setAttribute('tabindex', '0');
       }
-    });    // --- High Contrast Mode ---
-    const highContrastBtn = document.getElementById('highContrastBtn');
-    highContrastBtn.addEventListener('click', function() {
-      const enabled = document.body.classList.toggle('high-contrast');
-      this.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-      localStorage.setItem('dd_map_high_contrast', enabled ? '1' : '0');
-      showNotification(`High contrast mode ${enabled ? 'enabled' : 'disabled'}`, 'info');
-    });
-    // Restore high contrast mode on load
-    if (localStorage.getItem('dd_map_high_contrast') === '1') {
-      document.body.classList.add('high-contrast');
-      highContrastBtn.setAttribute('aria-pressed', 'true');
-    }
-
-    gridContainer.addEventListener('click', function(e) {
+    });    gridContainer.addEventListener('click', function(e) {
       if (e.target === gridContainer) clearSelection();
     });    window.addEventListener('DOMContentLoaded', function() {
       autoLoadMapEnhanced();
-      if (localStorage.getItem('dd_map_high_contrast') === '1') {
-        document.body.classList.add('high-contrast');
-        highContrastBtn.setAttribute('aria-pressed', 'true');
-      }
     });// --- Export as JSON ---
     document.getElementById('exportJsonButton').onclick = function() {
       try {
@@ -2377,7 +2307,6 @@
       'saveVersionButton': 'Save Map Version (Ctrl+S)',
       'loadVersionButton': 'Load Map Version (Ctrl+O)',
       'shareLinkButton': 'Get Shareable Link',
-      'highContrastBtn': 'Toggle High Contrast Mode',
       'clearButton': 'Clear Map (Delete selected)',
       'exploreAllButton': 'Mark All Cells as Explored'
     };
@@ -2489,12 +2418,6 @@
       } catch (e) {
         showNotification('Failed to generate link', 'error');
       }
-    };
-    document.getElementById('highContrastBtn').onclick = function() {
-      const enabled = document.body.classList.toggle('high-contrast');
-      this.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-      localStorage.setItem('dd_map_high_contrast', enabled ? '1' : '0');
-      showNotification(`High contrast mode ${enabled ? 'enabled' : 'disabled'}`, 'info');
     };
     // Remove description box toggle JS if present
     try {
