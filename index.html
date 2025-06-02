@@ -470,6 +470,7 @@
       align-items: center;
       justify-content: center;
       z-index: 1001;
+      pointer-events: auto;
     }
     
     .help-content {
@@ -575,72 +576,20 @@
       position: relative;
       z-index: 1;
     }
-    
-    .help-close:hover {
+      .help-close:hover {
       background: linear-gradient(145deg, #e6c755, #d4af37);
       transform: translateY(-2px);
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
     }
 
-    /* JSON Drop Zone Styling */
-    #jsonDropZone {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 400px;
-      height: 200px;
-      border: 4px dashed #d4af37;
-      border-radius: 15px;
-      background: linear-gradient(135deg, rgba(42, 24, 16, 0.9) 0%, rgba(26, 15, 8, 0.9) 100%);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(5px);
-    }
-    
-    #jsonDropZone.active {
-      display: flex;
-      animation: pulseGlow 2s infinite;
-    }
-    
-    @keyframes pulseGlow {
-      0%, 100% { 
-        border-color: #d4af37;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 0 rgba(212, 175, 55, 0.4);
-      }
-      50% { 
-        border-color: #ffe066;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 20px rgba(212, 175, 55, 0.1);
-      }
-    }
-    
-    .drop-zone-content {
-      text-align: center;
-      color: #d4af37;
-      font-family: 'Courier New', monospace;
-    }
-    
-    .drop-zone-icon {
-      font-size: 3em;
-      margin-bottom: 10px;
-      text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
-    }
-    
-    .drop-zone-text {
-      font-size: 1.2em;
-      font-weight: bold;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    
-    .drop-zone-subtext {
-      font-size: 0.9em;
-      opacity: 0.8;
-      margin-top: 5px;
-    }
+    /* Mobile responsiveness for help modal */
+    @media (max-width: 1000px) {
+      .help-content {
+        width: 95vw;
+        max-width: none;
+        margin: 10px;
+        padding: 20px;
+      }    }
 
     /* Icon Picker Modal Styling */
     #iconPickerModal {
@@ -932,14 +881,8 @@
           <span class="help-key">Arrow Keys</span>
           <span class="help-description">Navigate grid and legend</span>
         </div>
-      </div>
-
-      <div class="help-section">
+      </div>      <div class="help-section">
         <h3>📁 File Operations</h3>
-        <div class="help-shortcut">
-          <span class="help-key">Drop JSON</span>
-          <span class="help-description">Drag & drop JSON files anywhere to import</span>
-        </div>
         <div class="help-shortcut">
           <span class="help-key">Auto-save</span>
           <span class="help-description">Your work is automatically saved locally</span>
@@ -948,18 +891,7 @@
           <span class="help-key">Share Link</span>
           <span class="help-description">Generate shareable URLs with map data</span>
         </div>
-      </div>
-
-      <button class="help-close" onclick="closeHelp()">Close Manual</button>
-    </div>
-  </div>
-
-  <!-- JSON Drop Zone -->
-  <div id="jsonDropZone">
-    <div class="drop-zone-content">
-      <div class="drop-zone-icon">📁</div>
-      <div class="drop-zone-text">Drop JSON File</div>
-      <div class="drop-zone-subtext">Release to import map data</div>
+      </div><button class="help-close" onclick="closeHelp()">Close Manual</button>
     </div>
   </div>
 
@@ -2486,15 +2418,15 @@
       }
       
       return result;
-    }
-
-    // Enhanced initialization with error recovery
+    }    // Enhanced initialization with error recovery
     function initializeAppEnhanced() {
       try {
         measurePerformance('Legend rendering', () => renderLegendSafe());
         measurePerformance('Grid initialization', () => initializeGrid());
         measurePerformance('Icon picker population', () => populateIconPicker());
         measurePerformance('Cell re-rendering', () => rerenderAllCells());
+          // Initialize help system
+        initializeHelpSystem();
         
         updateTimeToggleHighlight();
         updateStormTimer();
@@ -2518,6 +2450,80 @@
         console.error('Initialization failed:', error);
         showNotification('Application initialization failed. Please refresh the page.', 'error');
       }
+    }    // --- Help Modal Functions ---
+    function openHelp() {
+      const helpModal = document.getElementById('helpModal');
+      const gridContainer = document.getElementById('gridContainer');
+      const gridRect = gridContainer.getBoundingClientRect();
+      const isMobile = window.innerWidth <= 1000;
+      
+      // Position help modal next to the grid
+      const helpContent = helpModal.querySelector('.help-content');
+      helpModal.style.display = 'flex';
+      
+      if (isMobile) {
+        // On mobile, center the modal
+        helpModal.style.alignItems = 'center';
+        helpModal.style.justifyContent = 'center';
+        helpContent.style.position = 'relative';
+        helpContent.style.left = 'auto';
+        helpContent.style.top = 'auto';
+        helpContent.style.transform = 'none';
+      } else {
+        // Calculate position to place modal next to the grid
+        const modalWidth = 600; // max-width from CSS
+        const spacing = 20;
+        const viewportWidth = window.innerWidth;
+        
+        // Position on the right side of the grid if there's space
+        if (gridRect.right + spacing + modalWidth < viewportWidth) {
+          helpModal.style.alignItems = 'flex-start';
+          helpModal.style.justifyContent = 'flex-start';
+          helpContent.style.position = 'fixed';
+          helpContent.style.left = `${gridRect.right + spacing}px`;
+          helpContent.style.top = `${Math.max(20, gridRect.top)}px`;
+          helpContent.style.transform = 'none';
+        } else {
+          // Fallback to centered if no space on the right
+          helpModal.style.alignItems = 'center';
+          helpModal.style.justifyContent = 'center';
+          helpContent.style.position = 'relative';
+          helpContent.style.left = 'auto';
+          helpContent.style.top = 'auto';
+          helpContent.style.transform = 'none';
+        }
+      }
+    }
+    
+    function closeHelp() {
+      const helpModal = document.getElementById('helpModal');
+      helpModal.style.display = 'none';
+    }
+    
+    // Enhanced drag-and-drop visual feedback    
+    // Initialize help button click handler
+    function initializeHelpSystem() {
+      const helpButton = document.getElementById('helpButton');
+      if (helpButton) {
+        helpButton.onclick = openHelp;
+      }
+      
+      // Close help modal when clicking outside
+      const helpModal = document.getElementById('helpModal');
+      if (helpModal) {
+        helpModal.addEventListener('click', function(e) {
+          if (e.target === helpModal) {
+            closeHelp();
+          }
+        });
+      }
+      
+      // Close help modal with Escape key
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && helpModal.style.display !== 'none') {
+          closeHelp();
+        }
+      });
     }
 
     // Replace initialization
