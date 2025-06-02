@@ -378,6 +378,11 @@
       outline: 2px solid #ffe066;
     }
 
+    .legend-item img {
+      width: 24px;
+      height: 24px;
+    }
+
     body.high-contrast {
       background: #000 !important;
       color: #fff !important;
@@ -435,7 +440,22 @@
         - You can import/export your map as JSON, or save/load named versions.<br>
         - You can set the time to either UTC or your local time for the export to png.
       </div>
-      <div style="margin-top:16px; text-align:center;">
+    </div>
+    <!-- New controls area under description box -->
+    <div class="main-controls" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom:18px;">
+      <div style="display:flex; gap:32px; justify-content:center; margin-bottom:10px;">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <button id="saveVersionButton" class="pretty-btn">Save Map</button>
+          <button id="loadVersionButton" class="pretty-btn">Load Map</button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
+          <button id="importJsonButton" class="pretty-btn">Import from JSON</button>
+          <input type="file" id="importJsonInput" accept="application/json" style="display:none;" />
+        </div>
+      </div>
+      <div style="display:flex; gap:18px; justify-content:center;">
+        <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
         <button id="shareLinkButton" class="pretty-btn">Get Shareable Link</button>
       </div>
     </div>
@@ -463,24 +483,16 @@
         </label>
       </div>
       <button id="exploreAllButton" class="pretty-btn">Explore All</button>
+      <button id="undoButton" class="pretty-btn" title="Undo (Ctrl+Z)">Undo</button>
+      <button id="redoButton" class="pretty-btn" title="Redo (Ctrl+Y)">Redo</button>
       <button id="clearButton" class="pretty-btn">Clear Map</button>
       <button id="highContrastBtn" class="pretty-btn" aria-pressed="false" title="Toggle high contrast mode">High Contrast</button>
     </div>
   </div>
-  <div class="controls" style="margin-top:30px; text-align:center;">
-    <button id="undoButton" class="pretty-btn" title="Undo (Ctrl+Z)">Undo</button>
-    <button id="redoButton" class="pretty-btn" title="Redo (Ctrl+Y)">Redo</button>
-    <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
-    <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
-    <button id="importJsonButton" class="pretty-btn">Import from JSON</button>
-    <button id="saveVersionButton" class="pretty-btn">Save Map</button>
-    <button id="loadVersionButton" class="pretty-btn">Load Map</button>
-    <input type="file" id="importJsonInput" accept="application/json" style="display:none;" />
-  </div>
 
   <!-- Icon Picker Modal -->
-  <div id="iconPickerModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); align-items:center; justify-content:center; z-index:1000;">
-    <div style="background:rgba(255,255,255,0.92); padding:20px; border-radius:8px; max-width:600px; box-shadow:0 4px 32px #0008; position:relative;">
+  <div id="iconPickerModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.15); align-items:center; justify-content:center; z-index:1000;">
+    <div style="background:rgba(255,255,255,0.85); padding:20px; border-radius:8px; max-width:600px; box-shadow:0 4px 32px #0008; position:relative;">
       <h3>Select an Icon</h3>
       <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
       <div style="margin-top:10px; display:flex; gap:10px;">
@@ -682,15 +694,24 @@
     function populateIconPicker() {
       const grid = document.getElementById('iconPickerGrid');
       grid.innerHTML = "";
+      let selectedIcon = null;
       iconList.forEach(icon => {
         const img = document.createElement('img');
         img.src = iconPath + icon;
         img.alt = icon;
-        img.style.width = "40px";
-        img.style.height = "40px";
+        img.style.width = "24px";
+        img.style.height = "24px";
         img.style.cursor = "pointer";
+        img.style.border = "2px solid transparent";
+        img.style.borderRadius = "6px";
         img.title = icon.replace('.png','').replace('Icon','');
-        img.onclick = () => selectIcon(icon);
+        img.onclick = () => {
+          // Remove border from all icons
+          Array.from(grid.children).forEach(child => child.style.border = "2px solid transparent");
+          img.style.border = "2.5px solid #a259e6";
+          selectedIcon = icon;
+          selectIcon(icon);
+        };
         grid.appendChild(img);
       });
     }
