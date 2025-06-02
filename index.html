@@ -532,14 +532,106 @@
     const iconPath = "Icons/";
     let currentCell = null;
 
-    function pushUndo() {
-      undoStack.push({
-        gridData: JSON.parse(JSON.stringify(gridData)),
-        exploredGrid: JSON.parse(JSON.stringify(exploredGrid)),
-        selectedCells: Array.from(selectedCells)
+    // Add debounce utility for performance
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    // Add throttle utility for high-frequency events
+    function throttle(func, limit) {
+      let inThrottle;
+      return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+          func.apply(context, args);
+          inThrottle = true;
+          setTimeout(() => inThrottle = false, limit);
+        }
+      }
+    }
+
+    // Enhanced image loading with fallback and retry mechanism
+    function loadImageWithFallback(src, fallbackSrc = null, retries = 2) {
+      return new Promise((resolve, reject) => {
+        let attempts = 0;
+        
+        function attemptLoad(imageSrc) {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => {
+            attempts++;
+            if (attempts < retries && fallbackSrc) {
+              console.warn(`Failed to load ${imageSrc}, trying fallback...`);
+              attemptLoad(fallbackSrc);
+            } else if (attempts < retries) {
+              console.warn(`Failed to load ${imageSrc}, retrying... (${attempts}/${retries})`);
+              setTimeout(() => attemptLoad(imageSrc), 1000);
+            } else {
+              console.error(`Failed to load image after ${retries} attempts: ${imageSrc}`);
+              reject(new Error(`Image loading failed: ${imageSrc}`));
+            }
+          };
+          img.src = imageSrc;
+        }
+        
+        attemptLoad(src);
       });
-      if (undoStack.length > 100) undoStack.shift();
-      redoStack = [];
+    }
+
+    // Improved renderLegend with error handling
+    function renderLegendSafe() {
+      try {
+        renderLegend();
+      } catch (error) {
+        console.error('Failed to render legend:', error);
+        // Show user-friendly error message
+        const legend = document.getElementById('legendIcons');
+        if (legend) {
+          legend.innerHTML = '<p style="color: #ff6666;">Failed to load legend icons. Please refresh the page.</p>';
+        }
+      }
+    }
+
+    // Debounced auto-save for better performance
+    const debouncedAutoSave = debounce(autoSaveMap, 2000);
+
+    // Throttled resize handler for better performance
+    const throttledResize = throttle(function() {
+      // Re-calculate grid dimensions on resize if needed
+      rerenderAllCells();
+    }, 250);
+
+    // Memory management: Clear unused undo states periodically
+    function cleanupMemory() {
+      if (undoStack.length > 50) {
+        undoStack.splice(0, undoStack.length - 50);
+      }
+      if (redoStack.length > 50) {
+        redoStack.splice(0, redoStack.length - 50);
+      }
+    }
+
+    function pushUndo() {
+      try {
+        undoStack.push({
+          gridData: JSON.parse(JSON.stringify(gridData)),
+          exploredGrid: JSON.parse(JSON.stringify(exploredGrid)),
+          selectedCells: Array.from(selectedCells)
+        });
+        if (undoStack.length > 100) undoStack.shift();
+        redoStack = [];
+      } catch (error) {
+        console.error('Failed to create undo state:', error);
+      }
     }
 
     function undo() {
@@ -726,9 +818,7 @@
         };
         grid.appendChild(img);
       });
-    }
-
-    // Batch icon selection for multi-cell
+    }    // Batch icon selection for multi-cell
     function selectIcon(icon) {
       let placed = false;
       if (selectedCells.size > 1) {
@@ -910,13 +1000,18 @@
       link.href = URL.createObjectURL(blob);
       link.download = "map_export.json";
       link.click();
-    }
-
-    function clearMap() {
+    }    function clearMap() {
       if (confirm("This will clear all map data. Are you sure you want to continue?")) {
-        initializeGrid();
-        rerenderAllCells();
-        onMapChange();
+        try {
+          pushUndo(); // Allow undoing clear operation
+          initializeGrid();
+          rerenderAllCells();
+          onMapChange();
+          showNotification('Map cleared successfully', 'success');
+        } catch (error) {
+          console.error('Clear failed:', error);
+          showNotification('Failed to clear map', 'error');
+        }
       }
     }
 
@@ -1226,11 +1321,14 @@
       document.getElementById('utcModeLabel').style.opacity = useLocalTime ? '0.5' : '1';
       // Visually update the switch to match logic
       document.getElementById('useLocalTime').checked = !useLocalTime;
-    }
-
-    function autoSaveMap() {
-      const saveData = { gridData, exploredGrid };
-      localStorage.setItem('dd_map_autosave', JSON.stringify(saveData));
+    }    function autoSaveMap() {
+      try {
+        const saveData = { gridData, exploredGrid };
+        localStorage.setItem('dd_map_autosave', JSON.stringify(saveData));
+      } catch (error) {
+        console.warn('Auto-save failed:', error);
+        // Could implement fallback save mechanism here
+      }
     }
 
     function autoLoadMap() {
@@ -1238,16 +1336,21 @@
       if (!saveData) return;
       try {
         const parsed = JSON.parse(saveData);
-        if (parsed.gridData && parsed.exploredGrid) {
+        if (parsed && parsed.gridData && parsed.exploredGrid) {
+          validateGridData(parsed.gridData);
+          validateExploredGrid(parsed.exploredGrid);
           gridData = parsed.gridData;
           exploredGrid = parsed.exploredGrid;
           rerenderAllCells();
         }
-      } catch {}
+      } catch (error) {
+        console.warn('Auto-load failed:', error);
+        localStorage.removeItem('dd_map_autosave'); // Clear corrupted data
+      }
     }
 
     function onMapChange() {
-      autoSaveMap();
+      debouncedAutoSave();
     }
 
     const _oldRenderCellIcons = renderCellIcons;
@@ -1268,16 +1371,99 @@
       onMapChange();
     };
 
-    setInterval(autoSaveMap, 30000);
+    setInterval(debouncedAutoSave, 30000);
+    setInterval(cleanupMemory, 60000); // Periodically clean up memory
+
+    // Data validation utilities
+    function validateGridData(data) {
+      if (!Array.isArray(data) || data.length !== 9) {
+        throw new Error('Invalid grid data: must be 9x9 array');
+      }
+      
+      for (let row = 0; row < 9; row++) {
+        if (!Array.isArray(data[row]) || data[row].length !== 9) {
+          throw new Error(`Invalid grid data: row ${row} must be array of length 9`);
+        }
+        
+        for (let col = 0; col < 9; col++) {
+          if (!Array.isArray(data[row][col])) {
+            throw new Error(`Invalid grid data: cell [${row}][${col}] must be array`);
+          }
+          
+          // Validate icon names
+          data[row][col].forEach((icon, idx) => {
+            if (typeof icon !== 'string' || !iconList.includes(icon)) {
+              console.warn(`Invalid icon at [${row}][${col}][${idx}]: ${icon}`);
+              // Remove invalid icon
+              data[row][col].splice(idx, 1);
+            }
+          });
+        }
+      }
+      
+      return true;
+    }
+
+    function validateExploredGrid(data) {
+      if (!Array.isArray(data) || data.length !== 9) {
+        throw new Error('Invalid explored grid: must be 9x9 array');
+      }
+      
+      for (let row = 0; row < 9; row++) {
+        if (!Array.isArray(data[row]) || data[row].length !== 9) {
+          throw new Error(`Invalid explored grid: row ${row} must be array of length 9`);
+        }
+        
+        for (let col = 0; col < 9; col++) {
+          if (typeof data[row][col] !== 'boolean') {
+            console.warn(`Invalid explored state at [${row}][${col}], converting to boolean`);
+            data[row][col] = Boolean(data[row][col]);
+          }
+        }
+      }
+      
+      return true;
+    }
+
+    // Enhanced import function with validation
+    function importMapDataSafe(data) {
+      try {
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid import data: must be object');
+        }
+        
+        if (!data.gridData || !data.exploredGrid) {
+          throw new Error('Invalid import data: missing gridData or exploredGrid');
+        }
+        
+        // Validate data before importing
+        validateGridData(data.gridData);
+        validateExploredGrid(data.exploredGrid);
+        
+        // Create backup before importing
+        pushUndo();
+        
+        gridData = data.gridData;
+        exploredGrid = data.exploredGrid;
+        rerenderAllCells();
+        onMapChange();
+        
+        return { success: true, message: 'Map imported successfully!' };
+      } catch (error) {
+        console.error('Import failed:', error);
+        return { success: false, message: `Import failed: ${error.message}` };
+      }
+    }
 
     function initializeApp() {
-      renderLegend();
+      renderLegendSafe();
       initializeGrid();
       populateIconPicker();
       rerenderAllCells();
       updateTimeToggleHighlight();
       updateStormTimer();
       setInterval(updateStormTimer, 1000);
+      window.addEventListener('resize', throttledResize);
     }
 
     initializeApp();
@@ -1309,75 +1495,74 @@
         el.setAttribute('aria-label', el.textContent);
         el.setAttribute('tabindex', '0');
       }
-    });
-
-    document.addEventListener('keydown', function(e) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        undo();
-      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
-        e.preventDefault();
-        redo();
-      }
-    });
-
-    gridContainer.addEventListener('click', function(e) {
-      if (e.target === gridContainer) clearSelection();
-    });
-
-    window.addEventListener('DOMContentLoaded', autoLoadMap);
-
-    // --- High Contrast Mode ---
+    });    // --- High Contrast Mode ---
     const highContrastBtn = document.getElementById('highContrastBtn');
     highContrastBtn.addEventListener('click', function() {
       const enabled = document.body.classList.toggle('high-contrast');
       this.setAttribute('aria-pressed', enabled ? 'true' : 'false');
       localStorage.setItem('dd_map_high_contrast', enabled ? '1' : '0');
+      showNotification(`High contrast mode ${enabled ? 'enabled' : 'disabled'}`, 'info');
     });
-    window.addEventListener('DOMContentLoaded', function() {
+
+    gridContainer.addEventListener('click', function(e) {
+      if (e.target === gridContainer) clearSelection();
+    });    window.addEventListener('DOMContentLoaded', function() {
+      autoLoadMapEnhanced();
       if (localStorage.getItem('dd_map_high_contrast') === '1') {
         document.body.classList.add('high-contrast');
         highContrastBtn.setAttribute('aria-pressed', 'true');
       }
-    });
-
-    // --- Export as JSON ---
+    });// --- Export as JSON ---
     document.getElementById('exportJsonButton').onclick = function() {
-      const data = { gridData, exploredGrid };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'dune_map.json';
-      link.click();
+      try {
+        const data = { gridData, exploredGrid };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'dune_map.json';
+        link.click();
+        showNotification('Map exported successfully!', 'success');
+      } catch (error) {
+        console.error('Export failed:', error);
+        showNotification('Failed to export map', 'error');
+      }
     };
 
     // --- Import from JSON (file input) ---
     document.getElementById('importJsonButton').onclick = function() {
       document.getElementById('importJsonInput').click();
-    };
-    document.getElementById('importJsonInput').addEventListener('change', function(e) {
+    };    document.getElementById('importJsonInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
+      
+      const indicator = showProgressIndicator('Importing map...');
       const reader = new FileReader();
+      
       reader.onload = function(evt) {
         try {
           const data = JSON.parse(evt.target.result);
-          if (data.gridData && data.exploredGrid) {
-            gridData = data.gridData;
-            exploredGrid = data.exploredGrid;
-            rerenderAllCells();
-            alert('Map imported!');
+          const result = importMapDataSafe(data);
+          hideProgressIndicator();
+          
+          if (result.success) {
+            showNotification(result.message, 'success');
           } else {
-            alert('Invalid map file.');
+            showNotification(result.message, 'error');
           }
-        } catch {
-          alert('Failed to import map.');
+        } catch (error) {
+          hideProgressIndicator();
+          console.error('Import failed:', error);
+          showNotification('Invalid JSON file format', 'error');
         }
       };
+      
+      reader.onerror = function() {
+        hideProgressIndicator();
+        showNotification('Failed to read file', 'error');
+      };
+      
       reader.readAsText(file);
-    });
-
-    // --- Import from JSON (drag-and-drop) ---
+    });    // --- Import from JSON (drag-and-drop) ---
     document.body.addEventListener('dragover', function(e) {
       e.preventDefault();
     });
@@ -1386,23 +1571,35 @@
       if (e.dataTransfer.files.length) {
         const file = e.dataTransfer.files[0];
         if (file.type === 'application/json' || file.name.endsWith('.json')) {
+          const indicator = showProgressIndicator('Importing dropped file...');
           const reader = new FileReader();
+          
           reader.onload = function(evt) {
             try {
               const data = JSON.parse(evt.target.result);
-              if (data.gridData && data.exploredGrid) {
-                gridData = data.gridData;
-                exploredGrid = data.exploredGrid;
-                rerenderAllCells();
-                alert('Map imported!');
+              const result = importMapDataSafe(data);
+              hideProgressIndicator();
+              
+              if (result.success) {
+                showNotification(result.message, 'success');
               } else {
-                alert('Invalid map file.');
+                showNotification(result.message, 'error');
               }
-            } catch {
-              alert('Failed to import map.');
+            } catch (error) {
+              hideProgressIndicator();
+              console.error('Import failed:', error);
+              showNotification('Invalid JSON file format', 'error');
             }
           };
+          
+          reader.onerror = function() {
+            hideProgressIndicator();
+            showNotification('Failed to read file', 'error');
+          };
+          
           reader.readAsText(file);
+        } else {
+          showNotification('Please drop a JSON file', 'warning');
         }
       }
     });
@@ -1441,72 +1638,421 @@
     function getVersionList() {
       const versions = JSON.parse(localStorage.getItem('dd_map_versions') || '[]');
       return versions;
-    }
-    function saveVersion() {
+    }    function saveVersion() {
       const name = prompt('Enter a name for this version:');
       if (!name) return;
+      
+      try {
+        const versions = getVersionList();
+        const timestamp = new Date().toISOString();
+        versions.push({ name, timestamp, data: { gridData, exploredGrid } });
+        localStorage.setItem('dd_map_versions', JSON.stringify(versions));
+        showNotification('Map version saved successfully!', 'success');
+      } catch (error) {
+        console.error('Save failed:', error);
+        showNotification('Failed to save map version', 'error');
+      }
+    }    function loadVersion() {
       const versions = getVersionList();
-      const timestamp = new Date().toISOString();
-      versions.push({ name, timestamp, data: { gridData, exploredGrid } });
-      localStorage.setItem('dd_map_versions', JSON.stringify(versions));
-      alert('Version saved!');
-    }
-    function loadVersion() {
-      const versions = getVersionList();
-      if (!versions.length) return alert('No saved versions.');
+      if (!versions.length) {
+        showNotification('No saved map versions found', 'warning');
+        return;
+      }
+      
       let msg = 'Select a version to load:\n';
       versions.forEach((v, i) => {
         msg += `${i + 1}: ${v.name} (${v.timestamp})\n`;
       });
+      
       const idx = parseInt(prompt(msg)) - 1;
       if (isNaN(idx) || idx < 0 || idx >= versions.length) return;
-      gridData = versions[idx].data.gridData;
-      exploredGrid = versions[idx].data.exploredGrid;
-      rerenderAllCells();
-      alert('Version loaded!');
+      
+      try {
+        const version = versions[idx];
+        const result = importMapDataSafe(version.data);
+        if (result.success) {
+          showNotification('Map version loaded successfully!', 'success');
+        } else {
+          showNotification(result.message, 'error');
+        }
+      } catch (error) {
+        console.error('Load failed:', error);
+        showNotification('Failed to load map version', 'error');
+      }
     }
     document.getElementById('saveVersionButton').onclick = saveVersion;
     document.getElementById('loadVersionButton').onclick = loadVersion;
     document.getElementById('saveVersionButton').textContent = 'Save Map';
-    document.getElementById('loadVersionButton').textContent = 'Load Map';
-
-    // --- Shareable Link ---
+    document.getElementById('loadVersionButton').textContent = 'Load Map';    // --- Shareable Link ---
     function getShareableLink() {
-      const data = { gridData, exploredGrid };
-      const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
-      const url = `${location.origin}${location.pathname}?map=${encoded}`;
-      prompt('Copy this link to share your map:', url);
+      try {
+        const data = { gridData, exploredGrid };
+        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
+        const url = `${location.origin}${location.pathname}?map=${encoded}`;
+        
+        // Try to copy to clipboard if available
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(url).then(() => {
+            showNotification('Shareable link copied to clipboard!', 'success');
+          }).catch(() => {
+            // Fallback to prompt
+            prompt('Copy this link to share your map:', url);
+          });
+        } else {
+          // Fallback to prompt
+          prompt('Copy this link to share your map:', url);
+        }
+      } catch (error) {
+        console.error('Failed to generate shareable link:', error);
+        showNotification('Failed to generate shareable link', 'error');
+      }
     }
-    document.getElementById('shareLinkButton').onclick = getShareableLink;
-
-    // --- Load from shareable link ---
+    document.getElementById('shareLinkButton').onclick = getShareableLink;    // --- Load from shareable link ---
     (function loadFromUrl() {
       const params = new URLSearchParams(location.search);
       if (params.has('map')) {
         try {
           const decoded = decodeURIComponent(params.get('map'));
           const json = JSON.parse(decodeURIComponent(escape(atob(decoded))));
-          if (json.gridData && json.exploredGrid) {
-            gridData = json.gridData;
-            exploredGrid = json.exploredGrid;
-            rerenderAllCells();
-            alert('Loaded map from link!');
+          const result = importMapDataSafe(json);
+          if (result.success) {
+            showNotification('Map loaded from shareable link!', 'success');
+            // Clean URL after loading
+            const newUrl = location.origin + location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+          } else {
+            showNotification(result.message, 'error');
           }
-        } catch (e) {
-          alert('Failed to load map from link.');
+        } catch (error) {
+          console.error('Failed to load from link:', error);
+          showNotification('Invalid or corrupted shareable link', 'error');
         }
       }
-    })();
+    })();    // --- Polish: Add tooltips to all controls ---
+    const tooltipMappings = {
+      'undoButton': 'Undo (Ctrl+Z)',
+      'redoButton': 'Redo (Ctrl+Y)',
+      'exportPngButton': 'Export as PNG',
+      'exportJsonButton': 'Export as JSON (Ctrl+E)',
+      'importJsonButton': 'Import from JSON (Ctrl+I)',
+      'saveVersionButton': 'Save Map Version (Ctrl+S)',
+      'loadVersionButton': 'Load Map Version (Ctrl+O)',
+      'shareLinkButton': 'Get Shareable Link',
+      'highContrastBtn': 'Toggle High Contrast Mode',
+      'clearButton': 'Clear Map (Delete selected)',
+      'exploreAllButton': 'Mark All Cells as Explored'
+    };
 
-    // --- Polish: Add tooltips to all controls ---
-    ['undoButton','redoButton','exportPngButton','exportJsonButton','importJsonButton','saveVersionButton','loadVersionButton','shareLinkButton','highContrastBtn'].forEach(id => {
+    Object.entries(tooltipMappings).forEach(([id, tooltip]) => {
       const el = document.getElementById(id);
       if (el) {
-        if (!el.title) el.title = el.textContent;
-        el.setAttribute('aria-label', el.textContent);
+        el.title = tooltip;
+        el.setAttribute('aria-label', tooltip);
         el.setAttribute('tabindex', '0');
       }
     });
+
+    // Status notification system
+    function showNotification(message, type = 'info', duration = 3000) {
+      // Remove existing notifications
+      const existing = document.querySelector('.notification-toast');
+      if (existing) existing.remove();
+      
+      const notification = document.createElement('div');
+      notification.className = 'notification-toast';
+      notification.textContent = message;
+      
+      // Style based on type
+      const styles = {
+        info: { background: '#2196F3', color: '#fff' },
+        success: { background: '#4CAF50', color: '#fff' },
+        warning: { background: '#FF9800', color: '#fff' },
+        error: { background: '#f44336', color: '#fff' }
+      };
+      
+      Object.assign(notification.style, {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        padding: '12px 20px',
+        borderRadius: '4px',
+        fontWeight: 'bold',
+        fontSize: '14px',
+        zIndex: '10000',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        transform: 'translateX(100%)',
+        transition: 'transform 0.3s ease-in-out',
+        maxWidth: '300px',
+        wordWrap: 'break-word',
+        ...styles[type]
+      });
+      
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 10);
+      
+      // Auto remove
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+      }, duration);
+    }
+
+    // Progress indicator for long operations
+    function showProgressIndicator(text = 'Processing...') {
+      const indicator = document.createElement('div');
+      indicator.id = 'progress-indicator';
+      indicator.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+          <div style="background: #fff; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #ffe066; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
+            <div style="color: #333; font-weight: bold;">${text}</div>
+          </div>
+        </div>
+      `;
+      
+      // Add CSS animation if not exists
+      if (!document.querySelector('#spinner-style')) {
+        const style = document.createElement('style');
+        style.id = 'spinner-style';
+        style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+        document.head.appendChild(style);
+      }
+      
+      document.body.appendChild(indicator);
+      return indicator;
+    }
+
+    function hideProgressIndicator() {
+      const indicator = document.getElementById('progress-indicator');
+      if (indicator) indicator.remove();
+    }
+
+    // Enhanced keyboard shortcuts and accessibility
+    document.addEventListener('keydown', function(e) {
+      // Existing shortcuts
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+        e.preventDefault();
+        redo();
+      }
+      // New shortcuts
+      else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveVersion();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+        e.preventDefault();
+        loadVersion();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+        e.preventDefault();
+        document.getElementById('exportJsonButton').click();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+        e.preventDefault();
+        document.getElementById('importJsonButton').click();
+      } else if (e.key === 'Delete' && selectedCells.size > 0) {
+        e.preventDefault();
+        clearSelectedCells();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        clearSelection();
+        closeIconPicker();
+      }
+    });
+
+    // Clear icons from selected cells
+    function clearSelectedCells() {
+      if (selectedCells.size === 0) return;
+      
+      pushUndo();
+      let cleared = false;
+      
+      selectedCells.forEach(key => {
+        const [row, col] = key.split(',');
+        if (gridData[row][col].length > 0) {
+          gridData[row][col] = [];
+          cleared = true;
+        }
+      });
+      
+      if (cleared) {
+        rerenderAllCells();
+        renderSelection();
+        showNotification(`Cleared ${selectedCells.size} cell(s)`, 'success');
+      }
+    }
+
+    // Enhanced error handling for PNG export
+    const originalExportAsPng = exportAsPng;
+    exportAsPng = function() {
+      try {
+        const indicator = showProgressIndicator('Generating PNG export...');
+        
+        // Use setTimeout to allow UI to update before heavy processing
+        setTimeout(() => {
+          try {
+            originalExportAsPng();
+            hideProgressIndicator();
+            showNotification('PNG exported successfully!', 'success');
+          } catch (error) {
+            hideProgressIndicator();
+            console.error('PNG export failed:', error);
+            showNotification('Failed to export PNG. Please try again.', 'error');
+          }
+        }, 10);
+      } catch (error) {
+        console.error('PNG export initialization failed:', error);
+        showNotification('Failed to start PNG export', 'error');
+      }
+    };
+
+    // Auto-save enhancement with better error handling
+    function autoSaveMapEnhanced() {
+      try {
+        const saveData = { 
+          gridData, 
+          exploredGrid,
+          version: '1.0',
+          timestamp: Date.now()
+        };
+        const serialized = JSON.stringify(saveData);
+        
+        // Check if data is too large for localStorage
+        if (serialized.length > 4.5 * 1024 * 1024) { // 4.5MB limit (conservative)
+          console.warn('Map data too large for auto-save, skipping...');
+          return;
+        }
+        
+        localStorage.setItem('dd_map_autosave', serialized);
+        
+        // Also save a backup
+        localStorage.setItem('dd_map_autosave_backup', serialized);
+      } catch (error) {
+        console.warn('Auto-save failed:', error);
+        
+        // Try to clear some space and retry once
+        try {
+          localStorage.removeItem('dd_map_autosave_backup');
+          localStorage.setItem('dd_map_autosave', JSON.stringify({ gridData, exploredGrid }));
+        } catch (retryError) {
+          console.error('Auto-save retry failed:', retryError);
+        }
+      }
+    }
+
+    // Enhanced auto-load with recovery options
+    function autoLoadMapEnhanced() {
+      let saveData = localStorage.getItem('dd_map_autosave');
+      
+      if (!saveData) {
+        // Try backup if main save is missing
+        saveData = localStorage.getItem('dd_map_autosave_backup');
+        if (saveData) {
+          console.log('Loading from backup auto-save');
+        }
+      }
+      
+      if (!saveData) return;
+      
+      try {
+        const parsed = JSON.parse(saveData);
+        
+        // Handle different save formats
+        const data = parsed.gridData ? parsed : { gridData: parsed, exploredGrid: parsed.exploredGrid || [] };
+        
+        if (data && data.gridData && data.exploredGrid) {
+          validateGridData(data.gridData);
+          validateExploredGrid(data.exploredGrid);
+          gridData = data.gridData;
+          exploredGrid = data.exploredGrid;
+          rerenderAllCells();
+          console.log('Auto-loaded previous session');
+        }
+      } catch (error) {
+        console.warn('Auto-load failed:', error);
+        
+        // Try backup if main save is corrupted
+        const backupData = localStorage.getItem('dd_map_autosave_backup');
+        if (backupData && backupData !== saveData) {
+          try {
+            const parsed = JSON.parse(backupData);
+            const data = parsed.gridData ? parsed : { gridData: parsed, exploredGrid: parsed.exploredGrid || [] };
+            
+            if (data && data.gridData && data.exploredGrid) {
+              validateGridData(data.gridData);
+              validateExploredGrid(data.exploredGrid);
+              gridData = data.gridData;
+              exploredGrid = data.exploredGrid;
+              rerenderAllCells();
+              console.log('Recovered from backup auto-save');
+              showNotification('Recovered previous session from backup', 'info');
+            }
+          } catch (backupError) {
+            console.error('Backup recovery failed:', backupError);
+            localStorage.removeItem('dd_map_autosave');
+            localStorage.removeItem('dd_map_autosave_backup');
+          }
+        } else {
+          localStorage.removeItem('dd_map_autosave');
+        }
+      }
+    }
+
+    // Replace the auto-save functions
+    autoSaveMap = autoSaveMapEnhanced;
+    autoLoadMap = autoLoadMapEnhanced;
+
+    // Performance monitoring for large operations
+    function measurePerformance(label, fn) {
+      const start = performance.now();
+      const result = fn();
+      const end = performance.now();
+      
+      if (end - start > 100) { // Log operations taking more than 100ms
+        console.log(`Performance: ${label} took ${(end - start).toFixed(2)}ms`);
+      }
+      
+      return result;
+    }
+
+    // Enhanced initialization with error recovery
+    function initializeAppEnhanced() {
+      try {
+        measurePerformance('Legend rendering', () => renderLegendSafe());
+        measurePerformance('Grid initialization', () => initializeGrid());
+        measurePerformance('Icon picker population', () => populateIconPicker());
+        measurePerformance('Cell re-rendering', () => rerenderAllCells());
+        
+        updateTimeToggleHighlight();
+        updateStormTimer();
+        setInterval(updateStormTimer, 1000);
+        window.addEventListener('resize', throttledResize);
+        
+        // Add visibility change handler for better resource management
+        document.addEventListener('visibilitychange', function() {
+          if (document.hidden) {
+            // Page is hidden, reduce resource usage
+            console.log('Page hidden, reducing timer frequency');
+          } else {
+            // Page is visible, resume normal operation
+            console.log('Page visible, resuming normal operation');
+            updateStormTimer();
+          }
+        });
+        
+        console.log('Application initialized successfully');
+      } catch (error) {
+        console.error('Initialization failed:', error);
+        showNotification('Application initialization failed. Please refresh the page.', 'error');
+      }
+    }
+
+    // Replace initialization
+    initializeApp = initializeAppEnhanced;
   </script>
   <div style="margin-top:40px; text-align:center;">
     <a href="https://awakening.wiki/Fremen_with_Benefits" target="_blank" style="text-decoration:none; color:inherit;">
@@ -1523,4 +2069,3 @@
   </div>
 </body>
 </html>
-```
