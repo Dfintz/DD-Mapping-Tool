@@ -333,7 +333,103 @@
       text-align: left;
       width: auto;
       margin-left: 0;
-      margin-right: 0;
+      min-width: 140px;
+      width: 100%;
+    }
+    
+    /* Enhanced Timer Styling */
+    .timer-container {
+      background: rgba(42, 24, 16, 0.8);
+      border: 2px solid #d4af37;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .timer-phases {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .timer-phase {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      border-left: 4px solid #666;
+      transition: all 0.3s ease;
+    }
+    
+    .timer-phase.active {
+      border-left-color: #ffe066;
+      background: rgba(255, 224, 102, 0.1);
+      box-shadow: 0 0 8px rgba(255, 224, 102, 0.3);
+    }
+    
+    .timer-phase.warning {
+      border-left-color: #ff9800;
+      background: rgba(255, 152, 0, 0.1);
+    }
+    
+    .timer-phase.critical {
+      border-left-color: #f44336;
+      background: rgba(244, 67, 54, 0.1);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .phase-label {
+      color: #ffe066;
+      font-weight: bold;
+      font-size: 0.9em;
+    }
+    
+    .phase-time {
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      font-size: 1em;
+    }
+    
+    .server-selector {
+      margin-bottom: 16px;
+    }
+    
+    .server-selector label {
+      color: #ffe066;
+      font-weight: bold;
+      font-size: 1em;
+      display: block;
+      margin-bottom: 8px;
+    }
+    
+    .server-selector select {
+      width: 100%;
+      padding: 8px 12px;
+      background: rgba(42, 24, 16, 0.9);
+      border: 2px solid #d4af37;
+      border-radius: 8px;
+      color: #ffe066;
+      font-size: 0.95em;
+      cursor: pointer;
+      outline: none;
+    }
+    
+    .server-selector select:focus {
+      border-color: #ffe066;
+      box-shadow: 0 0 8px rgba(255, 224, 102, 0.3);
+    }
+    
+    .server-selector option {
+      background: #2a1810;
+      color: #ffe066;
     }
 
     /* --- Mobile Mode --- */
@@ -754,9 +850,38 @@
   <div style="display:flex; align-items:center; justify-content:center; margin-bottom:10px;">
     <img src="arrakis.png" alt="Arrakis Icon" style="width:54px; height:54px; margin-right:16px; vertical-align:middle;">
     <h1 style="color:#fff; margin:0;">Dune Awakening Deep Desert Mapping</h1>
-  </div>
-  <div id="stormTimer" style="color:#ffe066; font-size:1.15em; font-weight:bold; margin-bottom:12px; text-align:center;">
-    Next Coriolis Storm: calculating...
+  </div>  <div class="timer-container">
+    <div class="server-selector">
+      <label for="serverLocation">Server Location:</label>
+      <select id="serverLocation">
+        <option value="UTC">Global (UTC)</option>
+        <option value="America/New_York">US East (EST/EDT)</option>
+        <option value="America/Chicago">US Central (CST/CDT)</option>
+        <option value="America/Denver">US Mountain (MST/MDT)</option>
+        <option value="America/Los_Angeles">US West (PST/PDT)</option>
+        <option value="Europe/London">UK (GMT/BST)</option>
+        <option value="Europe/Berlin">Central Europe (CET/CEST)</option>
+        <option value="Europe/Moscow">Russia West (MSK)</option>
+        <option value="Asia/Tokyo">Japan (JST)</option>
+        <option value="Asia/Shanghai">China (CST)</option>
+        <option value="Australia/Sydney">Australia East (AEST/AEDT)</option>
+        <option value="Pacific/Auckland">New Zealand (NZST/NZDT)</option>
+      </select>
+    </div>
+    <div class="timer-phases" id="timerPhases">
+      <div class="timer-phase" id="buildupPhase">
+        <span class="phase-label">⚡ Buildup Starts:</span>
+        <span class="phase-time" id="buildupTime">calculating...</span>
+      </div>
+      <div class="timer-phase" id="hitPhase">
+        <span class="phase-label">🌪️ Storm Hits:</span>
+        <span class="phase-time" id="hitTime">calculating...</span>
+      </div>
+      <div class="timer-phase" id="nextPhase">
+        <span class="phase-label">🕒 Next Storm:</span>
+        <span class="phase-time" id="nextTime">calculating...</span>
+      </div>
+    </div>
   </div>
   <div class="main-flex">
     <div class="description-box">
@@ -1671,34 +1796,136 @@
       }
       rerenderAllCells();
       onMapChange();
-    }
-
+    }    // Enhanced Coriolis Storm Timer with multiple phases
+    let selectedServerTimezone = 'UTC';
+    
     function updateStormTimer() {
-      const timerDiv = document.getElementById('stormTimer');
+      const buildupTimeEl = document.getElementById('buildupTime');
+      const hitTimeEl = document.getElementById('hitTime');
+      const nextTimeEl = document.getElementById('nextTime');
+      const buildupPhase = document.getElementById('buildupPhase');
+      const hitPhase = document.getElementById('hitPhase');
+      const nextPhase = document.getElementById('nextPhase');
+      
       const now = new Date();
-
       const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-      let next = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), utcNow.getUTCDate(), 4, 0, 0, 0));
+      
+      // Calculate next Tuesday 04:00 UTC (storm hit time)
+      let nextStorm = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), utcNow.getUTCDate(), 4, 0, 0, 0));
       const day = utcNow.getUTCDay();
+      
       if (day > 2 || (day === 2 && utcNow.getUTCHours() >= 4)) {
-        next.setUTCDate(next.getUTCDate() + ((9 - day) % 7));
+        nextStorm.setUTCDate(nextStorm.getUTCDate() + ((9 - day) % 7));
       } else if (day < 2 || (day === 2 && utcNow.getUTCHours() < 4)) {
-        next.setUTCDate(next.getUTCDate() + ((2 - day + 7) % 7));
+        nextStorm.setUTCDate(nextStorm.getUTCDate() + ((2 - day + 7) % 7));
       }
-
-      const diffMs = next.getTime() - utcNow.getTime();
-      if (diffMs <= 0) {
-        timerDiv.textContent = "Next Coriolis Storm: calculating...";
+      
+      // Buildup starts 15 minutes before storm hits
+      const buildupStart = new Date(nextStorm.getTime() - (15 * 60 * 1000));
+      
+      // Calculate time differences
+      const buildupDiff = buildupStart.getTime() - utcNow.getTime();
+      const hitDiff = nextStorm.getTime() - utcNow.getTime();
+      const nextDiff = nextStorm.getTime() - utcNow.getTime();
+      
+      // Reset all phase states
+      [buildupPhase, hitPhase, nextPhase].forEach(phase => {
+        if (phase) phase.classList.remove('active', 'warning', 'critical');
+      });
+      
+      // Current storm status and phase highlighting
+      if (hitDiff <= 0) {
+        // Storm has passed, calculate next week
+        nextStorm.setUTCDate(nextStorm.getUTCDate() + 7);
+        const newBuildupStart = new Date(nextStorm.getTime() - (15 * 60 * 1000));
+        const newBuildupDiff = newBuildupStart.getTime() - utcNow.getTime();
+        const newHitDiff = nextStorm.getTime() - utcNow.getTime();
+        
+        updatePhaseDisplay(buildupTimeEl, newBuildupDiff, newBuildupStart);
+        updatePhaseDisplay(hitTimeEl, newHitDiff, nextStorm);
+        updatePhaseDisplay(nextTimeEl, newHitDiff, nextStorm);
+        if (nextPhase) nextPhase.classList.add('active');
+      } else if (buildupDiff <= 0) {
+        // Currently in buildup phase or storm is hitting
+        updatePhaseDisplay(buildupTimeEl, 0, buildupStart, 'ACTIVE');
+        updatePhaseDisplay(hitTimeEl, hitDiff, nextStorm);
+        updatePhaseDisplay(nextTimeEl, hitDiff, nextStorm);
+        
+        if (hitDiff <= 300000) { // Less than 5 minutes to storm
+          if (hitPhase) hitPhase.classList.add('critical');
+        } else {
+          if (hitPhase) hitPhase.classList.add('warning');
+        }
+        if (buildupPhase) buildupPhase.classList.add('active');
+      } else {
+        // Waiting for next storm
+        updatePhaseDisplay(buildupTimeEl, buildupDiff, buildupStart);
+        updatePhaseDisplay(hitTimeEl, hitDiff, nextStorm);
+        updatePhaseDisplay(nextTimeEl, nextDiff, nextStorm);
+        
+        if (buildupDiff <= 3600000) { // Less than 1 hour to buildup
+          if (buildupPhase) buildupPhase.classList.add('warning');
+        }
+        if (nextPhase) nextPhase.classList.add('active');
+      }
+    }
+    
+    function updatePhaseDisplay(element, timeDiff, targetDate, status = null) {
+      if (!element) return;
+      
+      if (status === 'ACTIVE') {
+        element.textContent = 'NOW';
         return;
       }
-      const diffSec = Math.floor(diffMs / 1000);
+      
+      if (timeDiff <= 0) {
+        element.textContent = 'PASSED';
+        return;
+      }
+      
+      const diffSec = Math.floor(timeDiff / 1000);
       const days = Math.floor(diffSec / 86400);
       const hours = Math.floor((diffSec % 86400) / 3600);
       const mins = Math.floor((diffSec % 3600) / 60);
       const secs = diffSec % 60;
-
-      timerDiv.textContent =
-        `Next Coriolis Storm: ${days}d ${hours}h ${mins}m ${secs}s (Tuesday 04:00 UTC)`;
+      
+      let timeStr = '';
+      if (days > 0) {
+        timeStr = `${days}d ${hours}h ${mins}m`;
+      } else if (hours > 0) {
+        timeStr = `${hours}h ${mins}m ${secs}s`;
+      } else {
+        timeStr = `${mins}m ${secs}s`;
+      }
+      
+      // Add local time display based on selected server
+      const localTime = formatTimeForTimezone(targetDate, selectedServerTimezone);
+      element.textContent = `${timeStr} (${localTime})`;
+    }
+    
+    function formatTimeForTimezone(date, timezone) {
+      try {
+        if (timezone === 'UTC') {
+          return date.toISOString().substr(11, 5) + ' UTC';
+        }
+        
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+        
+        const timezoneName = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          timeZoneName: 'short'
+        }).formatToParts(date).find(part => part.type === 'timeZoneName').value;
+        
+        return formatter.format(date) + ' ' + timezoneName;
+      } catch (error) {
+        console.warn('Timezone formatting failed:', error);
+        return date.toISOString().substr(11, 5) + ' UTC';
+      }
     }
 
     // --- Time Mode Toggle (reverse logic: checked = UTC, unchecked = Local) ---
@@ -1709,6 +1936,12 @@
     // Set initial state: checked = UTC, unchecked = Local
     useLocalTime = !document.getElementById('useLocalTime').checked;
     updateTimeToggleHighlight();
+
+    // --- Server Location Change Handler ---
+    document.getElementById('serverLocation').addEventListener('change', function() {
+      selectedServerTimezone = this.value;
+      updateStormTimer(); // Immediately update timer display with new timezone
+    });
 
     function updateTimeToggleHighlight() {
       document.getElementById('timeModeLabel').style.fontWeight = useLocalTime ? 'bold' : 'normal';
@@ -2544,3 +2777,4 @@
   </div>
 </body>
 </html>
+`
