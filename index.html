@@ -879,39 +879,40 @@
   <div style="display:flex; align-items:center; justify-content:center; margin-bottom:10px;">
     <img src="arrakis.png" alt="Arrakis Icon" style="width:54px; height:54px; margin-right:16px; vertical-align:middle;">
     <h1 style="color:#fff; margin:0;">Dune Awakening Deep Desert Mapping</h1>
-  </div>  <div class="timer-container">
-    <div class="server-selector">
-      <label for="serverLocation">Server Location:</label>
-      <select id="serverLocation">
-        <option value="US East">US East (EST/EDT)</option>
-        <option value="US Central">US Central (CST/CDT)</option>
-        <option value="US West">US West (PST/PDT)</option>
-        <option value="South America">US West (PST/PDT)</option>
-        <option value="Europe">Central Europe (CET/CEST)</option>
-        <option value="Asia">Asia (CST)</option>
-        <option value="Australia">Australia East (AEST/AEDT)</option>
-      </select>
-    </div>
-    <div class="timer-phases" id="timerPhases">
-      <div class="timer-phase" id="buildupPhase">
-        <span class="phase-label">⚡ Buildup Starts:</span>
-        <span class="phase-time" id="buildupTime">calculating...</span>
+  </div>  
+  <div class="timer-container">
+      <div class="server-selector" style="max-width: 180px; margin-bottom: 8px;">
+        <label for="serverLocation" style="font-size:0.95em; margin-bottom:4px;">Server Location:</label>
+        <select id="serverLocation" style="font-size:0.95em; padding:4px 8px;">
+          <option value="US East">US East (EST/EDT)</option>
+          <option value="US Central">US Central (CST/CDT)</option>
+          <option value="US West">US West (PST/PDT)</option>
+          <option value="South America">US West (PST/PDT)</option>
+          <option value="Europe">Central Europe (CET/CEST)</option>
+          <option value="Asia">Asia (CST)</option>
+          <option value="Australia">Australia East (AEST/AEDT)</option>
+        </select>
       </div>
-      <div class="timer-phase" id="hitPhase">
-        <span class="phase-label">🌪️ Storm Hits:</span>
-        <span class="phase-time" id="hitTime">calculating...</span>
+      <div class="timer-phases" id="timerPhases">
+        <div class="timer-phase" id="buildupPhase">
+          <span class="phase-label">⚡ EU Buildup:</span>
+          <span class="phase-time" id="buildupTime">calculating...</span>
+        </div>
+        <div class="timer-phase" id="hitPhase">
+          <span class="phase-label">🌪️ Storm Hits:</span>
+          <span class="phase-time" id="hitTime">calculating...</span>
+        </div>
       </div>
     </div>
-  </div>
   <div class="main-flex">
     <div class="main-controls">
       <button id="helpButton" class="pretty-btn">Help & Shortcuts</button>
       <button id="saveVersionButton" class="pretty-btn">Save Map</button>
       <button id="loadVersionButton" class="pretty-btn">Load Map</button>
+      <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
       <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
       <button id="importJsonButton" class="pretty-btn">Import from JSON</button>
       <input type="file" id="importJsonInput" accept="application/json" style="display:none;" />
-      <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
       <button id="shareLinkButton" class="pretty-btn">Get Shareable Link</button>
     </div>
     <div class="grid-outer">
@@ -925,18 +926,6 @@
         <span class="legend-title">Legend</span>
       </button>
       <div id="legendIcons" role="list" aria-label="Map legend icons"></div>
-    </div>
-    <div class="description-box" id="descriptionPanel">
-      <button class="description-toggle" id="descriptionToggleBtn" aria-label="Toggle description" tabindex="0" title="Show/hide description">
-        <span id="descriptionToggleIcon">▼</span>
-        <span class="description-toggle-title">How to Use</span>
-      </button>
-      <div class="description-content" id="descriptionContent">
-        - Click on any cell to set its content, or drag and drop from Legend.<br>
-        - When you're finished updating the map, use the export to PNG button to download your grid or clear to start over.<br>
-        - You can import/export your map as JSON, or save/load named versions.<br>
-        - You can set the time to either UTC or your local time for the export to png.
-      </div>
     </div>
     <div class="side-controls">
       <div class="time-toggle">
@@ -973,6 +962,16 @@
     <div class="help-content">
       <h2 class="help-title">📖 Arrakis Field Manual</h2>
       
+      <div class="help-section">
+        <h3>🛈 How to Use</h3>
+        <ul style="color:#ffe066; font-size:1em; line-height:1.6; margin-bottom:10px;">
+          <li>Click on any cell to set its content, or drag and drop from Legend.</li>
+          <li>When you're finished updating the map, use the export to PNG button to download your grid or clear to start over.</li>
+          <li>You can import/export your map as JSON, or save/load named versions.</li>
+          <li>You can set the time to either UTC or your local time for the export to png.</li>
+        </ul>
+      </div>
+
       <div class="help-section">
         <h3>🔑 Keyboard Shortcuts</h3>
         <div class="help-shortcut">
@@ -1821,7 +1820,7 @@
       }
       rerenderAllCells();
       onMapChange();
-    }    // Enhanced Coriolis Storm Timer with multiple phases
+    }    // Enhanced Coriolis Storm Timer with fixed phases
     let selectedServerTimezone = 'UTC';
     
     function updateStormTimer() {
@@ -1829,50 +1828,48 @@
       const hitTimeEl = document.getElementById('hitTime');
       const buildupPhase = document.getElementById('buildupPhase');
       const hitPhase = document.getElementById('hitPhase');
-      
       const now = new Date();
       const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-      
-      // Calculate next Tuesday 04:00 UTC (storm hit time)
+
+      // Calculate next Monday 05:00 UTC (EU Buildup)
+      let nextBuildup = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), utcNow.getUTCDate(), 5, 0, 0, 0));
       let nextStorm = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), utcNow.getUTCDate(), 4, 0, 0, 0));
       const day = utcNow.getUTCDay();
-      
+
+      // Monday = 1, Tuesday = 2
+      if (day > 1 || (day === 1 && utcNow.getUTCHours() >= 5)) {
+        nextBuildup.setUTCDate(nextBuildup.getUTCDate() + ((8 - day) % 7));
+      } else if (day < 1 || (day === 1 && utcNow.getUTCHours() < 5)) {
+        nextBuildup.setUTCDate(nextBuildup.getUTCDate() + ((1 - day + 7) % 7));
+      }
       if (day > 2 || (day === 2 && utcNow.getUTCHours() >= 4)) {
         nextStorm.setUTCDate(nextStorm.getUTCDate() + ((9 - day) % 7));
       } else if (day < 2 || (day === 2 && utcNow.getUTCHours() < 4)) {
         nextStorm.setUTCDate(nextStorm.getUTCDate() + ((2 - day + 7) % 7));
       }
-      
-      // Buildup starts 15 minutes before storm hits
-      const buildupStart = new Date(nextStorm.getTime() - (15 * 60 * 1000));
-      
+
       // Calculate time differences
-      const buildupDiff = buildupStart.getTime() - utcNow.getTime();
+      const buildupDiff = nextBuildup.getTime() - utcNow.getTime();
       const hitDiff = nextStorm.getTime() - utcNow.getTime();
-      const nextDiff = nextStorm.getTime() - utcNow.getTime();
-      
+
       // Reset all phase states
-      [buildupPhase, hitPhase, nextPhase].forEach(phase => {
+      [buildupPhase, hitPhase].forEach(phase => {
         if (phase) phase.classList.remove('active', 'warning', 'critical');
       });
-      
+
       // Current storm status and phase highlighting
       if (hitDiff <= 0) {
         // Storm has passed, calculate next week
+        nextBuildup.setUTCDate(nextBuildup.getUTCDate() + 7);
         nextStorm.setUTCDate(nextStorm.getUTCDate() + 7);
-        const newBuildupStart = new Date(nextStorm.getTime() - (15 * 60 * 1000));
-        const newBuildupDiff = newBuildupStart.getTime() - utcNow.getTime();
+        const newBuildupDiff = nextBuildup.getTime() - utcNow.getTime();
         const newHitDiff = nextStorm.getTime() - utcNow.getTime();
-        
-        updatePhaseDisplay(buildupTimeEl, newBuildupDiff, newBuildupStart);
+        updatePhaseDisplay(buildupTimeEl, newBuildupDiff, nextBuildup);
         updatePhaseDisplay(hitTimeEl, newHitDiff, nextStorm);
-
-        if (nextPhase) nextPhase.classList.add('active');
       } else if (buildupDiff <= 0) {
         // Currently in buildup phase or storm is hitting
-        updatePhaseDisplay(buildupTimeEl, 0, buildupStart, 'ACTIVE');
+        updatePhaseDisplay(buildupTimeEl, 0, nextBuildup, 'ACTIVE');
         updatePhaseDisplay(hitTimeEl, hitDiff, nextStorm);
-                
         if (hitDiff <= 300000) { // Less than 5 minutes to storm
           if (hitPhase) hitPhase.classList.add('critical');
         } else {
@@ -1881,13 +1878,11 @@
         if (buildupPhase) buildupPhase.classList.add('active');
       } else {
         // Waiting for next storm
-        updatePhaseDisplay(buildupTimeEl, buildupDiff, buildupStart);
+        updatePhaseDisplay(buildupTimeEl, buildupDiff, nextBuildup);
         updatePhaseDisplay(hitTimeEl, hitDiff, nextStorm);
-                
         if (buildupDiff <= 3600000) { // Less than 1 hour to buildup
           if (buildupPhase) buildupPhase.classList.add('warning');
         }
-        if (nextPhase) nextPhase.classList.add('active');
       }
     }
     
@@ -2475,341 +2470,9 @@
     function showProgressIndicator(text = 'Processing...') {
       const indicator = document.createElement('div');
       indicator.id = 'progress-indicator';
-      indicator.innerHTML = `
-        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-          <div style="background: #fff; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-            <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #ffe066; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
-            <div style="color: #333; font-weight: bold;">${text}</div>
-          </div>
-        </div>
-      `;
-      
-      // Add CSS animation if not exists
-      if (!document.querySelector('#spinner-style')) {
-        const style = document.createElement('style');
-        style.id = 'spinner-style';
-        style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
-        document.head.appendChild(style);
-      }
-      
-      document.body.appendChild(indicator);
-      return indicator;
+      // Add any additional logic or DOM insertion here if needed
     }
-
-    function hideProgressIndicator() {
-      const indicator = document.getElementById('progress-indicator');
-      if (indicator) indicator.remove();
-    }
-
-    // Enhanced keyboard shortcuts and accessibility
-    document.addEventListener('keydown', function(e) {
-      // Existing shortcuts
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
-        e.preventDefault();
-        redo();
-      }
-      // New shortcuts
-      else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        saveVersion();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
-        e.preventDefault();
-        loadVersion();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
-        e.preventDefault();
-        document.getElementById('exportJsonButton').click();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
-        e.preventDefault();
-        document.getElementById('importJsonButton').click();
-      } else if (e.key === 'Delete' && selectedCells.size > 0) {
-        e.preventDefault();
-        clearSelectedCells();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        clearSelection();
-        closeIconPicker();
-      }
-    });
-
-    // Clear icons from selected cells
-    function clearSelectedCells() {
-      if (selectedCells.size === 0) return;
-      
-      pushUndo();
-      let cleared = false;
-      
-      selectedCells.forEach(key => {
-        const [row, col] = key.split(',');
-        if (gridData[row][col].length > 0) {
-          gridData[row][col] = [];
-          cleared = true;
-        }
-      });
-      
-      if (cleared) {
-        rerenderAllCells();
-        renderSelection();
-        showNotification(`Cleared ${selectedCells.size} cell(s)`, 'success');
-      }
-    }
-
-    // Enhanced error handling for PNG export
-    const originalExportAsPng = exportAsPng;
-    exportAsPng = function() {
-      try {
-        const indicator = showProgressIndicator('Generating PNG export...');
-        
-        // Use setTimeout to allow UI to update before heavy processing
-        setTimeout(() => {
-          try {
-            originalExportAsPng();
-            hideProgressIndicator();
-            showNotification('PNG exported successfully!', 'success');
-          } catch (error) {
-            hideProgressIndicator();
-            console.error('PNG export failed:', error);
-            showNotification('Failed to export PNG. Please try again.', 'error');
-          }
-        }, 10);
-      } catch (error) {
-        console.error('PNG export initialization failed:', error);
-        showNotification('Failed to start PNG export', 'error');
-      }
-    };
-
-    // Auto-save enhancement with better error handling
-    function autoSaveMapEnhanced() {
-      try {
-        const saveData = { 
-          gridData, 
-          exploredGrid,
-          version: '1.0',
-          timestamp: Date.now()
-        };
-        const serialized = JSON.stringify(saveData);
-        
-        // Check if data is too large for localStorage
-        if (serialized.length > 4.5 * 1024 * 1024) { // 4.5MB limit (conservative)
-          console.warn('Map data too large for auto-save, skipping...');
-          return;
-        }
-        
-        localStorage.setItem('dd_map_autosave', serialized);
-        
-        // Also save a backup
-        localStorage.setItem('dd_map_autosave_backup', serialized);
-      } catch (error) {
-        console.warn('Auto-save failed:', error);
-        
-        // Try to clear some space and retry once
-        try {
-          localStorage.removeItem('dd_map_autosave_backup');
-          localStorage.setItem('dd_map_autosave', JSON.stringify({ gridData, exploredGrid }));
-        } catch (retryError) {
-          console.error('Auto-save retry failed:', retryError);
-        }
-      }
-    }
-
-    // Enhanced auto-load with recovery options
-    function autoLoadMapEnhanced() {
-      let saveData = localStorage.getItem('dd_map_autosave');
-      
-      if (!saveData) {
-        // Try backup if main save is missing
-        saveData = localStorage.getItem('dd_map_autosave_backup');
-        if (saveData) {
-          console.log('Loading from backup auto-save');
-        }
-      }
-      
-      if (!saveData) return;
-      
-      try {
-        const parsed = JSON.parse(saveData);
-        
-        // Handle different save formats
-        const data = parsed.gridData ? parsed : { gridData: parsed, exploredGrid: parsed.exploredGrid || [] };
-        
-        if (data && data.gridData && data.exploredGrid) {
-          validateGridData(data.gridData);
-          validateExploredGrid(data.exploredGrid);
-          gridData = data.gridData;
-          exploredGrid = data.exploredGrid;
-          rerenderAllCells();
-          console.log('Auto-loaded previous session');
-        }
-      } catch (error) {
-        console.warn('Auto-load failed:', error);
-        
-        // Try backup if main save is corrupted
-        const backupData = localStorage.getItem('dd_map_autosave_backup');
-        if (backupData && backupData !== saveData) {
-          try {
-            const parsed = JSON.parse(backupData);
-            const data = parsed.gridData ? parsed : { gridData: parsed, exploredGrid: parsed.exploredGrid || [] };
-            
-            if (data && data.gridData && data.exploredGrid) {
-              validateGridData(data.gridData);
-              validateExploredGrid(data.exploredGrid);
-              gridData = data.gridData;
-              exploredGrid = data.exploredGrid;
-              rerenderAllCells();
-              console.log('Recovered from backup auto-save');
-              showNotification('Recovered previous session from backup', 'info');
-            }
-          } catch (backupError) {
-            console.error('Backup recovery failed:', backupError);
-            localStorage.removeItem('dd_map_autosave');
-            localStorage.removeItem('dd_map_autosave_backup');
-          }
-        } else {
-          localStorage.removeItem('dd_map_autosave');
-        }
-      }
-    }
-
-    // Replace the auto-save functions
-    autoSaveMap = autoSaveMapEnhanced;
-    autoLoadMap = autoLoadMapEnhanced;
-
-    // Performance monitoring for large operations
-    function measurePerformance(label, fn) {
-      const start = performance.now();
-      const result = fn();
-      const end = performance.now();
-      
-      if (end - start > 100) { // Log operations taking more than 100ms
-        console.log(`Performance: ${label} took ${(end - start).toFixed(2)}ms`);
-      }
-      
-      return result;
-    }    // Enhanced initialization with error recovery
-    function initializeAppEnhanced() {
-      try {
-        measurePerformance('Legend rendering', () => renderLegendSafe());
-        measurePerformance('Grid initialization', () => initializeGrid());
-        measurePerformance('Icon picker population', () => populateIconPicker());
-        measurePerformance('Cell re-rendering', () => rerenderAllCells());
-          // Initialize help system
-        initializeHelpSystem();
-        
-        updateTimeToggleHighlight();
-        updateStormTimer();
-        setInterval(updateStormTimer, 1000);
-        window.addEventListener('resize', throttledResize);
-        
-        // Add visibility change handler for better resource management
-        document.addEventListener('visibilitychange', function() {
-          if (document.hidden) {
-            // Page is hidden, reduce resource usage
-            console.log('Page hidden, reducing timer frequency');
-          } else {
-            // Page is visible, resume normal operation
-            console.log('Page visible, resuming normal operation');
-            updateStormTimer();
-          }
-        });
-        
-        console.log('Application initialized successfully');
-      } catch (error) {
-        console.error('Initialization failed:', error);
-        showNotification('Application initialization failed. Please refresh the page.', 'error');
-      }
-    }    // --- Help Modal Functions ---
-    function openHelp() {
-      const helpModal = document.getElementById('helpModal');
-      const gridContainer = document.getElementById('gridContainer');
-      const gridRect = gridContainer.getBoundingClientRect();
-      const isMobile = window.innerWidth <= 1000;
-      
-      // Position help modal next to the grid
-      const helpContent = helpModal.querySelector('.help-content');
-      helpModal.style.display = 'flex';
-      
-      if (isMobile) {
-        // On mobile, center the modal
-        helpModal.style.alignItems = 'center';
-        helpModal.style.justifyContent = 'center';
-        helpContent.style.position = 'relative';
-        helpContent.style.left = 'auto';
-        helpContent.style.top = 'auto';
-        helpContent.style.transform = 'none';
-      } else {
-        // Calculate position to place modal next to the grid
-        const modalWidth = 600; // max-width from CSS
-        const spacing = 20;
-        const viewportWidth = window.innerWidth;
-        
-        // Position on the right side of the grid if there's space
-        if (gridRect.right + spacing + modalWidth < viewportWidth) {
-          helpModal.style.alignItems = 'flex-start';
-          helpModal.style.justifyContent = 'flex-start';
-          helpContent.style.position = 'fixed';
-          helpContent.style.left = `${gridRect.right + spacing}px`;
-          helpContent.style.top = `${Math.max(20, gridRect.top)}px`;
-          helpContent.style.transform = 'none';
-        } else {
-          // Fallback to centered if no space on the right
-          helpModal.style.alignItems = 'center';
-          helpModal.style.justifyContent = 'center';
-          helpContent.style.position = 'relative';
-          helpContent.style.left = 'auto';
-          helpContent.style.top = 'auto';
-          helpContent.style.transform = 'none';
-        }
-      }
-    }
-    
-    function closeHelp() {
-      const helpModal = document.getElementById('helpModal');
-      helpModal.style.display = 'none';
-    }
-    
-    // Enhanced drag-and-drop visual feedback    
-    // Initialize help button click handler
-    function initializeHelpSystem() {
-      const helpButton = document.getElementById('helpButton');
-      if (helpButton) {
-        helpButton.onclick = openHelp;
-      }
-      
-      // Close help modal when clicking outside
-      const helpModal = document.getElementById('helpModal');
-      if (helpModal) {
-        helpModal.addEventListener('click', function(e) {
-          if (e.target === helpModal) {
-            closeHelp();
-          }
-        });
-      }
-      
-      // Close help modal with Escape key
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && helpModal.style.display !== 'none') {
-          closeHelp();
-        }
-      });
-    }
-
-    // Replace initialization
-    initializeApp = initializeAppEnhanced;
   </script>
-  <div style="margin-top:40px; text-align:center;">
-    <a href="https://awakening.wiki/Fremen_with_Benefits" target="_blank" style="text-decoration:none; color:inherit;">
-      <img src="fwb.png" alt="Fremen with Benefits" style="max-width:220px; width:100%; border-radius:12px; box-shadow:0 2px 16px #222; margin-bottom:10px;">
-      <div style="font-family:Arial,sans-serif; font-size:1.2em; color:#ffe066; font-weight:bold;">
-        Created by Fremen with Benefits
-      </div>
-    </a>
-  </div>
-  <div style="margin-top:18px; text-align:center;">
-    <span style="color:#bbb; font-size:0.95em; background:rgba(30,30,30,0.7); padding:6px 18px; border-radius:8px; display:inline-block;">
-      Disclaimer: All assets and watermarks belong to Funcom, Fremen with Benefits and Xtrophic.
-    </span>
-  </div>
 </body>
 </html>
+`
