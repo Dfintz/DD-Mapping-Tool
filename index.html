@@ -63,27 +63,26 @@
       flex-direction: column;
       align-items: center; /* Center the grid horizontally */
       margin-left: 300px; /* Make space for the description box */
-    }
-    .main-controls {
+    }    .main-controls {
       width: 100%;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       flex-wrap: wrap;
       justify-content: flex-start;
       align-items: center;
-      gap: 12px;
-      margin: 300px 0 20px 0; /* Top margin to position under description box */
-      max-width: 800px;
+      gap: 8px;
+      margin: 20px 0 20px 0;
+      max-width: 280px;
       position: absolute;
-      top: 0;
+      top: 250px; /* Position below description box */
       left: 0;
       z-index: 99;
     }
-    
     /* Unified controls row under description box */
     .main-controls .pretty-btn {
-      margin: 4px;
-      min-width: 160px;
+      margin: 4px 0;
+      min-width: 140px;
+      width: 100%;
     }
     .grid-label-row,
     .grid-label-col {
@@ -459,6 +458,188 @@
       color: #fff;
       font-size: 13px;
       font-weight: normal;
+    }    /* Help Modal Styling - Dune Filmbook Style */
+    #helpModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      align-items: center;
+      justify-content: center;
+      z-index: 1001;
+    }
+    
+    .help-content {
+      background: linear-gradient(135deg, #2a1810 0%, #1a0f08 100%);
+      border: 3px solid #d4af37;
+      border-radius: 15px;
+      padding: 30px;
+      max-width: 600px;
+      width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      position: relative;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .help-content::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(212, 175, 55, 0.1) 0%, transparent 50%);
+      border-radius: 12px;
+      pointer-events: none;
+    }
+    
+    .help-title {
+      color: #d4af37;
+      font-size: 1.8em;
+      font-weight: bold;
+      text-align: center;
+      margin: 0 0 20px 0;
+      text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .help-section {
+      margin-bottom: 25px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .help-section h3 {
+      color: #ffe066;
+      font-size: 1.3em;
+      margin: 0 0 12px 0;
+      border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+      padding-bottom: 5px;
+      letter-spacing: 1px;
+    }
+    
+    .help-shortcut {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      color: #e6d4a3;
+    }
+    
+    .help-shortcut:last-child {
+      border-bottom: none;
+    }
+    
+    .help-key {
+      background: linear-gradient(145deg, #3a2415, #2a1810);
+      border: 2px solid #d4af37;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      color: #d4af37;
+      text-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    
+    .help-description {
+      color: #c9b995;
+      flex: 1;
+      margin-left: 15px;
+    }
+    
+    .help-close {
+      background: linear-gradient(145deg, #d4af37, #b8941f);
+      color: #1a0f08;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 1.1em;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 20px auto 0;
+      display: block;
+      transition: all 0.3s;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      position: relative;
+      z-index: 1;
+    }
+    
+    .help-close:hover {
+      background: linear-gradient(145deg, #e6c755, #d4af37);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    /* JSON Drop Zone Styling */
+    #jsonDropZone {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 400px;
+      height: 200px;
+      border: 4px dashed #d4af37;
+      border-radius: 15px;
+      background: linear-gradient(135deg, rgba(42, 24, 16, 0.9) 0%, rgba(26, 15, 8, 0.9) 100%);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
+    }
+    
+    #jsonDropZone.active {
+      display: flex;
+      animation: pulseGlow 2s infinite;
+    }
+    
+    @keyframes pulseGlow {
+      0%, 100% { 
+        border-color: #d4af37;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 0 rgba(212, 175, 55, 0.4);
+      }
+      50% { 
+        border-color: #ffe066;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 20px rgba(212, 175, 55, 0.1);
+      }
+    }
+    
+    .drop-zone-content {
+      text-align: center;
+      color: #d4af37;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .drop-zone-icon {
+      font-size: 3em;
+      margin-bottom: 10px;
+      text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+    }
+    
+    .drop-zone-text {
+      font-size: 1.2em;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    
+    .drop-zone-subtext {
+      font-size: 0.9em;
+      opacity: 0.8;
+      margin-top: 5px;
     }
 
     /* Icon Picker Modal Styling */
@@ -597,28 +778,26 @@
     }    body.high-contrast .icon-picker-btn:hover {
       background: #222 !important;
       color: #fff !important;
-    }
-    
-    .main-controls {
+    }    .main-controls {
       position: absolute;
-      top: 0;
+      top: 250px; /* Position below description box */
       left: 0;
       z-index: 99;
       width: 100%;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       flex-wrap: wrap;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
-      gap: 12px;
-      margin: 300px 0 20px 0;
-      max-width: 800px;
+      gap: 8px;
+      margin: 20px 0 20px 0;
+      max-width: 280px;
     }
-    
-    /* Unified controls row under description box */
+      /* Unified controls row under description box */
     .main-controls .pretty-btn {
-      margin: 4px;
-      min-width: 160px;
+      margin: 4px 0;
+      min-width: 140px;
+      width: 100%;
     }
   </style>
 </head>
@@ -638,8 +817,8 @@
         - When you’re finished updating the map, use the export to PNG button to download your grid or clear to start over.<br>
         - You can import/export your map as JSON, or save/load named versions.<br>
         - You can set the time to either UTC or your local time for the export to png.
-      </div>    </div>
-    <div class="main-controls">
+      </div>    </div>    <div class="main-controls">
+      <button id="helpButton" class="pretty-btn">Help & Shortcuts</button>
       <button id="saveVersionButton" class="pretty-btn">Save Map</button>
       <button id="loadVersionButton" class="pretty-btn">Load Map</button>
       <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
@@ -677,8 +856,7 @@
       <button id="clearButton" class="pretty-btn">Clear Map</button>
       <button id="highContrastBtn" class="pretty-btn" aria-pressed="false" title="Toggle high contrast mode">High Contrast</button>
     </div>
-  </div>
-  <!-- Icon Picker Modal -->
+  </div>  <!-- Icon Picker Modal -->
   <div id="iconPickerModal">
     <div class="icon-picker-content">
       <h3>Select an Icon</h3>
@@ -688,6 +866,100 @@
         <button class="icon-picker-btn cancel" onclick="closeIconPicker()">Cancel</button>
       </div>
       <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;">Icon placed!</div>
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div id="helpModal">
+    <div class="help-content">
+      <h2 class="help-title">📖 Arrakis Field Manual</h2>
+      
+      <div class="help-section">
+        <h3>🔑 Keyboard Shortcuts</h3>
+        <div class="help-shortcut">
+          <span class="help-key">Ctrl+Z</span>
+          <span class="help-description">Undo last action</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Ctrl+Y</span>
+          <span class="help-description">Redo last undone action</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Ctrl+S</span>
+          <span class="help-description">Save map version</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Ctrl+O</span>
+          <span class="help-description">Load map version</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Ctrl+E</span>
+          <span class="help-description">Export as JSON</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Ctrl+I</span>
+          <span class="help-description">Import from JSON</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Delete</span>
+          <span class="help-description">Clear selected cells</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Escape</span>
+          <span class="help-description">Clear selection / Close modals</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Shift+Click</span>
+          <span class="help-description">Multi-select cells</span>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>🗺️ Map Controls</h3>
+        <div class="help-shortcut">
+          <span class="help-key">Click</span>
+          <span class="help-description">Select cell and open icon picker</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Drag</span>
+          <span class="help-description">Drag legend icons to grid cells</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">✓</span>
+          <span class="help-description">Toggle cell explored/unexplored</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Arrow Keys</span>
+          <span class="help-description">Navigate grid and legend</span>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>📁 File Operations</h3>
+        <div class="help-shortcut">
+          <span class="help-key">Drop JSON</span>
+          <span class="help-description">Drag & drop JSON files anywhere to import</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Auto-save</span>
+          <span class="help-description">Your work is automatically saved locally</span>
+        </div>
+        <div class="help-shortcut">
+          <span class="help-key">Share Link</span>
+          <span class="help-description">Generate shareable URLs with map data</span>
+        </div>
+      </div>
+
+      <button class="help-close" onclick="closeHelp()">Close Manual</button>
+    </div>
+  </div>
+
+  <!-- JSON Drop Zone -->
+  <div id="jsonDropZone">
+    <div class="drop-zone-content">
+      <div class="drop-zone-icon">📁</div>
+      <div class="drop-zone-text">Drop JSON File</div>
+      <div class="drop-zone-subtext">Release to import map data</div>
     </div>
   </div>
 
@@ -1762,8 +2034,8 @@
       }
     });
     document.body.addEventListener('drop', function(e) {
-      // Only handle file drops, ignore legend icon drops
-      if (e.dataTransfer.files.length > 0) {
+      // Only handle file drops, ignore legend icon drops and other non-file drops
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         e.preventDefault();
         const file = e.dataTransfer.files[0];
         if (file.type === 'application/json' || file.name.endsWith('.json')) {
@@ -1798,7 +2070,7 @@
           showNotification('Please drop a JSON file', 'warning');
         }
       }
-      // For non-file drops (legend icons), let the default handling proceed
+      // For non-file drops (legend icons), do nothing and let the grid cell handlers take care of it
     });
 
     // --- ARIA roles and keyboard navigation for legend and grid ---
