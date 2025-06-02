@@ -151,6 +151,7 @@
       </div>
       <div class="controls" style="margin-top:30px; text-align:center;">
         <button id="clearButton">Clear Map</button>
+        <button id="exploreAllButton">Explore All</button>
         <button id="exportPngButton">Export as PNG</button>
         <button id="exportJsonButton">Export as JSON</button>
       </div>
@@ -298,9 +299,17 @@
       const col = cell.getAttribute('data-col');
       const label = String.fromCharCode(65 + parseInt(row)) + (parseInt(col) + 1);
 
-      // Checkmark overlay
+      // If icons are present, auto-explore the cell
+      if (icons.length > 0 && !exploredGrid[row][col]) {
+        exploredGrid[row][col] = true;
+      }
+
+      // Checkmark overlay or "explore" button
       const explored = exploredGrid[row][col];
-      let checkHtml = `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;" title="Toggle explored">&#x2714;</span>`;
+      let checkHtml = explored
+        ? `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;" title="Mark unexplored">&#x2714;</span>`
+        : `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;" title="Mark explored">&#x25A2;</span>`;
+
       let exploredClass = explored ? "explored" : "unexplored";
 
       let html = `<span class="cell-label">${label}</span>
@@ -323,11 +332,14 @@
       if (toggle) {
         toggle.onclick = (e) => {
           e.stopPropagation();
-          exploredGrid[row][col] = !exploredGrid[row][col];
-          renderCellIcons(cell, icons);
+          // Only allow toggling if no icons in cell
+          if (gridData[row][col].length === 0) {
+            exploredGrid[row][col] = !exploredGrid[row][col];
+            renderCellIcons(cell, icons);
+          }
         };
         // Style checkmark faded if not explored
-        toggle.style.opacity = explored ? "1" : "0.3";
+        toggle.style.opacity = explored ? "1" : "0.5";
       }
     }
 
@@ -674,6 +686,16 @@
       closeIconPicker();
     };
 
+    // Explore All button logic
+    document.getElementById('exploreAllButton').onclick = function() {
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          exploredGrid[row][col] = true;
+        }
+      }
+      rerenderAllCells();
+    };
+
     // Initialize everything on page load
     renderLegend();
     initializeGrid();
@@ -687,3 +709,4 @@
   </script>
 </body>
 </html>
+`
