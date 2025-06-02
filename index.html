@@ -24,14 +24,14 @@
       font-size: 2.2em;
       letter-spacing: 0.03em;
       text-align: center;
-    }
-    .main-flex {
+    }    .main-flex {
       display: flex;
       align-items: flex-start;
       justify-content: center; /* Center the grid and side panels horizontally */
       gap: 40px;
       width: 100%;
       max-width: none;
+      position: relative;
     }
     .description-box {
       background: rgba(30,30,30,0.85);
@@ -40,10 +40,12 @@
       padding: 18px;
       min-width: 220px;
       max-width: 260px;
-      margin-right: 32px;
       font-size: 1em;
       box-shadow: 0 2px 12px #2228;
-      align-self: flex-start;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 100;
     }
     .description-title {
       font-weight: bold;
@@ -56,11 +58,32 @@
       color: #ffe066;
       font-size: 0.98em;
       line-height: 1.6;
-    }
-    .grid-outer {
+    }    .grid-outer {
       display: flex;
       flex-direction: column;
       align-items: center; /* Center the grid horizontally */
+      margin-left: 300px; /* Make space for the description box */
+    }
+    .main-controls {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 12px;
+      margin: 300px 0 20px 0; /* Top margin to position under description box */
+      max-width: 800px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 99;
+    }
+    
+    /* Unified controls row under description box */
+    .main-controls .pretty-btn {
+      margin: 4px;
+      min-width: 160px;
     }
     .grid-label-row,
     .grid-label-col {
@@ -571,10 +594,31 @@
       background: #000 !important;
       color: #fff700 !important;
       border: 2px solid #fff700 !important;
-    }
-    body.high-contrast .icon-picker-btn:hover {
+    }    body.high-contrast .icon-picker-btn:hover {
       background: #222 !important;
       color: #fff !important;
+    }
+    
+    .main-controls {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 99;
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin: 300px 0 20px 0;
+      max-width: 800px;
+    }
+    
+    /* Unified controls row under description box */
+    .main-controls .pretty-btn {
+      margin: 4px;
+      min-width: 160px;
     }
   </style>
 </head>
@@ -594,25 +638,8 @@
         - When you’re finished updating the map, use the export to PNG button to download your grid or clear to start over.<br>
         - You can import/export your map as JSON, or save/load named versions.<br>
         - You can set the time to either UTC or your local time for the export to png.
-      </div>
-    </div>
-    .main-controls {
-      width: 100%;
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-      gap: 12px;
-      margin: 20px auto;
-      max-width: 800px;
-    }
-    
-    /* Unified controls row under description box */
-    .main-controls .pretty-btn {
-      margin: 4px;
-      min-width: 160px;
-    }    <div class="main-controls">
+      </div>    </div>
+    <div class="main-controls">
       <button id="saveVersionButton" class="pretty-btn">Save Map</button>
       <button id="loadVersionButton" class="pretty-btn">Load Map</button>
       <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
@@ -1729,11 +1756,15 @@
       reader.readAsText(file);
     });    // --- Import from JSON (drag-and-drop) ---
     document.body.addEventListener('dragover', function(e) {
-      e.preventDefault();
+      // Only prevent default for file drops, not legend icon drags
+      if (e.dataTransfer.types.includes('Files')) {
+        e.preventDefault();
+      }
     });
     document.body.addEventListener('drop', function(e) {
-      e.preventDefault();
-      if (e.dataTransfer.files.length) {
+      // Only handle file drops, ignore legend icon drops
+      if (e.dataTransfer.files.length > 0) {
+        e.preventDefault();
         const file = e.dataTransfer.files[0];
         if (file.type === 'application/json' || file.name.endsWith('.json')) {
           const indicator = showProgressIndicator('Importing dropped file...');
@@ -1767,6 +1798,7 @@
           showNotification('Please drop a JSON file', 'warning');
         }
       }
+      // For non-file drops (legend icons), let the default handling proceed
     });
 
     // --- ARIA roles and keyboard navigation for legend and grid ---
