@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Dune Awakening Deep Desert Mapping</title>
   <style>
     *,
@@ -14,15 +15,23 @@
       font-family: Arial, sans-serif;
       margin: 20px;
       background-color: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     h1 {
       color: #fff;
+      font-size: 2.2em;
+      letter-spacing: 0.03em;
+      text-align: center;
     }
     .main-flex {
       display: flex;
       align-items: flex-start;
-      gap: 40px;
       justify-content: center;
+      gap: 40px;
+      width: 100%;
+      max-width: 1400px;
     }
     .description-box {
       background: rgba(30,30,30,0.85);
@@ -34,7 +43,7 @@
       margin-right: 32px;
       font-size: 1em;
       box-shadow: 0 2px 12px #2228;
-      align-self: flex-start;
+      align-self: center;
     }
     .description-title {
       font-weight: bold;
@@ -51,6 +60,7 @@
     .grid-outer {
       display: flex;
       flex-direction: column;
+      align-items: center;
     }
     .grid-label-row,
     .grid-label-col {
@@ -67,6 +77,7 @@
       height: 900px;
       z-index: 1;
       position: relative;
+      touch-action: manipulation;
     }
     .cell {
       border: 1.5px solid #222;
@@ -81,8 +92,9 @@
       transition: background-color 0.2s;
       position: relative;
       overflow: hidden;
+      touch-action: manipulation;
     }
-    .cell:hover {
+    .cell:hover, .cell:active {
       background-color: rgba(255,255,255,0.1);
     }
     .cell-label {
@@ -120,10 +132,13 @@
       background: #222;
       border-radius: 4px;
       border: 1px solid #444;
+      pointer-events: none;
+      user-drag: none;
+      user-select: none;
     }
     .legend {
       margin-left: 40px;
-      align-self: flex-start;
+      align-self: center;
       color: #fff;
       background: rgba(30,30,30,0.7);
       padding: 10px 10px 18px 10px;
@@ -145,6 +160,7 @@
       align-items: center;
       margin-bottom: 6px;
       font-size: 13px;
+      user-select: none;
     }
     .legend-item img {
       width: 20px;
@@ -153,14 +169,17 @@
       background: #222;
       border-radius: 3px;
       border: 1px solid #444;
+      pointer-events: none;
+      user-drag: none;
+      user-select: none;
     }
     .controls {
       margin-top: 30px;
-      text-align: center;
       display: flex;
       justify-content: center;
       gap: 18px;
       flex-wrap: wrap;
+      width: 900px; /* Match grid width for perfect alignment */
     }
     .cell.unexplored::after {
       content: "";
@@ -269,6 +288,7 @@
       transition: background 0.2s, color 0.2s, transform 0.1s;
       outline: none;
       display: inline-block;
+      touch-action: manipulation;
     }
     .pretty-btn:hover, .pretty-btn:focus {
       background: linear-gradient(90deg, #fff6b0 0%, #ffe066 100%);
@@ -276,12 +296,75 @@
       transform: translateY(-2px) scale(1.03);
       box-shadow: 0 4px 16px #ffe06655;
     }
+    #stormTimer {
+      text-align: center;
+      width: 900px; /* Match grid width for perfect alignment */
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* --- Mobile Mode --- */
+    @media (max-width: 1000px) {
+      .main-flex {
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        max-width: 100vw;
+      }
+      .description-box,
+      .legend {
+        margin: 0 auto;
+        min-width: 0;
+        max-width: 98vw;
+        width: 98vw;
+      }
+      .controls,
+      #stormTimer {
+        width: 98vw;
+        min-width: 0;
+        max-width: 98vw;
+      }
+      .grid-container {
+        width: 98vw;
+        height: 98vw;
+        max-width: 98vw;
+        max-height: 98vw;
+        grid-template-columns: repeat(9, 1fr);
+        grid-template-rows: repeat(9, 1fr);
+      }
+      .cell {
+        font-size: 10px;
+      }
+      .cell-label {
+        font-size: 11px;
+      }
+      .cell-icons img {
+        width: 22px;
+        height: 22px;
+      }
+      .legend {
+        min-width: 0;
+        max-width: 98vw;
+        width: 98vw;
+        font-size: 12px;
+        padding: 8px 4px 12px 4px;
+      }
+      .legend-item img {
+        width: 16px;
+        height: 16px;
+      }
+      .pretty-btn {
+        min-width: 120px;
+        padding: 10px 10px;
+        font-size: 1em;
+      }
+    }
   </style>
 </head>
 <body>
   <div style="display:flex; align-items:center; justify-content:center; margin-bottom:10px;">
     <img src="arrakis.png" alt="Arrakis Icon" style="width:54px; height:54px; margin-right:16px; vertical-align:middle;">
-    <h1 style="color:#fff; margin:0; font-size:2.2em; letter-spacing:0.03em;">Dune Awakening Deep Desert Mapping</h1>
+    <h1 style="color:#fff; margin:0;">Dune Awakening Deep Desert Mapping</h1>
   </div>
   <div id="stormTimer" style="color:#ffe066; font-size:1.15em; font-weight:bold; margin-bottom:12px; text-align:center;">
     Next Coriolis Storm: calculating...
@@ -777,6 +860,9 @@
 
             if (!exploredGrid[row][col]) {
               ctx.fillStyle = "rgba(30,30,30,0.55)";
+              ctx.fillRect(x, y, cellSize, cellSize);
+            } else {
+              ctx.fillStyle = "rgba(255,255,255,0.13)";
               ctx.fillRect(x, y, cellSize, cellSize);
             }
           }
