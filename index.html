@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Added mobile viewport -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';">
   <title>Dune Awakening Deep Desert Mapping</title>
   <style>
     *,
@@ -881,7 +880,7 @@
       <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
       <div class="icon-picker-buttons">
         <button id="confirmSelectionButton" class="icon-picker-btn" type="button">Confirm</button>
-        <button class="icon-picker-btn cancel">Cancel</button>
+        <button class="icon-picker-btn cancel" onclick="closeIconPicker()">Cancel</button>
       </div>
       <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;">Icon placed!</div>
     </div>
@@ -938,7 +937,7 @@
           <span class="help-key">Share Link</span>
           <span class="help-description">Generate shareable URLs with map data</span>
         </div>
-      </div><button class="help-close">Close Manual</button>
+      </div><button class="help-close" onclick="closeHelp()">Close Manual</button>
     </div>
   </div>
 
@@ -951,54 +950,1161 @@
   </div>
 
   <script>
-    // --- Security & Optimization ---
-    // Utility: Safe JSON parse
-    function safeJsonParse(str) {
-      try {
-        return JSON.parse(str);
-      } catch (e) {
-        return null;
+    let useLocalTime = true;
+    const gridContainer = document.getElementById('gridContainer');
+    let gridData = [];
+    let exploredGrid = [];
+    let undoStack = [];
+    let redoStack = [];
+    let selectedCells = new Set();
+    let isSelecting = false;
+
+    const iconList = [
+      "IconAuthorizedBase.png",
+      "IconCave.png",
+      "IconHomeBase.png",
+      "IconPoi.png",
+      "IconShipwreck.png",
+      "IconShipwreckX2.png",
+      "IconSpice.png",
+      "IconStravidium.png",
+      "IconTestingStation.png",
+      "IconTitanium.png"
+    ];
+    const iconNames = [
+      "Authorized Base",
+      "Cave",
+      "Home Base",
+      "POI",
+      "Shipwreck",
+      "Shipwreck x2",
+      "Spice",
+      "Stravidium",
+      "Testing Station",
+      "Titanium"
+    ];
+    const iconPath = "Icons/";
+    let currentCell = null;
+
+    // Add debounce utility for performance
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    // Add throttle utility for high-frequency events
+    function throttle(func, limit) {
+      let inThrottle;
+      return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+          func.apply(context, args);
+          inThrottle = true;
+          setTimeout(() => inThrottle = false, limit);
+        }
       }
     }
-    // Utility: Sanitize imported data
-    function sanitizeImportedData(data) {
-      if (!data || typeof data !== 'object') return null;
-      if (!Array.isArray(data.gridData) || !Array.isArray(data.exploredGrid)) return null;
-      if (data.gridData.length !== 9 || data.exploredGrid.length !== 9) return null;
-      for (let row = 0; row < 9; row++) {
-        if (!Array.isArray(data.gridData[row]) || !Array.isArray(data.exploredGrid[row])) return null;
-        if (data.gridData[row].length !== 9 || data.exploredGrid[row].length !== 9) return null;
+
+    // Enhanced image loading with fallback and retry mechanism
+    function loadImageWithFallback(src, fallbackSrc = null, retries = 2) {
+      return new Promise((resolve, reject) => {
+        let attempts = 0;
+        
+        function attemptLoad(imageSrc) {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => {
+            attempts++;
+            if (attempts < retries && fallbackSrc) {
+              console.warn(`Failed to load ${imageSrc}, trying fallback...`);
+              attemptLoad(fallbackSrc);
+            } else if (attempts < retries) {
+              console.warn(`Failed to load ${imageSrc}, retrying... (${attempts}/${retries})`);
+              setTimeout(() => attemptLoad(imageSrc), 1000);
+            } else {
+              console.error(`Failed to load image after ${retries} attempts: ${imageSrc}`);
+              reject(new Error(`Image loading failed: ${imageSrc}`));
+            }
+          };
+          img.src = imageSrc;
+        }
+        
+        attemptLoad(src);
+      });
+    }
+
+    // Improved renderLegend with error handling
+    function renderLegendSafe() {
+      try {
+        renderLegend();
+      } catch (error) {
+        console.error('Failed to render legend:', error);
+        // Show user-friendly error message
+        const legend = document.getElementById('legendIcons');
+        if (legend) {
+          legend.innerHTML = '<p style="color: #ff6666;">Failed to load legend icons. Please refresh the page.</p>';
+        }
+      }
+    }
+
+    // Debounced auto-save for better performance
+    const debouncedAutoSave = debounce(autoSaveMap, 2000);
+
+    // Throttled resize handler for better performance
+    const throttledResize = throttle(function() {
+      // Re-calculate grid dimensions on resize if needed
+      rerenderAllCells();
+    }, 250);
+
+    // Memory management: Clear unused undo states periodically
+    function cleanupMemory() {
+      if (undoStack.length > 50) {
+        undoStack.splice(0, undoStack.length - 50);
+      }
+      if (redoStack.length > 50) {
+        redoStack.splice(0, redoStack.length - 50);
+      }
+    }
+
+    function pushUndo() {
+      try {
+        undoStack.push({
+          gridData: JSON.parse(JSON.stringify(gridData)),
+          exploredGrid: JSON.parse(JSON.stringify(exploredGrid)),
+          selectedCells: Array.from(selectedCells)
+        });
+        if (undoStack.length > 100) undoStack.shift();
+        redoStack = [];
+      } catch (error) {
+        console.error('Failed to create undo state:', error);
+      }
+    }
+
+    function undo() {
+      if (undoStack.length === 0) return;
+      redoStack.push({
+        gridData: JSON.parse(JSON.stringify(gridData)),
+        exploredGrid: JSON.parse(JSON.stringify(exploredGrid)),
+        selectedCells: Array.from(selectedCells)
+      });
+      const prev = undoStack.pop();
+      gridData = prev.gridData;
+      exploredGrid = prev.exploredGrid;
+      selectedCells = new Set(prev.selectedCells);
+      rerenderAllCells();
+      renderSelection();
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      undoStack.push({
+        gridData: JSON.parse(JSON.stringify(gridData)),
+        exploredGrid: JSON.parse(JSON.stringify(exploredGrid)),
+        selectedCells: Array.from(selectedCells)
+      });
+      const next = redoStack.pop();
+      gridData = next.gridData;
+      exploredGrid = next.exploredGrid;
+      selectedCells = new Set(next.selectedCells);
+      rerenderAllCells();
+      renderSelection();
+    }
+
+    function cellKey(row, col) {
+      return row + "," + col;
+    }
+
+    function renderLegend() {
+      const legend = document.getElementById('legendIcons');
+      legend.innerHTML = '';
+      iconList.forEach((icon, idx) => {
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.setAttribute('draggable', 'true');
+        div.setAttribute('data-icon', icon);
+        div.setAttribute('tabindex', '0');
+        div.setAttribute('aria-label', iconNames[idx] + ' (drag to grid or click to select)');
+        div.title = 'Drag to grid or click to select';
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.alt = iconNames[idx];
+        img.title = iconNames[idx];
+        const span = document.createElement('span');
+        span.textContent = iconNames[idx];
+        div.appendChild(img);
+        div.appendChild(span);
+        legend.appendChild(div);
+        div.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
+        });
+        div.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
+        });
+      });
+    }
+
+    function initializeGrid() {
+      gridContainer.innerHTML = "";
+      gridData = [];
+      exploredGrid = [];
+      for (let row = 8; row >= 0; row--) {
+        gridData[row] = [];
+        exploredGrid[row] = [];
         for (let col = 0; col < 9; col++) {
-          if (!Array.isArray(data.gridData[row][col]) || typeof data.exploredGrid[row][col] !== 'boolean') return null;
-          for (const icon of data.gridData[row][col]) {
-            if (typeof icon !== 'string' || !iconList.includes(icon)) return null;
+          gridData[row][col] = [];
+          exploredGrid[row][col] = false;
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.setAttribute('data-row', row);
+          cell.setAttribute('data-col', col);
+          cell.setAttribute('tabindex', '0');
+          cell.setAttribute('aria-label', `Grid cell ${String.fromCharCode(65+row)}${col+1}`);
+          cell.title = `Grid cell ${String.fromCharCode(65+row)}${col+1}`;
+          cell.innerHTML = "";
+          cell.addEventListener('click', handleCellClick);
+          cell.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleCellClick({currentTarget: cell});
+            }
+          });
+          gridContainer.appendChild(cell);
+        }
+      }
+      makeCellsDroppable();
+    }
+
+    function handleCellClick(event) {
+      const cell = event.currentTarget;
+      const row = cell.getAttribute('data-row');
+      const col = cell.getAttribute('data-col');
+      if (event.shiftKey) {
+        // Multi-select
+        const key = cellKey(row, col);
+        if (selectedCells.has(key)) {
+          selectedCells.delete(key);
+        } else {
+          selectedCells.add(key);
+        }
+        renderSelection();
+        return;
+      }
+      if (selectedCells.size > 1) {
+        // Batch edit: open icon picker for all selected
+        currentCell = null;
+        document.getElementById('iconPickerModal').style.display = 'flex';
+      } else {
+        currentCell = cell;
+        document.getElementById('iconPickerModal').style.display = 'flex';
+      }
+    }
+
+    function renderSelection() {
+      document.querySelectorAll('.cell').forEach(cell => {
+        const row = cell.getAttribute('data-row');
+        const col = cell.getAttribute('data-col');
+        const key = cellKey(row, col);
+        if (selectedCells.has(key)) {
+          cell.style.outline = '3px solid #ffe066';
+          cell.style.boxShadow = '0 0 8px #ffe066cc';
+        } else {
+          cell.style.outline = '';
+          cell.style.boxShadow = '';
+        }
+      });
+    }
+
+    function clearSelection() {
+      selectedCells.clear();
+      renderSelection();
+    }
+
+    function populateIconPicker() {
+      const grid = document.getElementById('iconPickerGrid');
+      grid.innerHTML = "";
+      let selectedIcon = null;
+
+      // Determine which icons are present in the current cell or all selected cells
+      let presentIcons = new Set();
+      if (selectedCells.size > 1) {
+        // Multi-cell: collect all icons present in any selected cell
+        selectedCells.forEach(key => {
+          const [row, col] = key.split(',');
+          gridData[row][col].forEach(icon => presentIcons.add(icon));
+        });
+      } else if (currentCell) {
+        const row = currentCell.getAttribute('data-row');
+        const col = currentCell.getAttribute('data-col');
+        gridData[row][col].forEach(icon => presentIcons.add(icon));
+      }
+
+      iconList.forEach(icon => {
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.alt = icon;
+        img.style.width = "48px";
+        img.style.height = "48px";
+        img.style.cursor = "pointer";
+        img.style.border = presentIcons.has(icon) ? "2.5px solid #a259e6" : "2px solid transparent";
+        img.style.borderRadius = "6px";
+        img.title = icon.replace('.png','').replace('Icon','');
+        img.onclick = () => {
+          // Remove border from all icons
+          Array.from(grid.children).forEach(child => {
+            // Only remove border if not present in the cell(s)
+            if (!presentIcons.has(child.alt)) {
+              child.style.border = "2px solid transparent";
+            }
+          });
+          img.style.border = "2.5px solid #a259e6";
+          selectedIcon = icon;
+          selectIcon(icon);
+        };
+        grid.appendChild(img);
+      });
+    }    // Batch icon selection for multi-cell
+    function selectIcon(icon) {
+      let placed = false;
+      if (selectedCells.size > 1) {
+        pushUndo();
+        selectedCells.forEach(key => {
+          const [row, col] = key.split(',');
+          const idx = gridData[row][col].indexOf(icon);
+          if (idx === -1) {
+            gridData[row][col].push(icon);
+            placed = true;
+          } else {
+            gridData[row][col].splice(idx, 1);
+            placed = true;
+          }
+        });
+        rerenderAllCells();
+        renderSelection();
+      } else if (currentCell) {
+        pushUndo();
+        const row = currentCell.getAttribute('data-row');
+        const col = currentCell.getAttribute('data-col');
+        const idx = gridData[row][col].indexOf(icon);
+        if (idx === -1) {
+          gridData[row][col].push(icon);
+          placed = true;
+        } else {
+          gridData[row][col].splice(idx, 1);
+          placed = true;
+        }
+        renderCellIcons(currentCell, gridData[row][col]);
+      }
+      if (placed) {
+        showIconPickerFeedback();
+      }
+    }
+
+    function showIconPickerFeedback() {
+      const feedback = document.getElementById('iconPickerFeedback');
+      if (!feedback) return;
+      feedback.textContent = 'Icon placed!';
+      feedback.style.display = 'block';
+      feedback.style.opacity = '1';
+      setTimeout(() => {
+        feedback.style.transition = 'opacity 0.5s';
+        feedback.style.opacity = '0';
+        setTimeout(() => {
+          feedback.style.display = 'none';
+          feedback.style.transition = '';
+        }, 500);
+      }, 600);
+    }
+
+    function renderCellIcons(cell, icons) {
+      const row = cell.getAttribute('data-row');
+      const col = cell.getAttribute('data-col');
+      const label = String.fromCharCode(65 + parseInt(row)) + (parseInt(col) + 1);
+
+      if (icons.length > 0 && !exploredGrid[row][col]) {
+        exploredGrid[row][col] = true;
+      }
+
+      const explored = exploredGrid[row][col];
+      let checkHtml = explored
+        ? `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;color:#ffe066;text-shadow:0 0 2px #222,0 0 8px #ffe066;" title="Mark unexplored">&#x2714;</span>`
+        : `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;color:#ffe066;text-shadow:0 0 2px #222,0 0 8px #ffe066;" title="Mark explored">&#x25A2;</span>`;
+
+      let exploredClass = explored ? "explored" : "unexplored";      // Build the cell content safely
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = `<span class="cell-label"></span>
+        <div class="cell-icons"></div>${checkHtml}`;
+
+      // Set label safely
+      wrapper.querySelector('.cell-label').textContent = label;
+
+      // Add icons safely with proper grid layout
+      const iconsGrid = wrapper.querySelector('.cell-icons');
+      for (let i = 0; i < 9; i++) {
+        const iconContainer = document.createElement('div');
+        iconContainer.className = 'cell-icon-container';
+        
+        if (icons[i]) {
+          const img = document.createElement('img');
+          img.src = iconPath + icons[i];
+          img.alt = iconNames[iconList.indexOf(icons[i])] || "";
+          img.draggable = false;
+          img.title = iconNames[iconList.indexOf(icons[i])] || "";
+          iconContainer.appendChild(img);
+        }
+        iconsGrid.appendChild(iconContainer);
+      }
+
+      // Replace cell content
+      cell.innerHTML = '';
+      Array.from(wrapper.childNodes).forEach(n => cell.appendChild(n));
+      cell.classList.remove("explored", "unexplored");
+      cell.classList.add(exploredClass);
+
+      const toggle = cell.querySelector('.explored-toggle');
+      if (toggle) {
+        toggle.onclick = (e) => {
+          e.stopPropagation();
+          if (gridData[row][col].length === 0) {
+            exploredGrid[row][col] = !exploredGrid[row][col];
+            renderCellIcons(cell, icons);
+          }
+        };
+        toggle.style.opacity = explored ? "1" : "0.5";
+      }
+      onMapChange();
+    }
+
+    function closeIconPicker() {
+      document.getElementById('iconPickerModal').style.display = 'none';
+      currentCell = null;
+    }
+
+    function exportMapData() {
+      let output = "Cell\t\tIcons\n";
+      output += "-------------------------\n";
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (gridData[row][col].length) {
+            const coord = String.fromCharCode(65 + row) + (col + 1);
+            const icons = gridData[row][col].map(i => iconNames[iconList.indexOf(i)]).join(", ");
+            output += coord + "\t" + icons + "\n";
           }
         }
       }
-      return data;
+      if (output === "Cell\t\tIcons\n-------------------------\n") {
+        output += "(No icons placed on the map)";
+      }
+      alert("Exported Map Data:\n" + output);
+      console.log("Exported Map Data:\n" + output);
     }
-    // --- Replace all unsafe JSON imports with safe version ---
-    document.getElementById('importJsonInput').addEventListener('change', function(e) {
+
+    function exportMapDataAsJson() {
+      const layers = [
+        { Name: "Shipwreck", IconName: "Shipwreck", Description: "Shipwreck" },
+        { Name: "TestingStation", IconName: "TestingStation", Description: "Testing station" },
+        { Name: "Cave", IconName: "Cave", Description: "Cave" },
+        { Name: "Spice", IconName: "Spice", Description: "Spice ring" },
+        { Name: "Titanium", IconName: "Titanium", Description: "Titanium" },
+        { Name: "Stravidium", IconName: "Stravidium", Description: "Stravidium" },
+        { Name: "Poi", IconName: "Poi", Description: "Point of interest" },
+        { Name: "AuthorizedBase", IconName: "AuthorizedBase", Description: "Guild base" }
+      ];
+
+      const simpleEntries = [];
+      for (let row = 8; row >= 0; row--) {
+        for (let col = 0; col < 9; col++) {
+          gridData[row][col].forEach(icon => {
+            let iconName = icon.replace(/^Icon/, '').replace(/\.png$/i, '');
+            const coord = String.fromCharCode(65 + row) + (col + 1);
+            simpleEntries.push(`${coord},${iconName}`);
+          });
+        }
+      }
+
+      const json = {
+        GridSize: 9,
+        IconSize: 48,
+        GridMapSize: 150,
+        IconsFolder: "Icons",
+        Layers: layers,
+        ActiveMap: {
+          Help: "This is a sample map. It contains a list of simple entries that is used for easy entering of map coordinates by using comma or semicolon separation of entries. Ex 'A1,G4'\r\nYou may also enter detailed entries that include a grid location, name, description and coordinates within the grid.\r\n",
+          ScoutedGrids: "",
+          SimpleEntries: simpleEntries,
+          DetailedEntries: []
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = "map_export.json";
+      link.click();
+    }    function clearMap() {
+      if (confirm("This will clear all map data. Are you sure you want to continue?")) {
+        try {
+          pushUndo(); // Allow undoing clear operation
+          initializeGrid();
+          rerenderAllCells();
+          onMapChange();
+          showNotification('Map cleared successfully', 'success');
+        } catch (error) {
+          console.error('Clear failed:', error);
+          showNotification('Failed to clear map', 'error');
+        }
+      }
+    }
+
+    function exportAsPng() {
+      const cellSize = 150;
+      const gap = 2;
+      const gridSize = 9;
+      const backgroundSrc = 'background.jpg';
+      const legendPadding = 30;
+      const legendIconSize = 40;
+      const legendTextSize = 22;
+      const legendSpacing = 18;
+      const legendTitleSize = 26;
+      const legendTitle = "Legend";
+      const legendItems = iconList.map((icon, idx) => ({
+        icon,
+        name: iconNames[idx]
+      }));
+
+      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140;
+      const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing +
+        legendItems.length * (legendIconSize + legendSpacing);
+
+      const dateHeight = 60;
+      const gridWidth = gridSize * (cellSize + gap);
+      const gridHeight = gridSize * (cellSize + gap);
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = legendWidth + gridWidth;
+      canvas.height = Math.max(gridHeight + dateHeight, legendHeight + dateHeight);
+
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+        });
+      }
+
+      const usedIcons = new Set();
+      for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+          gridData[row][col].forEach(icon => usedIcons.add(icon));
+        }
+      }
+
+      const iconPromises = {};
+      iconList.forEach(icon => {
+        iconPromises[icon] = loadImage(iconPath + icon);
+      });
+
+      Promise.all([
+        loadImage(backgroundSrc),
+        ...Object.values(iconPromises)
+      ]).then(([backgroundImage, ...iconImages]) => {
+        const iconMap = {};
+        let i = 0;
+        for (const icon of iconList) {
+          iconMap[icon] = iconImages[i++];
+        }
+
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, dateHeight);
+
+        const now = new Date();
+        const dateStr = useLocalTime
+          ? now.toLocaleString()
+          : now.toUTCString();
+        ctx.font = "bold 32px Arial";
+        ctx.fillStyle = "#fff";
+        ctx.textBaseline = "middle";
+        ctx.fillText(dateStr, legendWidth + 20, dateHeight / 2);
+
+        ctx.globalAlpha = 0.4;
+        ctx.drawImage(backgroundImage, legendWidth, dateHeight, gridWidth, gridHeight);
+        ctx.globalAlpha = 1.0;
+
+        ctx.fillStyle = "rgba(30,30,30,0.85)";
+        ctx.fillRect(0, dateHeight, legendWidth, legendHeight);
+
+        ctx.font = `bold ${legendTitleSize}px Arial`;
+        ctx.fillStyle = "#fff";
+        ctx.textBaseline = "top";
+        ctx.fillText(legendTitle, legendPadding, dateHeight + legendPadding);
+
+        let legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
+        ctx.font = `${legendTextSize}px Arial`;
+        for (const item of legendItems) {
+          if (iconMap[item.icon]) {
+            ctx.drawImage(
+              iconMap[item.icon],
+              legendPadding,
+              legendY,
+              legendIconSize,
+              legendIconSize
+            );
+          }
+          ctx.fillStyle = "#fff";
+          ctx.fillText(
+            item.name,
+            legendPadding + legendIconSize + 10,
+            legendY + (legendIconSize - legendTextSize) / 2
+          );
+          legendY += legendIconSize + legendSpacing;
+        }
+
+        for (let row = 8; row >= 0; row--) {
+          for (let col = 0; col < gridSize; col++) {
+            const canvasRow = 8 - row;
+            const x = legendWidth + col * (cellSize + gap);
+            const y = dateHeight + canvasRow * (cellSize + gap);
+
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, cellSize, cellSize);
+
+            ctx.font = "bold 24px Arial";
+            ctx.fillStyle = "rgba(255,255,255,0.8)";
+            ctx.textBaseline = "top";
+            ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
+
+            const icons = gridData[row][col];
+            const n = icons.length;
+            if (n > 0) {
+              let iconSize, positions;
+              if (n === 1) {
+                iconSize = 90;
+                positions = [[cellSize / 2, cellSize / 2 + 10]];
+              } else if (n === 2) {
+                iconSize = 70;
+                positions = [
+                  [cellSize / 2 - 35, cellSize / 2 + 10],
+                  [cellSize / 2 + 35, cellSize / 2 + 10]
+                ];
+              } else if (n === 3) {
+                iconSize = 60;
+                positions = [
+                  [cellSize / 2, cellSize / 2 - 30],
+                  [cellSize / 2 - 38, cellSize / 2 + 32],
+                  [cellSize / 2 + 38, cellSize / 2 + 32]
+                ];
+              } else if (n === 4) {
+                iconSize = 54;
+                positions = [
+                  [cellSize / 2 - 32, cellSize / 2 - 24],
+                  [cellSize / 2 + 32, cellSize / 2 - 24],
+                  [cellSize / 2 - 32, cellSize / 2 + 32],
+                  [cellSize / 2 + 32, cellSize / 2 + 32]
+                ];
+              } else {
+                iconSize = 40;
+                positions = [];
+                const grid = 3;
+                const offset = (cellSize - grid * iconSize) / 2;
+                for (let i = 0; i < Math.min(n, 9); i++) {
+                  const gx = i % 3;
+                  const gy = Math.floor(i / 3);
+                  positions.push([
+                    offset + gx * iconSize + iconSize / 2,
+                    30 + offset + gy * iconSize + iconSize / 2
+                  ]);
+                }
+              }
+              for (let i = 0; i < Math.min(n, 9); i++) {
+                const icon = icons[i];
+                if (icon && iconMap[icon]) {
+                  ctx.drawImage(
+                    iconMap[icon],
+                    x + positions[i][0] - iconSize / 2,
+                    y + positions[i][1] - iconSize / 2,
+                    iconSize,
+                    iconSize
+                  );
+                }
+              }
+            }
+
+            if (!exploredGrid[row][col]) {
+              ctx.fillStyle = "rgba(30,30,30,0.55)";
+              ctx.fillRect(x, y, cellSize, cellSize);
+            } else {
+              ctx.fillStyle = "rgba(255,255,255,0.13)";
+              ctx.fillRect(x, y, cellSize, cellSize);
+            }
+          }
+        }
+
+        // Signature at top right, same line as date
+        loadImage('fwb.png').then(fwbImg => {
+          const sigHeight = 44;
+          const sigMargin = 18;
+          const sigY = (dateHeight - sigHeight) / 2;
+          const sigText = "Provided by Fremen with Benefits";
+          ctx.font = "bold 24px Arial";
+          const textWidth = ctx.measureText(sigText).width;
+          const sigX = canvas.width - sigMargin - sigHeight - 12 - textWidth;
+
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.fillStyle = "#222";
+          ctx.fillRect(sigX - 16, sigY - 8, textWidth + sigHeight + 44, sigHeight + 16);
+          ctx.globalAlpha = 1.0;
+
+          ctx.drawImage(fwbImg, sigX, sigY, sigHeight, sigHeight);
+
+          ctx.font = "bold 24px Arial";
+          ctx.fillStyle = "#ffe066";
+          ctx.textBaseline = "middle";
+          ctx.fillText(sigText, sigX + sigHeight + 12, sigY + sigHeight / 2);
+
+          ctx.restore();
+
+          const link = document.createElement('a');
+          link.download = 'grid.png';
+          link.href = canvas.toDataURL();
+          link.click();
+        });
+      });
+    }
+
+    function makeCellsDroppable() {
+      document.querySelectorAll('.cell').forEach(cell => {
+        cell.addEventListener('dragover', function (e) {
+          e.preventDefault();
+        });
+        cell.addEventListener('drop', function (e) {
+          e.preventDefault();
+          const icon = e.dataTransfer.getData('text/plain');
+          const row = this.getAttribute('data-row');
+          const col = this.getAttribute('data-col');
+          if (icon && gridData[row][col].indexOf(icon) === -1) {
+            gridData[row][col].push(icon);
+            renderCellIcons(this, gridData[row][col]);
+          }
+        });
+      });
+    }
+
+    function rerenderAllCells() {
+      const cells = document.querySelectorAll('.cell');
+      let idx = 0;
+      for (let row = 8; row >= 0; row--) {
+        for (let col = 0; col < 9; col++) {
+          renderCellIcons(cells[idx++], gridData[row][col]);
+        }
+      }
+      makeCellsDroppable();
+    }
+
+    document.getElementById('confirmSelectionButton').onclick = function() {
+      closeIconPicker();
+    };
+
+    function exploreAllCells() {
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          exploredGrid[row][col] = true;
+        }
+      }
+      rerenderAllCells();
+      onMapChange();
+    }    // Enhanced Coriolis Storm Timer with fixed phases
+    let selectedServerTimezone = 'UTC';
+    
+    function updateStormTimer() {
+      const buildupTimeEl = document.getElementById('buildupTime');
+      const hitTimeEl = document.getElementById('hitTime');
+      const buildupPhase = document.getElementById('buildupPhase');
+      const hitPhase = document.getElementById('hitPhase');
+      const now = new Date();
+      const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
+
+      // Calculate next Monday 05:00 UTC (EU Buildup)
+      let nextBuildup = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), utcNow.getUTCDate(), 5, 0, 0, 0));
+      let nextStorm = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), utcNow.getUTCDate(), 4, 0, 0, 0));
+      const day = utcNow.getUTCDay();
+
+      // Monday = 1, Tuesday = 2
+      if (day > 1 || (day === 1 && utcNow.getUTCHours() >= 5)) {
+        nextBuildup.setUTCDate(nextBuildup.getUTCDate() + ((8 - day) % 7));
+      } else if (day < 1 || (day === 1 && utcNow.getUTCHours() < 5)) {
+        nextBuildup.setUTCDate(nextBuildup.getUTCDate() + ((1 - day + 7) % 7));
+      }
+      if (day > 2 || (day === 2 && utcNow.getUTCHours() >= 4)) {
+        nextStorm.setUTCDate(nextStorm.getUTCDate() + ((9 - day) % 7));
+      } else if (day < 2 || (day === 2 && utcNow.getUTCHours() < 4)) {
+        nextStorm.setUTCDate(nextStorm.getUTCDate() + ((2 - day + 7) % 7));
+      }
+
+      // Calculate time differences
+      const buildupDiff = nextBuildup.getTime() - utcNow.getTime();
+      const hitDiff = nextStorm.getTime() - utcNow.getTime();
+
+      // Reset all phase states
+      [buildupPhase, hitPhase].forEach(phase => {
+        if (phase) phase.classList.remove('active', 'warning', 'critical');
+      });
+
+      // Current storm status and phase highlighting
+      if (hitDiff <= 0) {
+        // Storm has passed, calculate next week
+        nextBuildup.setUTCDate(nextBuildup.getUTCDate() + 7);
+        nextStorm.setUTCDate(nextStorm.getUTCDate() + 7);
+        const newBuildupDiff = nextBuildup.getTime() - utcNow.getTime();
+        const newHitDiff = nextStorm.getTime() - utcNow.getTime();
+        updatePhaseDisplay(buildupTimeEl, newBuildupDiff, nextBuildup);
+        updatePhaseDisplay(hitTimeEl, newHitDiff, nextStorm);
+      } else if (buildupDiff <= 0) {
+        // Currently in buildup phase or storm is hitting
+        updatePhaseDisplay(buildupTimeEl, 0, nextBuildup, 'ACTIVE');
+        updatePhaseDisplay(hitTimeEl, hitDiff, nextStorm);
+        if (hitDiff <= 300000) { // Less than 5 minutes to storm
+          if (hitPhase) hitPhase.classList.add('critical');
+        } else {
+          if (hitPhase) hitPhase.classList.add('warning');
+        }
+        if (buildupPhase) buildupPhase.classList.add('active');
+      } else {
+        // Waiting for next storm
+        updatePhaseDisplay(buildupTimeEl, buildupDiff, nextBuildup);
+        updatePhaseDisplay(hitTimeEl, hitDiff, nextStorm);
+        if (buildupDiff <= 3600000) { // Less than 1 hour to buildup
+          if (buildupPhase) buildupPhase.classList.add('warning');
+        }
+      }
+    }
+    
+    function updatePhaseDisplay(element, timeDiff, targetDate, status = null) {
+      if (!element) return;
+      
+      if (status === 'ACTIVE') {
+        element.textContent = 'NOW';
+        return;
+      }
+      
+      if (timeDiff <= 0) {
+        element.textContent = 'PASSED';
+        return;
+      }
+      
+      const diffSec = Math.floor(timeDiff / 1000);
+      const days = Math.floor(diffSec / 86400);
+      const hours = Math.floor((diffSec % 86400) / 3600);
+      const mins = Math.floor((diffSec % 3600) / 60);
+      const secs = diffSec % 60;
+      
+      let timeStr = '';
+      if (days > 0) {
+        timeStr = `${days}d ${hours}h ${mins}m`;
+      } else if (hours > 0) {
+        timeStr = `${hours}h ${mins}m ${secs}s`;
+      } else {
+        timeStr = `${mins}m ${secs}s`;
+      }
+      
+      // Add local time display based on selected server
+      const localTime = formatTimeForTimezone(targetDate, selectedServerTimezone);
+      element.textContent = `${timeStr} (${localTime})`;
+    }
+    
+    function formatTimeForTimezone(date, timezone) {
+      try {
+        if (timezone === 'UTC') {
+          return date.toISOString().substr(11, 5) + ' UTC';
+        }
+        
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+        
+        const timezoneName = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          timeZoneName: 'short'
+        }).formatToParts(date).find(part => part.type === 'timeZoneName').value;
+        
+        return formatter.format(date) + ' ' + timezoneName;
+      } catch (error) {
+        console.warn('Timezone formatting failed:', error);
+        return date.toISOString().substr(11, 5) + ' UTC';
+      }
+    }
+
+    // --- Time Mode Toggle (reverse logic: checked = UTC, unchecked = Local) ---
+    document.getElementById('useLocalTime').addEventListener('change', function() {
+      useLocalTime = !this.checked;
+      updateTimeToggleHighlight();
+    });
+    // Set initial state: checked = UTC, unchecked = Local
+    useLocalTime = !document.getElementById('useLocalTime').checked;
+    updateTimeToggleHighlight();
+
+    // --- Server Location Change Handler ---
+    document.getElementById('serverLocation').addEventListener('change', function() {
+      selectedServerTimezone = this.value;
+      updateStormTimer(); // Immediately update timer display with new timezone
+    });
+
+    function updateTimeToggleHighlight() {
+      document.getElementById('timeModeLabel').style.fontWeight = useLocalTime ? 'bold' : 'normal';
+      document.getElementById('timeModeLabel').style.opacity = useLocalTime ? '1' : '0.5';
+      document.getElementById('utcModeLabel').style.fontWeight = useLocalTime ? 'normal' : 'bold';
+      document.getElementById('utcModeLabel').style.opacity = useLocalTime ? '0.5' : '1';
+      // Visually update the switch to match logic
+      document.getElementById('useLocalTime').checked = !useLocalTime;
+    }    function autoSaveMap() {
+      try {
+        const saveData = { gridData, exploredGrid };
+        localStorage.setItem('dd_map_autosave', JSON.stringify(saveData));
+      } catch (error) {
+        console.warn('Auto-save failed:', error);
+        // Could implement fallback save mechanism here
+      }
+    }
+
+    function autoLoadMap() {
+      const saveData = localStorage.getItem('dd_map_autosave');
+      if (!saveData) return;
+      try {
+        const parsed = JSON.parse(saveData);
+        if (parsed && parsed.gridData && parsed.exploredGrid) {
+          validateGridData(parsed.gridData);
+          validateExploredGrid(parsed.exploredGrid);
+          gridData = parsed.gridData;
+          exploredGrid = parsed.exploredGrid;
+          rerenderAllCells();
+        }
+      } catch (error) {
+        console.warn('Auto-load failed:', error);
+        localStorage.removeItem('dd_map_autosave'); // Clear corrupted data
+      }
+    }
+
+    function onMapChange() {
+      debouncedAutoSave();
+    }
+
+    const _oldRenderCellIcons = renderCellIcons;
+    renderCellIcons = function(cell, icons) {
+      _oldRenderCellIcons(cell, icons);
+      onMapChange();
+    };
+
+    const _oldClearMap = clearMap;
+    clearMap = function() {
+      _oldClearMap();
+      onMapChange();
+    };
+
+    const _oldExploreAllCells = exploreAllCells;
+    exploreAllCells = function() {
+      _oldExploreAllCells();
+      onMapChange();
+    };
+
+    setInterval(debouncedAutoSave, 30000);
+    setInterval(cleanupMemory, 60000); // Periodically clean up memory
+
+    // Data validation utilities
+    function validateGridData(data) {
+      if (!Array.isArray(data) || data.length !== 9) {
+        throw new Error('Invalid grid data: must be 9x9 array');
+      }
+      
+      for (let row = 0; row < 9; row++) {
+        if (!Array.isArray(data[row]) || data[row].length !== 9) {
+          throw new Error(`Invalid grid data: row ${row} must be array of length 9`);
+        }
+        
+        for (let col = 0; col < 9; col++) {
+          if (!Array.isArray(data[row][col])) {
+            throw new Error(`Invalid grid data: cell [${row}][${col}] must be array`);
+          }
+          
+          // Validate icon names
+          data[row][col].forEach((icon, idx) => {
+            if (typeof icon !== 'string' || !iconList.includes(icon)) {
+              console.warn(`Invalid icon at [${row}][${col}][${idx}]: ${icon}`);
+              // Remove invalid icon
+              data[row][col].splice(idx, 1);
+            }
+          });
+        }
+      }
+      
+      return true;
+    }
+
+    function validateExploredGrid(data) {
+      if (!Array.isArray(data) || data.length !== 9) {
+        throw new Error('Invalid explored grid: must be 9x9 array');
+      }
+      
+      for (let row = 0; row < 9; row++) {
+        if (!Array.isArray(data[row]) || data[row].length !== 9) {
+          throw new Error(`Invalid explored grid: row ${row} must be array of length 9`);
+        }
+        
+        for (let col = 0; col < 9; col++) {
+          if (typeof data[row][col] !== 'boolean') {
+            console.warn(`Invalid explored state at [${row}][${col}], converting to boolean`);
+            data[row][col] = Boolean(data[row][col]);
+          }
+        }
+      }
+      
+      return true;
+    }
+
+    // Enhanced import function with validation
+    function importMapDataSafe(data) {
+      try {
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid import data: must be object');
+        }
+        
+        if (!data.gridData || !data.exploredGrid) {
+          throw new Error('Invalid import data: missing gridData or exploredGrid');
+        }
+        
+        // Validate data before importing
+        validateGridData(data.gridData);
+        validateExploredGrid(data.exploredGrid);
+        
+        // Create backup before importing
+        pushUndo();
+        
+        gridData = data.gridData;
+        exploredGrid = data.exploredGrid;
+        rerenderAllCells();
+        onMapChange();
+        
+        return { success: true, message: 'Map imported successfully!' };
+      } catch (error) {
+        console.error('Import failed:', error);
+        return { success: false, message: `Import failed: ${error.message}` };
+      }
+    }
+
+    function initializeApp() {
+      renderLegendSafe();
+      initializeGrid();
+      populateIconPicker();
+      rerenderAllCells();
+      updateTimeToggleHighlight();
+      updateStormTimer();
+      setInterval(updateStormTimer, 1000);
+      window.addEventListener('resize', throttledResize);
+    }
+
+    initializeApp();
+
+    document.getElementById('clearButton').onclick = clearMap;
+    document.getElementById('exportPngButton').onclick = exportAsPng;
+    document.getElementById('exploreAllButton').onclick = exploreAllCells;
+    document.getElementById('undoButton').onclick = undo;
+    document.getElementById('redoButton').onclick = redo;
+
+    document.getElementById('legendToggleBtn').onclick = function() {
+      const legend = document.getElementById('legendPanel');
+      const icon = document.getElementById('legendToggleIcon');
+      legend.classList.toggle('collapsed');
+      icon.textContent = legend.classList.contains('collapsed') ? '►' : '▼';
+    };
+
+    document.getElementById('legendToggleBtn').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.click();
+      }
+    });
+
+    ['exportPngButton','exploreAllButton','clearButton'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.title = el.textContent;
+        el.setAttribute('aria-label', el.textContent);
+        el.setAttribute('tabindex', '0');
+      }
+    });    gridContainer.addEventListener('click', function(e) {
+      if (e.target === gridContainer) clearSelection();
+    });    window.addEventListener('DOMContentLoaded', function() {
+      autoLoadMapEnhanced();
+    });// --- Export as JSON ---
+    document.getElementById('exportJsonButton').onclick = function() {
+      try {
+        const data = { gridData, exploredGrid };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'dune_map.json';
+        link.click();
+        showNotification('Map exported successfully!', 'success');
+      } catch (error) {
+        console.error('Export failed:', error);
+        showNotification('Failed to export map', 'error');
+      }
+    };
+
+    // --- Import from JSON (file input) ---
+    document.getElementById('importJsonButton').onclick = function() {
+      document.getElementById('importJsonInput').click();
+    };    document.getElementById('importJsonInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
+      
+      const indicator = showProgressIndicator('Importing map...');
       const reader = new FileReader();
+      
       reader.onload = function(evt) {
-        const data = safeJsonParse(evt.target.result);
-        const sanitized = sanitizeImportedData(data);
-        if (sanitized) {
-          const result = importMapDataSafe(sanitized);
+        try {
+          const data = JSON.parse(evt.target.result);
+          const result = importMapDataSafe(data);
+          hideProgressIndicator();
+          
           if (result.success) {
-            showNotification('Map imported successfully!', 'success');
+            showNotification(result.message, 'success');
           } else {
             showNotification(result.message, 'error');
           }
-        } else {
-          showNotification('Invalid or unsafe JSON file', 'error');
+        } catch (error) {
+          hideProgressIndicator();
+          console.error('Import failed:', error);
+          showNotification('Invalid JSON file format', 'error');
         }
       };
+      
+      reader.onerror = function() {
+        hideProgressIndicator();
+        showNotification('Failed to read file', 'error');
+      };
+      
       reader.readAsText(file);
+    });    // --- Import from JSON (drag-and-drop) ---
+    document.body.addEventListener('dragover', function(e) {
+      e.preventDefault();
     });
     document.body.addEventListener('drop', function(e) {
+      // Only handle file drops, ignore legend icon drags
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
         if (!file.name.endsWith('.json')) {
@@ -1007,59 +2113,275 @@
         }
         const reader = new FileReader();
         reader.onload = function(evt) {
-          const data = safeJsonParse(evt.target.result);
-          const sanitized = sanitizeImportedData(data);
-          if (sanitized) {
-            const result = importMapDataSafe(sanitized);
+          try {
+            const data = JSON.parse(evt.target.result);
+            const result = importMapDataSafe(data);
             if (result.success) {
               showNotification('Map imported successfully!', 'success');
             } else {
               showNotification(result.message, 'error');
             }
-          } else {
-            showNotification('Invalid or unsafe JSON file', 'error');
+          } catch (err) {
+            showNotification('Invalid JSON file', 'error');
           }
         };
         reader.readAsText(file);
         e.preventDefault();
       }
     });
-    // --- Remove inline event handlers (e.g., onclick in HTML) ---
-    document.getElementById('confirmSelectionButton').addEventListener('click', closeIconPicker);
-    document.querySelector('.icon-picker-btn.cancel').addEventListener('click', closeIconPicker);
-    document.getElementById('helpButton').addEventListener('click', function() {
+
+    // --- ARIA roles and keyboard navigation for legend and grid ---
+    const legendIcons = document.getElementById('legendIcons');
+    legendIcons.addEventListener('keydown', function(e) {
+      const items = Array.from(legendIcons.querySelectorAll('.legend-item'));
+      const idx = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown' && idx < items.length - 1) {
+        items[idx + 1].focus();
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp' && idx > 0) {
+        items[idx - 1].focus();
+        e.preventDefault();
+      }
+    });
+
+    const gridEl = document.getElementById('gridContainer');
+    gridEl.addEventListener('keydown', function(e) {
+      const cells = Array.from(gridEl.querySelectorAll('.cell'));
+      const idx = cells.indexOf(document.activeElement);
+      if (idx === -1) return;
+      let nextIdx = idx;
+      if (e.key === 'ArrowRight' && (idx + 1) % 9 !== 0) nextIdx++;
+      else if (e.key === 'ArrowLeft' && idx % 9 !== 0) nextIdx--;
+      else if (e.key === 'ArrowDown' && idx + 9 < 81) nextIdx += 9;
+      else if (e.key === 'ArrowUp' && idx - 9 >= 0) nextIdx -= 9;
+      if (nextIdx !== idx) {
+        cells[nextIdx].focus();
+        e.preventDefault();
+      }
+    });
+
+    // --- Versioning ---
+    function getVersionList() {
+      const versions = JSON.parse(localStorage.getItem('dd_map_versions') || '[]');
+      return versions;
+    }    function saveVersion() {
+      const name = prompt('Enter a name for this version:');
+      if (!name) return;
+      
+      try {
+        const versions = getVersionList();
+        const timestamp = new Date().toISOString();
+        versions.push({ name, timestamp, data: { gridData, exploredGrid } });
+        localStorage.setItem('dd_map_versions', JSON.stringify(versions));
+        showNotification('Map version saved successfully!', 'success');
+      } catch (error) {
+        console.error('Save failed:', error);
+        showNotification('Failed to save map version', 'error');
+      }
+    }    function loadVersion() {
+      const versions = getVersionList();
+      if (!versions.length) {
+        showNotification('No saved map versions found', 'warning');
+        return;
+      }
+      
+      let msg = 'Select a version to load:\n';
+      versions.forEach((v, i) => {
+        msg += `${i + 1}: ${v.name} (${v.timestamp})\n`;
+      });
+      
+      const idx = parseInt(prompt(msg)) - 1;
+      if (isNaN(idx) || idx < 0 || idx >= versions.length) return;
+      
+      try {
+        const version = versions[idx];
+        const result = importMapDataSafe(version.data);
+        if (result.success) {
+          showNotification('Map version loaded successfully!', 'success');
+        } else {
+          showNotification(result.message, 'error');
+        }
+      } catch (error) {
+        console.error('Load failed:', error);
+        showNotification('Failed to load map version', 'error');
+      }
+    }
+    document.getElementById('saveVersionButton').onclick = saveVersion;
+    document.getElementById('loadVersionButton').onclick = loadVersion;
+    document.getElementById('saveVersionButton').textContent = 'Save Map';
+    document.getElementById('loadVersionButton').textContent = 'Load Map';    // --- Shareable Link ---
+    function getShareableLink() {
+      try {
+        const data = { gridData, exploredGrid };
+        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
+        const url = `${location.origin}${location.pathname}?map=${encoded}`;
+        
+        // Try to copy to clipboard if available
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(url).then(() => {
+            showNotification('Shareable link copied to clipboard!', 'success');
+          }).catch(() => {
+            // Fallback to prompt
+            prompt('Copy this link to share your map:', url);
+          });
+        } else {
+          // Fallback to prompt
+          prompt('Copy this link to share your map:', url);
+        }
+      } catch (error) {
+        console.error('Failed to generate shareable link:', error);
+        showNotification('Failed to generate shareable link', 'error');
+      }
+    }
+    document.getElementById('shareLinkButton').onclick = getShareableLink;    // --- Load from shareable link ---
+    (function loadFromUrl() {
+      const params = new URLSearchParams(location.search);
+      if (params.has('map')) {
+        try {
+          const decoded = decodeURIComponent(params.get('map'));
+          const json = JSON.parse(decodeURIComponent(escape(atob(decoded))));
+          const result = importMapDataSafe(json);
+          if (result.success) {
+            showNotification('Map loaded from shareable link!', 'success');
+            // Clean URL after loading
+            const newUrl = location.origin + location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+          } else {
+            showNotification(result.message, 'error');
+          }
+        } catch (error) {
+          console.error('Failed to load from link:', error);
+          showNotification('Invalid or corrupted shareable link', 'error');
+        }
+      }
+    })();    // --- Polish: Add tooltips to all controls ---
+    const tooltipMappings = {
+      'undoButton': 'Undo (Ctrl+Z)',
+      'redoButton': 'Redo (Ctrl+Y)',
+      'exportPngButton': 'Export as PNG',
+      'exportJsonButton': 'Export as JSON (Ctrl+E)',
+      'importJsonButton': 'Import from JSON (Ctrl+I)',
+      'saveVersionButton': 'Save Map Version (Ctrl+S)',
+      'loadVersionButton': 'Load Map Version (Ctrl+O)',
+      'shareLinkButton': 'Get Shareable Link',
+      'clearButton': 'Clear Map (Delete selected)',
+      'exploreAllButton': 'Mark All Cells as Explored'
+    };
+
+    Object.entries(tooltipMappings).forEach(([id, tooltip]) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.title = tooltip;
+        el.setAttribute('aria-label', tooltip);
+        el.setAttribute('tabindex', '0');
+      }
+    });
+
+    // Status notification system
+    function showNotification(message, type = 'info', duration = 3000) {
+      // Remove existing notifications
+      const existing = document.querySelector('.notification-toast');
+      if (existing) existing.remove();
+      
+      const notification = document.createElement('div');
+      notification.className = 'notification-toast';
+      notification.textContent = message;
+      
+      // Style based on type
+      const styles = {
+        info: { background: '#2196F3', color: '#fff' },
+        success: { background: '#4CAF50', color: '#fff' },
+        warning: { background: '#FF9800', color: '#fff' },
+        error: { background: '#f44336', color: '#fff' }
+      };
+      
+      Object.assign(notification.style, {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        padding: '12px 20px',
+        borderRadius: '4px',
+        fontWeight: 'bold',
+        fontSize: '14px',
+        zIndex: '10000',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        transform: 'translateX(100%)',
+        transition: 'transform 0.3s ease-in-out',
+        maxWidth: '300px',
+        wordWrap: 'break-word',
+        ...styles[type]
+      });
+      
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 10);
+      
+      // Auto remove
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+      }, duration);
+    }
+
+    // Progress indicator for long operations
+    function showProgressIndicator(text = 'Processing...') {
+      const indicator = document.createElement('div');
+      indicator.id = 'progress-indicator';
+      // Add any additional logic or DOM insertion here if needed
+    }
+
+    // --- Button Event Handlers ---
+    document.getElementById('helpButton').onclick = function() {
       document.getElementById('helpModal').style.display = 'flex';
-    });
-    document.querySelector('.help-close').addEventListener('click', function() {
+    };
+    document.querySelector('.help-close').onclick = function() {
       document.getElementById('helpModal').style.display = 'none';
+    };
+    document.getElementById('saveVersionButton').onclick = saveVersion;
+    document.getElementById('loadVersionButton').onclick = loadVersion;
+    document.getElementById('exportJsonButton').onclick = exportMapDataAsJson;
+    document.getElementById('importJsonButton').onclick = function() {
+      document.getElementById('importJsonInput').click();
+    };
+    document.getElementById('importJsonInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = JSON.parse(evt.target.result);
+          const result = importMapDataSafe(data);
+          if (result.success) {
+            showNotification('Map imported successfully!', 'success');
+          } else {
+            showNotification(result.message, 'error');
+          }
+        } catch (err) {
+          showNotification('Invalid JSON file', 'error');
+        }
+      };
+      reader.readAsText(file);
     });
-    // --- Defensive clipboard and DOM operations ---
     document.getElementById('shareLinkButton').onclick = function() {
       try {
         const data = { gridData, exploredGrid };
         const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
         const url = window.location.origin + window.location.pathname + '?map=' + encoded;
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(url).then(() => {
-            showNotification('Shareable link copied to clipboard!', 'success');
-          }, () => {
-            prompt('Copy this link to share your map:', url);
-          });
-        } else {
-          prompt('Copy this link to share your map:', url);
-        }
+        navigator.clipboard.writeText(url);
+        showNotification('Shareable link copied to clipboard!', 'success');
       } catch (e) {
         showNotification('Failed to generate link', 'error');
       }
     };
-    // --- Remove dead/duplicate code and unnecessary global variables ---
-    // (No-op here, but this is a placeholder for further manual cleanup if needed)
-    // --- Add rel=noopener to download links ---
-    // (Handled by using download attribute and not opening new tabs)
-    // --- Use strict equality in all comparisons (already present in most code) ---
-    // --- Optimize event listeners and remove unnecessary ones ---
-    // (No-op here, but this is a placeholder for further manual cleanup if needed)
-    // --- End Security & Optimization ---
+    // Remove description box toggle JS if present
+    try {
+      document.getElementById('descriptionToggleBtn').onclick = null;
+      document.getElementById('descriptionToggleBtn').remove();
+    } catch(e) {}
   </script>
 </body>
 </html>
+`
