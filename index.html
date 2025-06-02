@@ -37,32 +37,61 @@
       background: rgba(30,30,30,0.85);
       color: #ffe066;
       border-radius: 10px;
-      padding: 18px;
-      min-width: 220px;
-      max-width: 260px;
-      font-size: 1em;
-      box-shadow: 0 2px 12px #2228;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 100;
+      padding: 12px;
+      min-width: 200px;
+      max-width: 220px;
+      width: 200px;
+      font-size: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+      position: static;
+      box-sizing: border-box;
+      transition: max-height 0.3s, padding 0.3s;
+      overflow: hidden;
+      margin-left: 40px;
+      margin-top: 20px;
+      align-self: flex-start;
     }
-    .description-title {
-      font-weight: bold;
-      font-size: 1.1em;
+    
+    .description-box.collapsed {
+      max-height: 38px;
+      padding-bottom: 0;
+    }
+    
+    .description-toggle {
+      background: none;
+      border: none;
       color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 0;
       margin-bottom: 8px;
+      width: 100%;
+      text-align: left;
+    }
+    
+    .description-toggle:hover {
+      color: #ffe066;
+    }
+    
+    .description-toggle-title {
+      font-size: 1.1em;
       letter-spacing: 0.03em;
     }
+    
     .description-content {
       color: #ffe066;
       font-size: 0.98em;
       line-height: 1.6;
+      margin-top: 8px;
     }    .grid-outer {
       display: flex;
       flex-direction: column;
       align-items: center; /* Center the grid horizontally */
-      margin-left: 300px; /* Make space for the description box */
+      margin-left: 300px; /* Make space for the controls */
     }    .main-controls {
       width: 100%;
       display: flex;
@@ -74,7 +103,7 @@
       margin: 20px 0 20px 0;
       max-width: 280px;
       position: absolute;
-      top: 250px; /* Position below description box */
+      top: 150px; /* Position at reasonable height */
       left: 0;
       z-index: 99;
     }
@@ -854,18 +883,13 @@
     <div class="server-selector">
       <label for="serverLocation">Server Location:</label>
       <select id="serverLocation">
-        <option value="UTC">Global (UTC)</option>
-        <option value="America/New_York">US East (EST/EDT)</option>
-        <option value="America/Chicago">US Central (CST/CDT)</option>
-        <option value="America/Denver">US Mountain (MST/MDT)</option>
-        <option value="America/Los_Angeles">US West (PST/PDT)</option>
-        <option value="Europe/London">UK (GMT/BST)</option>
-        <option value="Europe/Berlin">Central Europe (CET/CEST)</option>
-        <option value="Europe/Moscow">Russia West (MSK)</option>
-        <option value="Asia/Tokyo">Japan (JST)</option>
-        <option value="Asia/Shanghai">China (CST)</option>
-        <option value="Australia/Sydney">Australia East (AEST/AEDT)</option>
-        <option value="Pacific/Auckland">New Zealand (NZST/NZDT)</option>
+        <option value="US East">US East (EST/EDT)</option>
+        <option value="US Central">US Central (CST/CDT)</option>
+        <option value="US West">US West (PST/PDT)</option>
+        <option value="South America">US West (PST/PDT)</option>
+        <option value="Europe">Central Europe (CET/CEST)</option>
+        <option value="Asia">Asia (CST)</option>
+        <option value="Australia">Australia East (AEST/AEDT)</option>
       </select>
     </div>
     <div class="timer-phases" id="timerPhases">
@@ -877,21 +901,10 @@
         <span class="phase-label">🌪️ Storm Hits:</span>
         <span class="phase-time" id="hitTime">calculating...</span>
       </div>
-      <div class="timer-phase" id="nextPhase">
-        <span class="phase-label">🕒 Next Storm:</span>
-        <span class="phase-time" id="nextTime">calculating...</span>
-      </div>
     </div>
   </div>
   <div class="main-flex">
-    <div class="description-box">
-      <div class="description-title">How to Use</div>
-      <div class="description-content">
-        - Click on any cell to set its content, or drag and drop from Legend.<br>
-        - When you’re finished updating the map, use the export to PNG button to download your grid or clear to start over.<br>
-        - You can import/export your map as JSON, or save/load named versions.<br>
-        - You can set the time to either UTC or your local time for the export to png.
-      </div>    </div>    <div class="main-controls">
+    <div class="main-controls">
       <button id="helpButton" class="pretty-btn">Help & Shortcuts</button>
       <button id="saveVersionButton" class="pretty-btn">Save Map</button>
       <button id="loadVersionButton" class="pretty-btn">Load Map</button>
@@ -912,6 +925,18 @@
         <span class="legend-title">Legend</span>
       </button>
       <div id="legendIcons" role="list" aria-label="Map legend icons"></div>
+    </div>
+    <div class="description-box" id="descriptionPanel">
+      <button class="description-toggle" id="descriptionToggleBtn" aria-label="Toggle description" tabindex="0" title="Show/hide description">
+        <span id="descriptionToggleIcon">▼</span>
+        <span class="description-toggle-title">How to Use</span>
+      </button>
+      <div class="description-content" id="descriptionContent">
+        - Click on any cell to set its content, or drag and drop from Legend.<br>
+        - When you're finished updating the map, use the export to PNG button to download your grid or clear to start over.<br>
+        - You can import/export your map as JSON, or save/load named versions.<br>
+        - You can set the time to either UTC or your local time for the export to png.
+      </div>
     </div>
     <div class="side-controls">
       <div class="time-toggle">
@@ -1802,10 +1827,8 @@
     function updateStormTimer() {
       const buildupTimeEl = document.getElementById('buildupTime');
       const hitTimeEl = document.getElementById('hitTime');
-      const nextTimeEl = document.getElementById('nextTime');
       const buildupPhase = document.getElementById('buildupPhase');
       const hitPhase = document.getElementById('hitPhase');
-      const nextPhase = document.getElementById('nextPhase');
       
       const now = new Date();
       const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
@@ -1843,14 +1866,13 @@
         
         updatePhaseDisplay(buildupTimeEl, newBuildupDiff, newBuildupStart);
         updatePhaseDisplay(hitTimeEl, newHitDiff, nextStorm);
-        updatePhaseDisplay(nextTimeEl, newHitDiff, nextStorm);
+
         if (nextPhase) nextPhase.classList.add('active');
       } else if (buildupDiff <= 0) {
         // Currently in buildup phase or storm is hitting
         updatePhaseDisplay(buildupTimeEl, 0, buildupStart, 'ACTIVE');
         updatePhaseDisplay(hitTimeEl, hitDiff, nextStorm);
-        updatePhaseDisplay(nextTimeEl, hitDiff, nextStorm);
-        
+                
         if (hitDiff <= 300000) { // Less than 5 minutes to storm
           if (hitPhase) hitPhase.classList.add('critical');
         } else {
@@ -1861,8 +1883,7 @@
         // Waiting for next storm
         updatePhaseDisplay(buildupTimeEl, buildupDiff, buildupStart);
         updatePhaseDisplay(hitTimeEl, hitDiff, nextStorm);
-        updatePhaseDisplay(nextTimeEl, nextDiff, nextStorm);
-        
+                
         if (buildupDiff <= 3600000) { // Less than 1 hour to buildup
           if (buildupPhase) buildupPhase.classList.add('warning');
         }
@@ -2111,6 +2132,21 @@
     };
 
     document.getElementById('legendToggleBtn').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.click();
+      }
+    });
+
+    // Description box toggle functionality
+    document.getElementById('descriptionToggleBtn').onclick = function() {
+      const description = document.getElementById('descriptionPanel');
+      const icon = document.getElementById('descriptionToggleIcon');
+      description.classList.toggle('collapsed');
+      icon.textContent = description.classList.contains('collapsed') ? '►' : '▼';
+    };
+
+    document.getElementById('descriptionToggleBtn').addEventListener('keydown', function(e) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         this.click();
@@ -2777,4 +2813,3 @@
   </div>
 </body>
 </html>
-`
