@@ -97,10 +97,10 @@
       align-self: flex-start;
       color: #fff;
       background: rgba(30,30,30,0.7);
-      padding: 10px 10px;
+      padding: 10px 10px 18px 10px;
       border-radius: 8px;
-      min-width: 120px;
-      max-width: 160px;
+      min-width: 140px;
+      max-width: 180px;
       font-size: 13px;
       position: static;
       box-sizing: border-box;
@@ -147,36 +147,96 @@
       color: #ffe066 !important;
       opacity: 0.7;
     }
+    /* Add to your <style> section for even better contrast */
+    #useLocalTime {
+      accent-color: #ffe066;
+    }
+    #timeModeLabel {
+      color: #fff700;
+      font-weight: bold;
+    }
+    .side-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 18px;
+      align-items: stretch;
+    }
+    .time-toggle label {
+      color: #ffe066;
+      font-weight: bold;
+      font-size: 1.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #useLocalTime {
+      accent-color: #ffe066;
+      width: 18px;
+      height: 18px;
+    }
+    #timeModeLabel {
+      color: #fff700;
+      font-weight: bold;
+      margin-left: 2px;
+    }
+    .pretty-btn {
+      background: linear-gradient(90deg, #ffe066 0%, #ffd700 100%);
+      color: #222;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 0;
+      font-size: 1em;
+      font-weight: bold;
+      box-shadow: 0 2px 8px #2224;
+      cursor: pointer;
+      margin: 0;
+      transition: background 0.2s, color 0.2s, transform 0.1s;
+      outline: none;
+    }
+    .pretty-btn:hover, .pretty-btn:focus {
+      background: linear-gradient(90deg, #fff6b0 0%, #ffe066 100%);
+      color: #111;
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 4px 16px #ffe06655;
+    }
   </style>
 </head>
 <body>
   <h1>Dune Awakening Deep Desert Mapping</h1>
-  <!-- Add this toggle button above or near your controls/buttons, e.g. after <h1> -->
   <div style="margin-bottom:10px;">
-    <label>
-      <input type="checkbox" id="useLocalTime" checked>
-      Show date/time in <span id="timeModeLabel">Local</span> time
+    <label style="color:#ffe066; font-weight:bold; font-size:1.1em;">
+      <input type="checkbox" id="useLocalTime" checked style="accent-color:#ffe066;">
+      Show date/time in <span id="timeModeLabel" style="color:#fff700;">Local</span> time
     </label>
   </div>
-  <p>Click on any cell to set its content. When you’re finished updating the map, use the export button to review your grid or clear to start over.</p>
+  <p>Click on any cell to set its content, or drag and drop from Legend. When you’re finished updating the map, use the export to png or json button to review your grid or clear to start over. You can also save and load the current state of your map locally. Lastly you can set the time to either UTC or your local time.</p>
   <div class="main-flex">
     <div class="grid-outer">
       <div style="display:flex;">
         <div class="grid-container" id="gridContainer"></div>
       </div>
-      <div class="controls" style="margin-top:30px; text-align:center;">
-        <button id="clearButton">Clear Map</button>
-        <button id="exploreAllButton">Explore All</button>
-        <button id="exportPngButton">Export as PNG</button>
-        <button id="exportJsonButton">Export as JSON</button>
-        <button id="saveLocalButton">Save Map Locally</button>
-        <button id="loadLocalButton">Load Map</button>
-      </div>
     </div>
     <div class="legend">
       <div class="legend-title">Legend</div>
       <div id="legendIcons"></div>
+      <div class="side-controls">
+        <div class="time-toggle">
+          <label>
+            <input type="checkbox" id="useLocalTime" checked>
+            <span id="timeModeLabel">Local</span> time
+          </label>
+        </div>
+        <button id="exploreAllButton" class="pretty-btn">Explore All</button>
+        <button id="clearButton" class="pretty-btn">Clear Map</button>
+      </div>
     </div>
+  </div>
+  <div class="controls" style="margin-top:30px; text-align:center;">
+    <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
+    <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
+    <button id="saveLocalButton" class="pretty-btn">Save Map Locally</button>
+    <button id="loadLocalButton" class="pretty-btn">Load Map</button>
   </div>
 
   <!-- Icon Picker Modal -->
@@ -769,12 +829,16 @@
   </script>
   <div style="margin-top:40px; text-align:center;">
     <a href="https://awakening.wiki/Fremen_with_Benefits" target="_blank" style="text-decoration:none; color:inherit;">
-      <img src="fremen_with_benefits.png" alt="Fremen with Benefits" style="max-width:220px; width:100%; border-radius:12px; box-shadow:0 2px 16px #222; margin-bottom:10px;">
+      <img src="fwb.png" alt="Fremen with Benefits" style="max-width:220px; width:100%; border-radius:12px; box-shadow:0 2px 16px #222; margin-bottom:10px;">
       <div style="font-family:Arial,sans-serif; font-size:1.2em; color:#ffe066; font-weight:bold;">
         Created by Fremen with Benefits
       </div>
     </a>
   </div>
+  <div style="margin-top:18px; text-align:center;">
+    <span style="color:#bbb; font-size:0.95em; background:rgba(30,30,30,0.7); padding:6px 18px; border-radius:8px; display:inline-block;">
+      Disclaimer: All assets and watermarks belong to Fremen with Benefits and Xtrophic.
+    </span>
+  </div>
 </body>
 </html>
-``` 
