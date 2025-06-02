@@ -78,23 +78,15 @@
       z-index: 1;
       position: relative;
       touch-action: manipulation;
-      transition: transform 0.2s cubic-bezier(.4,2,.6,1), box-shadow 0.2s;
-      will-change: transform;
-    }
-    .grid-pan-wrapper {
-      width: 900px;
-      height: 900px;
-      overflow: hidden;
-      position: relative;
-      touch-action: pan-x pan-y;
-      background: transparent;
     }
     @media (max-width: 1000px) {
-      .grid-pan-wrapper {
+      .grid-container {
         width: 98vw;
         height: 98vw;
         max-width: 98vw;
         max-height: 98vw;
+        grid-template-columns: repeat(9, 1fr);
+        grid-template-rows: repeat(9, 1fr);
       }
     }
     .cell {
@@ -439,24 +431,17 @@
       <div class="description-title">How to Use</div>
       <div class="description-content">
         - Click on any cell to set its content, or drag and drop from Legend.<br>
-        
         - When you’re finished updating the map, use the export to PNG button to download your grid or clear to start over.<br>
-        
-        - You can save and load the current state of your map locally.<br>
-        
+        - You can import/export your map as JSON, or save/load named versions.<br>
         - You can set the time to either UTC or your local time for the export to png.
+      </div>
+      <div style="margin-top:16px; text-align:center;">
+        <button id="shareLinkButton" class="pretty-btn">Get Shareable Link</button>
       </div>
     </div>
     <div class="grid-outer">
-      <div style="display:flex; flex-direction:column; align-items:center;">
-        <div style="margin-bottom:8px; display:flex; gap:8px;">
-          <button id="zoomInBtn" class="pretty-btn" title="Zoom In" aria-label="Zoom In">＋</button>
-          <button id="zoomOutBtn" class="pretty-btn" title="Zoom Out" aria-label="Zoom Out">－</button>
-          <button id="resetZoomBtn" class="pretty-btn" title="Reset Zoom" aria-label="Reset Zoom">⟳</button>
-        </div>
-        <div class="grid-pan-wrapper" id="gridPanWrapper" style="overflow:hidden; touch-action:pan-x pan-y; width:fit-content; height:fit-content;">
-          <div class="grid-container" id="gridContainer" role="grid" aria-label="Map grid"></div>
-        </div>
+      <div style="display:flex;">
+        <div class="grid-container" id="gridContainer" role="grid" aria-label="Map grid"></div>
       </div>
     </div>
     <div class="legend" id="legendPanel">
@@ -465,21 +450,21 @@
         <span class="legend-title">Legend</span>
       </button>
       <div id="legendIcons" role="list" aria-label="Map legend icons"></div>
-      <div class="side-controls">
-        <div class="time-toggle">
-          <label class="switch-label">
-            <span id="timeModeLabel" style="margin-right:10px;">Local</span>
-            <label class="switch">
-              <input type="checkbox" id="useLocalTime" checked>
-              <span class="slider"></span>
-            </label>
-            <span id="utcModeLabel" style="margin-left:10px;">UTC</span>
+    </div>
+    <div class="side-controls">
+      <div class="time-toggle">
+        <label class="switch-label">
+          <span id="timeModeLabel" style="margin-right:10px;">Local</span>
+          <label class="switch">
+            <input type="checkbox" id="useLocalTime" checked>
+            <span class="slider"></span>
           </label>
-        </div>
-        <button id="exploreAllButton" class="pretty-btn">Explore All</button>
-        <button id="clearButton" class="pretty-btn">Clear Map</button>
-        <button id="highContrastBtn" class="pretty-btn" aria-pressed="false" title="Toggle high contrast mode">High Contrast</button>
+          <span id="utcModeLabel" style="margin-left:10px;">UTC</span>
+        </label>
       </div>
+      <button id="exploreAllButton" class="pretty-btn">Explore All</button>
+      <button id="clearButton" class="pretty-btn">Clear Map</button>
+      <button id="highContrastBtn" class="pretty-btn" aria-pressed="false" title="Toggle high contrast mode">High Contrast</button>
     </div>
   </div>
   <div class="controls" style="margin-top:30px; text-align:center;">
@@ -487,27 +472,22 @@
     <button id="redoButton" class="pretty-btn" title="Redo (Ctrl+Y)">Redo</button>
     <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
     <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
-    <button id="exportSvgButton" class="pretty-btn">Export as SVG</button>
-    <button id="saveLocalButton" class="pretty-btn">Save Map Locally</button>
-    <button id="loadLocalButton" class="pretty-btn">Load Map</button>
     <button id="importJsonButton" class="pretty-btn">Import from JSON</button>
-    <button id="saveVersionButton" class="pretty-btn">Save Version</button>
-    <button id="loadVersionButton" class="pretty-btn">Load Version</button>
-    <button id="shareLinkButton" class="pretty-btn">Get Shareable Link</button>
+    <button id="saveVersionButton" class="pretty-btn">Save Map</button>
+    <button id="loadVersionButton" class="pretty-btn">Load Map</button>
     <input type="file" id="importJsonInput" accept="application/json" style="display:none;" />
-    <a id="feedbackLink" href="https://forms.gle/2Q8Qw8Qw8Qw8Qw8Q9" target="_blank" class="pretty-btn" style="display:inline-block; text-decoration:none;">Feedback</a>
   </div>
 
   <!-- Icon Picker Modal -->
-  <div id="iconPickerModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:1000;">
-    <div style="background:#fff; padding:20px; border-radius:8px; max-width:600px;">
+  <div id="iconPickerModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.25); align-items:center; justify-content:center; z-index:1000;">
+    <div style="background:rgba(255,255,255,0.92); padding:20px; border-radius:8px; max-width:600px; box-shadow:0 4px 32px #0008; position:relative;">
       <h3>Select an Icon</h3>
       <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
       <div style="margin-top:10px; display:flex; gap:10px;">
-        <button id="checkSelectionButton" type="button">Check</button>
         <button id="confirmSelectionButton" type="button">Confirm</button>
         <button onclick="closeIconPicker()">Cancel</button>
       </div>
+      <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;">Icon placed!</div>
     </div>
   </div>
 
@@ -717,6 +697,7 @@
 
     // Batch icon selection for multi-cell
     function selectIcon(icon) {
+      let placed = false;
       if (selectedCells.size > 1) {
         pushUndo();
         selectedCells.forEach(key => {
@@ -724,8 +705,10 @@
           const idx = gridData[row][col].indexOf(icon);
           if (idx === -1) {
             gridData[row][col].push(icon);
+            placed = true;
           } else {
             gridData[row][col].splice(idx, 1);
+            placed = true;
           }
         });
         rerenderAllCells();
@@ -737,11 +720,32 @@
         const idx = gridData[row][col].indexOf(icon);
         if (idx === -1) {
           gridData[row][col].push(icon);
+          placed = true;
         } else {
           gridData[row][col].splice(idx, 1);
+          placed = true;
         }
         renderCellIcons(currentCell, gridData[row][col]);
       }
+      if (placed) {
+        showIconPickerFeedback();
+      }
+    }
+
+    function showIconPickerFeedback() {
+      const feedback = document.getElementById('iconPickerFeedback');
+      if (!feedback) return;
+      feedback.textContent = 'Icon placed!';
+      feedback.style.display = 'block';
+      feedback.style.opacity = '1';
+      setTimeout(() => {
+        feedback.style.transition = 'opacity 0.5s';
+        feedback.style.opacity = '0';
+        setTimeout(() => {
+          feedback.style.display = 'none';
+          feedback.style.transition = '';
+        }, 500);
+      }, 600);
     }
 
     function renderCellIcons(cell, icons) {
@@ -1131,24 +1135,6 @@
       makeCellsDroppable();
     }
 
-    document.getElementById('checkSelectionButton').onclick = function() {
-      if (currentCell) {
-        const row = currentCell.getAttribute('data-row');
-        const col = currentCell.getAttribute('data-col');
-        const icons = gridData[row][col];
-        if (icons.length === 0) {
-          alert("No icons selected for this cell.");
-        } else {
-          alert(
-            "Cell " +
-            String.fromCharCode(65 + parseInt(row)) +
-            (parseInt(col) + 1) +
-            " contains: " +
-            icons.map(i => iconNames[iconList.indexOf(i)]).join(", ")
-          );
-        }
-      }
-    };
     document.getElementById('confirmSelectionButton').onclick = function() {
       closeIconPicker();
     };
@@ -1161,30 +1147,6 @@
       }
       rerenderAllCells();
       onMapChange();
-    }
-
-    function saveMapLocally() {
-      const saveData = { gridData, exploredGrid };
-      localStorage.setItem('dd_map_save', JSON.stringify(saveData));
-      alert('Map saved locally!');
-    }
-
-    function loadMapLocally() {
-      const saveData = localStorage.getItem('dd_map_save');
-      if (!saveData) return alert('No saved map found.');
-      try {
-        const parsed = JSON.parse(saveData);
-        if (parsed.gridData && parsed.exploredGrid) {
-          gridData = parsed.gridData;
-          exploredGrid = parsed.exploredGrid;
-          rerenderAllCells();
-          alert('Map loaded!');
-        } else {
-          alert('Saved data is invalid.');
-        }
-      } catch {
-        alert('Failed to load map.');
-      }
     }
 
     function updateStormTimer() {
@@ -1215,11 +1177,22 @@
         `Next Coriolis Storm: ${days}d ${hours}h ${mins}m ${secs}s (Tuesday 04:00 UTC)`;
     }
 
+    // --- Time Mode Toggle (reverse logic: checked = UTC, unchecked = Local) ---
+    document.getElementById('useLocalTime').addEventListener('change', function() {
+      useLocalTime = !this.checked;
+      updateTimeToggleHighlight();
+    });
+    // Set initial state: checked = UTC, unchecked = Local
+    useLocalTime = !document.getElementById('useLocalTime').checked;
+    updateTimeToggleHighlight();
+
     function updateTimeToggleHighlight() {
       document.getElementById('timeModeLabel').style.fontWeight = useLocalTime ? 'bold' : 'normal';
       document.getElementById('timeModeLabel').style.opacity = useLocalTime ? '1' : '0.5';
       document.getElementById('utcModeLabel').style.fontWeight = useLocalTime ? 'normal' : 'bold';
       document.getElementById('utcModeLabel').style.opacity = useLocalTime ? '0.5' : '1';
+      // Visually update the switch to match logic
+      document.getElementById('useLocalTime').checked = !useLocalTime;
     }
 
     function autoSaveMap() {
@@ -1276,15 +1249,8 @@
 
     initializeApp();
 
-    document.getElementById('useLocalTime').addEventListener('change', function() {
-      useLocalTime = this.checked;
-      updateTimeToggleHighlight();
-    });
-
     document.getElementById('clearButton').onclick = clearMap;
     document.getElementById('exportPngButton').onclick = exportAsPng;
-    document.getElementById('saveLocalButton').onclick = saveMapLocally;
-    document.getElementById('loadLocalButton').onclick = loadMapLocally;
     document.getElementById('exploreAllButton').onclick = exploreAllCells;
     document.getElementById('undoButton').onclick = undo;
     document.getElementById('redoButton').onclick = redo;
@@ -1303,7 +1269,7 @@
       }
     });
 
-    ['exportPngButton','saveLocalButton','loadLocalButton','exploreAllButton','clearButton'].forEach(id => {
+    ['exportPngButton','exploreAllButton','clearButton'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
         el.title = el.textContent;
@@ -1448,11 +1414,7 @@
       if (!name) return;
       const versions = getVersionList();
       const timestamp = new Date().toISOString();
-      versions.push({
-        name,
-        timestamp,
-        data: { gridData, exploredGrid }
-      });
+      versions.push({ name, timestamp, data: { gridData, exploredGrid } });
       localStorage.setItem('dd_map_versions', JSON.stringify(versions));
       alert('Version saved!');
     }
@@ -1472,6 +1434,8 @@
     }
     document.getElementById('saveVersionButton').onclick = saveVersion;
     document.getElementById('loadVersionButton').onclick = loadVersion;
+    document.getElementById('saveVersionButton').textContent = 'Save Map';
+    document.getElementById('loadVersionButton').textContent = 'Load Map';
 
     // --- Shareable Link ---
     function getShareableLink() {
@@ -1495,141 +1459,20 @@
             rerenderAllCells();
             alert('Loaded map from link!');
           }
-        } catch {}
+        } catch (e) {
+          alert('Failed to load map from link.');
+        }
       }
     })();
 
-    // --- SVG Export ---
-    document.getElementById('exportSvgButton').onclick = function() {
-      const gridSize = 9;
-      const cellSize = 100;
-      const gap = 2;
-      const svgWidth = gridSize * (cellSize + gap);
-      const svgHeight = gridSize * (cellSize + gap);
-      let svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${svgWidth}' height='${svgHeight}' style='background:#000'>`;
-      for (let row = 8; row >= 0; row--) {
-        for (let col = 0; col < 9; col++) {
-          const x = col * (cellSize + gap);
-          const y = (8 - row) * (cellSize + gap);
-          svg += `<rect x='${x}' y='${y}' width='${cellSize}' height='${cellSize}' fill='${exploredGrid[row][col] ? '#222' : '#111'}' stroke='#ffe066' stroke-width='2'/>`;
-          svg += `<text x='${x + 8}' y='${y + 22}' font-size='18' fill='#ffe066' font-family='Arial' font-weight='bold'>${String.fromCharCode(65 + row) + (col + 1)}</text>`;
-          gridData[row][col].forEach((icon, i) => {
-            svg += `<text x='${x + 20}' y='${y + 40 + i * 22}' font-size='16' fill='#fff' font-family='Arial'>${icon.replace('Icon','').replace('.png','')}</text>`;
-          });
-        }
+    // --- Polish: Add tooltips to all controls ---
+    ['undoButton','redoButton','exportPngButton','exportJsonButton','importJsonButton','saveVersionButton','loadVersionButton','shareLinkButton','highContrastBtn'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (!el.title) el.title = el.textContent;
+        el.setAttribute('aria-label', el.textContent);
+        el.setAttribute('tabindex', '0');
       }
-      svg += '</svg>';
-      const blob = new Blob([svg], { type: 'image/svg+xml' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'dune_map.svg';
-      link.click();
-    };
-
-    // --- Zoom & Pan ---
-    let gridScale = 1;
-    let gridTranslate = { x: 0, y: 0 };
-    const gridPanWrapper = document.getElementById('gridPanWrapper');
-    function updateGridTransform() {
-      gridEl.style.transform = `scale(${gridScale}) translate(${gridTranslate.x / gridScale}px, ${gridTranslate.y / gridScale}px)`;
-    }
-    function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
-    function zoomGrid(factor, centerX, centerY) {
-      const prevScale = gridScale;
-      gridScale = clamp(gridScale * factor, 0.5, 3);
-      if (centerX !== undefined && centerY !== undefined) {
-        const rect = gridEl.getBoundingClientRect();
-        const dx = (centerX - rect.left - gridTranslate.x) / prevScale;
-        const dy = (centerY - rect.top - gridTranslate.y) / prevScale;
-        gridTranslate.x -= dx * (gridScale - prevScale);
-        gridTranslate.y -= dy * (gridScale - prevScale);
-      }
-      updateGridTransform();
-    }
-    function panGrid(dx, dy) {
-      gridTranslate.x += dx;
-      gridTranslate.y += dy;
-      updateGridTransform();
-    }
-    function resetGridZoom() {
-      gridScale = 1;
-      gridTranslate = { x: 0, y: 0 };
-      updateGridTransform();
-    }
-    document.getElementById('zoomInBtn').onclick = () => zoomGrid(1.2, gridEl.offsetWidth/2, gridEl.offsetHeight/2);
-    document.getElementById('zoomOutBtn').onclick = () => zoomGrid(1/1.2, gridEl.offsetWidth/2, gridEl.offsetHeight/2);
-    document.getElementById('resetZoomBtn').onclick = resetGridZoom;
-    gridPanWrapper.addEventListener('wheel', function(e) {
-      if (e.ctrlKey || e.metaKey) return;
-      e.preventDefault();
-      const factor = e.deltaY < 0 ? 1.1 : 0.9;
-      zoomGrid(factor, e.clientX, e.clientY);
-    }, { passive: false });
-    let isPanning = false, panStart = {x:0, y:0};
-    gridPanWrapper.addEventListener('mousedown', function(e) {
-      if (e.button !== 0) return;
-      isPanning = true;
-      panStart = { x: e.clientX - gridTranslate.x, y: e.clientY - gridTranslate.y };
-      gridPanWrapper.style.cursor = 'grabbing';
-    });
-    document.addEventListener('mousemove', function(e) {
-      if (!isPanning) return;
-      gridTranslate.x = e.clientX - panStart.x;
-      gridTranslate.y = e.clientY - panStart.y;
-      updateGridTransform();
-    });
-    document.addEventListener('mouseup', function() {
-      isPanning = false;
-      gridPanWrapper.style.cursor = '';
-    });
-    let lastTouchDist = null, lastTouchCenter = null;
-    gridPanWrapper.addEventListener('touchstart', function(e) {
-      if (e.touches.length === 2) {
-        lastTouchDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        lastTouchCenter = {
-          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-          y: (e.touches[0].clientY + e.touches[1].clientY) / 2
-        };
-      }
-    });
-    gridPanWrapper.addEventListener('touchmove', function(e) {
-      if (e.touches.length === 1 && !lastTouchDist) {
-        gridTranslate.x += e.touches[0].clientX - (lastTouchCenter?.x || e.touches[0].clientX);
-        gridTranslate.y += e.touches[0].clientY - (lastTouchCenter?.y || e.touches[0].clientY);
-        lastTouchCenter = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        updateGridTransform();
-      } else if (e.touches.length === 2) {
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        const center = {
-          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-          y: (e.touches[0].clientY + e.touches[1].clientY) / 2
-        };
-        if (lastTouchDist) {
-          const factor = dist / lastTouchDist;
-          zoomGrid(factor, center.x, center.y);
-        }
-        lastTouchDist = dist;
-        lastTouchCenter = center;
-      }
-    }, { passive: false });
-    gridPanWrapper.addEventListener('touchend', function(e) {
-      if (e.touches.length < 2) lastTouchDist = null;
-      if (e.touches.length === 0) lastTouchCenter = null;
-    });
-    ['zoomInBtn','zoomOutBtn','resetZoomBtn'].forEach(id => {
-      const btn = document.getElementById(id);
-      btn.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          btn.click();
-        }
-      });
     });
   </script>
   <div style="margin-top:40px; text-align:center;">
