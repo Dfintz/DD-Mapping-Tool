@@ -118,48 +118,51 @@
       z-index: 2;
       font-weight: bold;
       text-shadow: 1px 1px 2px #000;
-    }
-    .cell-icons {
-      display: flex;
-      flex-direction: column;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      justify-content: flex-start;
+    }    .cell-icons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 2px;
+      align-items: center;
+      justify-items: center;
       width: 100%;
       height: 100%;
-      padding-top: 20px;
+      padding: 22px 4px 4px 4px;
       z-index: 1;
     }
-    .cell-icon-row {
+    .cell-icon-container {
       display: flex;
-      flex-direction: row;
-      margin-bottom: 2px;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      min-height: 24px;
     }
     .cell-icons img {
-      width: 36px;
-      height: 36px;
-      margin: 2px;
-      background: #222;
-      border-radius: 4px;
-      border: 1px solid #444;
+      width: 28px;
+      height: 28px;
+      background: rgba(34, 34, 34, 0.8);
+      border-radius: 3px;
+      border: 1px solid #555;
       pointer-events: none;
       user-select: none;
-    }
-    .legend {
+      object-fit: contain;
+    }.legend {
       margin-left: 40px;
       align-self: flex-start;
       color: #fff;
-      background: rgba(30,30,30,0.7);
-      padding: 10px 10px 18px 10px;
-      border-radius: 8px;
-      min-width: 140px;
-      max-width: 180px;
-      font-size: 13px;
+      background: rgba(30,30,30,0.85);
+      padding: 12px;
+      border-radius: 10px;
+      min-width: 200px;
+      max-width: 220px;
+      width: 200px;
+      font-size: 14px;
       position: static;
       box-sizing: border-box;
-      width: 180px;
       transition: max-height 0.3s, padding 0.3s;
       overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
     }
     .legend.collapsed {
       max-height: 38px;
@@ -325,6 +328,17 @@
         min-width: 0;
         max-width: 98vw;
         width: 98vw;
+      }      .main-controls {
+        flex-direction: column;
+        gap: 8px;
+        margin: 16px auto;
+        width: 98vw;
+        max-width: 98vw;
+      }
+      .main-controls .pretty-btn {
+        width: 100%;
+        min-width: unset;
+        margin: 2px 0;
       }
       .controls,
       #stormTimer {
@@ -345,10 +359,16 @@
       }
       .cell-label {
         font-size: 11px;
+      }      .cell-icons img {
+        width: 18px;
+        height: 18px;
       }
-      .cell-icons img {
-        width: 22px;
-        height: 22px;
+      .cell-icons {
+        padding: 18px 2px 2px 2px;
+        gap: 1px;
+      }
+      .cell-icon-container {
+        min-height: 18px;
       }
       .legend {
         min-width: 0;
@@ -360,10 +380,17 @@
       .legend.collapsed {
         max-height: 38px;
         padding-bottom: 0;
-      }
-      .legend-item img {
+      }      .legend-item img {
         width: 24px;
         height: 24px;
+      }
+      .legend-item {
+        padding: 4px 2px;
+        gap: 6px;
+        margin-bottom: 2px;
+      }
+      .legend-item span {
+        font-size: 11px;
       }
       .pretty-btn {
         min-width: 120px;
@@ -376,11 +403,124 @@
     }
     [aria-label][tabindex]:focus {
       outline: 2px solid #ffe066;
+    }    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      margin-bottom: 4px;
+    }
+    
+    .legend-item:hover {
+      background-color: rgba(255, 224, 102, 0.1);
+    }
+    
+    .legend-item:focus {
+      outline: 2px solid #ffe066;
+      background-color: rgba(255, 224, 102, 0.1);
     }
 
     .legend-item img {
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border-radius: 3px;
+      background: rgba(34, 34, 34, 0.8);
+      border: 1px solid #555;
+    }
+    
+    .legend-item span {
+      color: #fff;
+      font-size: 13px;
+      font-weight: normal;
+    }
+
+    /* Icon Picker Modal Styling */
+    #iconPickerModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .icon-picker-content {
+      background: rgba(40, 40, 40, 0.95);
+      border: 2px solid #ffe066;
+      padding: 24px;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+    
+    .icon-picker-content h3 {
+      color: #ffe066;
+      margin: 0 0 16px 0;
+      font-size: 1.3em;
+      text-align: center;
+    }
+    
+    .icon-picker-buttons {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    
+    .icon-picker-btn {
+      background: linear-gradient(90deg, #ffe066 0%, #ffd700 100%);
+      color: #222;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 100px;
+    }
+    
+    .icon-picker-btn:hover {
+      background: linear-gradient(90deg, #fff6b0 0%, #ffe066 100%);
+      transform: translateY(-1px);
+    }
+    
+    #iconPickerGrid img {
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      background: rgba(34, 34, 34, 0.8);
+      padding: 2px;
+      transition: all 0.2s;
+    }
+    
+    #iconPickerGrid img:hover {
+      background: rgba(255, 224, 102, 0.2);
+      border-color: #ffe066;
+      transform: scale(1.1);
+    }
+
+    .icon-picker-btn.cancel {
+      background: linear-gradient(90deg, #666 0%, #888 100%);
+      color: #fff;
+    }
+    
+    .icon-picker-btn.cancel:hover {
+      background: linear-gradient(90deg, #777 0%, #999 100%);
     }
 
     body.high-contrast {
@@ -416,10 +556,25 @@
     }
     body.high-contrast .legend-toggle {
       color: #fff700 !important;
-    }
-    body.high-contrast .explored-toggle {
+    }    body.high-contrast .explored-toggle {
       color: #fff700 !important;
       text-shadow: none !important;
+    }
+    body.high-contrast .icon-picker-content {
+      background: #000 !important;
+      border: 3px solid #fff700 !important;
+    }
+    body.high-contrast .icon-picker-content h3 {
+      color: #fff700 !important;
+    }
+    body.high-contrast .icon-picker-btn {
+      background: #000 !important;
+      color: #fff700 !important;
+      border: 2px solid #fff700 !important;
+    }
+    body.high-contrast .icon-picker-btn:hover {
+      background: #222 !important;
+      color: #fff !important;
     }
   </style>
 </head>
@@ -441,8 +596,23 @@
         - You can set the time to either UTC or your local time for the export to png.
       </div>
     </div>
-    <!-- Unified controls row under description box -->
-    <div class="main-controls" style="width:100%; display:flex; flex-direction:row; flex-wrap:wrap; justify-content:center; align-items:center; gap:14px; margin-bottom:18px;">
+    .main-controls {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin: 20px auto;
+      max-width: 800px;
+    }
+    
+    /* Unified controls row under description box */
+    .main-controls .pretty-btn {
+      margin: 4px;
+      min-width: 160px;
+    }    <div class="main-controls">
       <button id="saveVersionButton" class="pretty-btn">Save Map</button>
       <button id="loadVersionButton" class="pretty-btn">Load Map</button>
       <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
@@ -481,15 +651,14 @@
       <button id="highContrastBtn" class="pretty-btn" aria-pressed="false" title="Toggle high contrast mode">High Contrast</button>
     </div>
   </div>
-
   <!-- Icon Picker Modal -->
-  <div id="iconPickerModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.15); align-items:center; justify-content:center; z-index:1000;">
-    <div style="background:rgba(255,255,255,0.85); padding:20px; border-radius:8px; max-width:600px; box-shadow:0 4px 32px #0008; position:relative;">
+  <div id="iconPickerModal">
+    <div class="icon-picker-content">
       <h3>Select an Icon</h3>
       <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
-      <div style="margin-top:10px; display:flex; gap:10px;">
-        <button id="confirmSelectionButton" type="button">Confirm</button>
-        <button onclick="closeIconPicker()">Cancel</button>
+      <div class="icon-picker-buttons">
+        <button id="confirmSelectionButton" class="icon-picker-btn" type="button">Confirm</button>
+        <button class="icon-picker-btn cancel" onclick="closeIconPicker()">Cancel</button>
       </div>
       <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;">Icon placed!</div>
     </div>
@@ -885,33 +1054,29 @@
         ? `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;color:#ffe066;text-shadow:0 0 2px #222,0 0 8px #ffe066;" title="Mark unexplored">&#x2714;</span>`
         : `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;color:#ffe066;text-shadow:0 0 2px #222,0 0 8px #ffe066;" title="Mark explored">&#x25A2;</span>`;
 
-      let exploredClass = explored ? "explored" : "unexplored";
-
-      // Build the cell content safely
+      let exploredClass = explored ? "explored" : "unexplored";      // Build the cell content safely
       const wrapper = document.createElement('div');
       wrapper.innerHTML = `<span class="cell-label"></span>
-        <div class="cell-icons" style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding-top:20px;"></div>${checkHtml}`;
+        <div class="cell-icons"></div>${checkHtml}`;
 
       // Set label safely
       wrapper.querySelector('.cell-label').textContent = label;
 
-      // Add icons safely
+      // Add icons safely with proper grid layout
       const iconsGrid = wrapper.querySelector('.cell-icons');
       for (let i = 0; i < 9; i++) {
-        const iconDiv = document.createElement('div');
-        iconDiv.style.display = "flex";
-        iconDiv.style.alignItems = "center";
-        iconDiv.style.justifyContent = "center";
+        const iconContainer = document.createElement('div');
+        iconContainer.className = 'cell-icon-container';
+        
         if (icons[i]) {
           const img = document.createElement('img');
           img.src = iconPath + icons[i];
-          img.alt = "";
+          img.alt = iconNames[iconList.indexOf(icons[i])] || "";
           img.draggable = false;
-          img.style.width = "32px";
-          img.style.height = "32px";
-          iconDiv.appendChild(img);
+          img.title = iconNames[iconList.indexOf(icons[i])] || "";
+          iconContainer.appendChild(img);
         }
-        iconsGrid.appendChild(iconDiv);
+        iconsGrid.appendChild(iconContainer);
       }
 
       // Replace cell content
