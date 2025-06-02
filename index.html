@@ -139,6 +139,14 @@
     .cell.explored::after {
       display: none;
     }
+    .explored-toggle {
+      color: #ffe066 !important;
+      text-shadow: 0 0 2px #222, 0 0 8px #ffe066;
+    }
+    .cell.unexplored .explored-toggle {
+      color: #ffe066 !important;
+      opacity: 0.7;
+    }
   </style>
 </head>
 <body>
@@ -307,8 +315,8 @@
       // Checkmark overlay or "explore" button
       const explored = exploredGrid[row][col];
       let checkHtml = explored
-        ? `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;" title="Mark unexplored">&#x2714;</span>`
-        : `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;" title="Mark explored">&#x25A2;</span>`;
+        ? `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;color:#ffe066;text-shadow:0 0 2px #222,0 0 8px #ffe066;" title="Mark unexplored">&#x2714;</span>`
+        : `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;color:#ffe066;text-shadow:0 0 2px #222,0 0 8px #ffe066;" title="Mark explored">&#x25A2;</span>`;
 
       let exploredClass = explored ? "explored" : "unexplored";
 
@@ -542,11 +550,12 @@
           legendY += legendIconSize + legendSpacing;
         }
 
-        // Draw the grid and icons (row 0 at top, 8 at bottom)
-        for (let row = 0; row < gridSize; row++) {
+        // Draw the grid and icons (row 8 at top, 0 at bottom, so A is bottom, I is top)
+        for (let row = 8; row >= 0; row--) {
           for (let col = 0; col < gridSize; col++) {
+            const canvasRow = 8 - row; // so row 8 (I) is at top, row 0 (A) is at bottom
             const x = legendWidth + col * (cellSize + gap);
-            const y = dateHeight + row * (cellSize + gap);
+            const y = dateHeight + canvasRow * (cellSize + gap);
 
             // Draw cell border
             ctx.strokeStyle = '#222';
@@ -557,7 +566,7 @@
             ctx.font = "bold 24px Arial";
             ctx.fillStyle = "rgba(255,255,255,0.8)";
             ctx.textBaseline = "top";
-            ctx.fillText(String.fromCharCode(65 + (8 - row)) + (col + 1), x + 8, y + 8);
+            ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
 
             // Draw up to 9 icons in a 3x3 grid, enlarge and center based on count
             const icons = gridData[row][col];
@@ -709,4 +718,3 @@
   </script>
 </body>
 </html>
-`
