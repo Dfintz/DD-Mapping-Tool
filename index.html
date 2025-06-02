@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Added mobile viewport -->
   <title>Dune Awakening Deep Desert Mapping</title>
   <style>
     *,
@@ -78,6 +78,24 @@
       z-index: 1;
       position: relative;
       touch-action: manipulation;
+      transition: transform 0.2s cubic-bezier(.4,2,.6,1), box-shadow 0.2s;
+      will-change: transform;
+    }
+    .grid-pan-wrapper {
+      width: 900px;
+      height: 900px;
+      overflow: hidden;
+      position: relative;
+      touch-action: pan-x pan-y;
+      background: transparent;
+    }
+    @media (max-width: 1000px) {
+      .grid-pan-wrapper {
+        width: 98vw;
+        height: 98vw;
+        max-width: 98vw;
+        max-height: 98vw;
+      }
     }
     .cell {
       border: 1.5px solid #222;
@@ -133,7 +151,6 @@
       border-radius: 4px;
       border: 1px solid #444;
       pointer-events: none;
-      user-drag: none;
       user-select: none;
     }
     .legend {
@@ -149,29 +166,28 @@
       position: static;
       box-sizing: border-box;
       width: 180px;
+      transition: max-height 0.3s, padding 0.3s;
+      overflow: hidden;
     }
-    .legend-title {
+    .legend.collapsed {
+      max-height: 38px;
+      padding-bottom: 0;
+    }
+    .legend-toggle {
+      cursor: pointer;
+      color: #ffe066;
+      font-size: 1.1em;
       font-weight: bold;
-      margin-bottom: 8px;
-      font-size: 1em;
-    }
-    .legend-item {
+      background: none;
+      border: none;
+      outline: none;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
-      margin-bottom: 6px;
-      font-size: 13px;
-      user-select: none;
+      gap: 6px;
     }
-    .legend-item img {
-      width: 20px;
-      height: 20px;
-      margin-right: 6px;
-      background: #222;
-      border-radius: 3px;
-      border: 1px solid #444;
-      pointer-events: none;
-      user-drag: none;
-      user-select: none;
+    .legend-toggle:focus {
+      outline: 2px solid #ffe066;
     }
     .controls {
       margin-top: 30px;
@@ -349,6 +365,10 @@
         font-size: 12px;
         padding: 8px 4px 12px 4px;
       }
+      .legend.collapsed {
+        max-height: 38px;
+        padding-bottom: 0;
+      }
       .legend-item img {
         width: 16px;
         height: 16px;
@@ -358,6 +378,51 @@
         padding: 10px 10px;
         font-size: 1em;
       }
+    }
+    [aria-label][tabindex] {
+      outline: none;
+    }
+    [aria-label][tabindex]:focus {
+      outline: 2px solid #ffe066;
+    }
+
+    body.high-contrast {
+      background: #000 !important;
+      color: #fff !important;
+    }
+    body.high-contrast .legend,
+    body.high-contrast .description-box,
+    body.high-contrast .side-controls,
+    body.high-contrast .controls {
+      background: #000 !important;
+      color: #fff !important;
+      border: 2px solid #fff700 !important;
+    }
+    body.high-contrast .cell {
+      border: 2px solid #fff700 !important;
+      background: #111 !important;
+      color: #fff !important;
+    }
+    body.high-contrast .cell-label {
+      color: #fff700 !important;
+      text-shadow: none !important;
+    }
+    body.high-contrast .pretty-btn {
+      background: #000 !important;
+      color: #fff700 !important;
+      border: 2px solid #fff700 !important;
+      box-shadow: none !important;
+    }
+    body.high-contrast .pretty-btn:hover, body.high-contrast .pretty-btn:focus {
+      background: #222 !important;
+      color: #fff !important;
+    }
+    body.high-contrast .legend-toggle {
+      color: #fff700 !important;
+    }
+    body.high-contrast .explored-toggle {
+      color: #fff700 !important;
+      text-shadow: none !important;
     }
   </style>
 </head>
@@ -383,13 +448,23 @@
       </div>
     </div>
     <div class="grid-outer">
-      <div style="display:flex;">
-        <div class="grid-container" id="gridContainer"></div>
+      <div style="display:flex; flex-direction:column; align-items:center;">
+        <div style="margin-bottom:8px; display:flex; gap:8px;">
+          <button id="zoomInBtn" class="pretty-btn" title="Zoom In" aria-label="Zoom In">＋</button>
+          <button id="zoomOutBtn" class="pretty-btn" title="Zoom Out" aria-label="Zoom Out">－</button>
+          <button id="resetZoomBtn" class="pretty-btn" title="Reset Zoom" aria-label="Reset Zoom">⟳</button>
+        </div>
+        <div class="grid-pan-wrapper" id="gridPanWrapper" style="overflow:hidden; touch-action:pan-x pan-y; width:fit-content; height:fit-content;">
+          <div class="grid-container" id="gridContainer" role="grid" aria-label="Map grid"></div>
+        </div>
       </div>
     </div>
-    <div class="legend">
-      <div class="legend-title">Legend</div>
-      <div id="legendIcons"></div>
+    <div class="legend" id="legendPanel">
+      <button class="legend-toggle" id="legendToggleBtn" aria-label="Toggle legend" tabindex="0" title="Show/hide legend">
+        <span id="legendToggleIcon">▼</span>
+        <span class="legend-title">Legend</span>
+      </button>
+      <div id="legendIcons" role="list" aria-label="Map legend icons"></div>
       <div class="side-controls">
         <div class="time-toggle">
           <label class="switch-label">
@@ -403,14 +478,24 @@
         </div>
         <button id="exploreAllButton" class="pretty-btn">Explore All</button>
         <button id="clearButton" class="pretty-btn">Clear Map</button>
+        <button id="highContrastBtn" class="pretty-btn" aria-pressed="false" title="Toggle high contrast mode">High Contrast</button>
       </div>
     </div>
   </div>
   <div class="controls" style="margin-top:30px; text-align:center;">
+    <button id="undoButton" class="pretty-btn" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="redoButton" class="pretty-btn" title="Redo (Ctrl+Y)">Redo</button>
     <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
-    <!-- <button id="exportJsonButton" class="pretty-btn">Export as JSON</button> -->
+    <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
+    <button id="exportSvgButton" class="pretty-btn">Export as SVG</button>
     <button id="saveLocalButton" class="pretty-btn">Save Map Locally</button>
     <button id="loadLocalButton" class="pretty-btn">Load Map</button>
+    <button id="importJsonButton" class="pretty-btn">Import from JSON</button>
+    <button id="saveVersionButton" class="pretty-btn">Save Version</button>
+    <button id="loadVersionButton" class="pretty-btn">Load Version</button>
+    <button id="shareLinkButton" class="pretty-btn">Get Shareable Link</button>
+    <input type="file" id="importJsonInput" accept="application/json" style="display:none;" />
+    <a id="feedbackLink" href="https://forms.gle/2Q8Qw8Qw8Qw8Qw8Q9" target="_blank" class="pretty-btn" style="display:inline-block; text-decoration:none;">Feedback</a>
   </div>
 
   <!-- Icon Picker Modal -->
@@ -431,6 +516,10 @@
     const gridContainer = document.getElementById('gridContainer');
     let gridData = [];
     let exploredGrid = [];
+    let undoStack = [];
+    let redoStack = [];
+    let selectedCells = new Set();
+    let isSelecting = false;
 
     const iconList = [
       "IconAuthorizedBase.png",
@@ -459,31 +548,77 @@
     const iconPath = "Icons/";
     let currentCell = null;
 
+    function pushUndo() {
+      undoStack.push({
+        gridData: JSON.parse(JSON.stringify(gridData)),
+        exploredGrid: JSON.parse(JSON.stringify(exploredGrid)),
+        selectedCells: Array.from(selectedCells)
+      });
+      if (undoStack.length > 100) undoStack.shift();
+      redoStack = [];
+    }
+
+    function undo() {
+      if (undoStack.length === 0) return;
+      redoStack.push({
+        gridData: JSON.parse(JSON.stringify(gridData)),
+        exploredGrid: JSON.parse(JSON.stringify(exploredGrid)),
+        selectedCells: Array.from(selectedCells)
+      });
+      const prev = undoStack.pop();
+      gridData = prev.gridData;
+      exploredGrid = prev.exploredGrid;
+      selectedCells = new Set(prev.selectedCells);
+      rerenderAllCells();
+      renderSelection();
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      undoStack.push({
+        gridData: JSON.parse(JSON.stringify(gridData)),
+        exploredGrid: JSON.parse(JSON.stringify(exploredGrid)),
+        selectedCells: Array.from(selectedCells)
+      });
+      const next = redoStack.pop();
+      gridData = next.gridData;
+      exploredGrid = next.exploredGrid;
+      selectedCells = new Set(next.selectedCells);
+      rerenderAllCells();
+      renderSelection();
+    }
+
+    function cellKey(row, col) {
+      return row + "," + col;
+    }
+
     function renderLegend() {
       const legend = document.getElementById('legendIcons');
       legend.innerHTML = '';
       iconList.forEach((icon, idx) => {
-        // Use textContent for span and setAttribute for img to avoid XSS
         const div = document.createElement('div');
         div.className = 'legend-item';
         div.setAttribute('draggable', 'true');
         div.setAttribute('data-icon', icon);
-
+        div.setAttribute('tabindex', '0');
+        div.setAttribute('aria-label', iconNames[idx] + ' (drag to grid or click to select)');
+        div.title = 'Drag to grid or click to select';
         const img = document.createElement('img');
         img.src = iconPath + icon;
         img.alt = iconNames[idx];
-
+        img.title = iconNames[idx];
         const span = document.createElement('span');
         span.textContent = iconNames[idx];
-
         div.appendChild(img);
         div.appendChild(span);
         legend.appendChild(div);
-      });
-
-      document.querySelectorAll('.legend-item').forEach(item => {
-        item.addEventListener('dragstart', function (e) {
+        div.addEventListener('dragstart', function (e) {
           e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
+        });
+        div.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
         });
       });
     }
@@ -502,8 +637,17 @@
           cell.classList.add('cell');
           cell.setAttribute('data-row', row);
           cell.setAttribute('data-col', col);
+          cell.setAttribute('tabindex', '0');
+          cell.setAttribute('aria-label', `Grid cell ${String.fromCharCode(65+row)}${col+1}`);
+          cell.title = `Grid cell ${String.fromCharCode(65+row)}${col+1}`;
           cell.innerHTML = "";
           cell.addEventListener('click', handleCellClick);
+          cell.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleCellClick({currentTarget: cell});
+            }
+          });
           gridContainer.appendChild(cell);
         }
       }
@@ -511,8 +655,48 @@
     }
 
     function handleCellClick(event) {
-      currentCell = event.currentTarget;
-      document.getElementById('iconPickerModal').style.display = 'flex';
+      const cell = event.currentTarget;
+      const row = cell.getAttribute('data-row');
+      const col = cell.getAttribute('data-col');
+      if (event.shiftKey) {
+        // Multi-select
+        const key = cellKey(row, col);
+        if (selectedCells.has(key)) {
+          selectedCells.delete(key);
+        } else {
+          selectedCells.add(key);
+        }
+        renderSelection();
+        return;
+      }
+      if (selectedCells.size > 1) {
+        // Batch edit: open icon picker for all selected
+        currentCell = null;
+        document.getElementById('iconPickerModal').style.display = 'flex';
+      } else {
+        currentCell = cell;
+        document.getElementById('iconPickerModal').style.display = 'flex';
+      }
+    }
+
+    function renderSelection() {
+      document.querySelectorAll('.cell').forEach(cell => {
+        const row = cell.getAttribute('data-row');
+        const col = cell.getAttribute('data-col');
+        const key = cellKey(row, col);
+        if (selectedCells.has(key)) {
+          cell.style.outline = '3px solid #ffe066';
+          cell.style.boxShadow = '0 0 8px #ffe066cc';
+        } else {
+          cell.style.outline = '';
+          cell.style.boxShadow = '';
+        }
+      });
+    }
+
+    function clearSelection() {
+      selectedCells.clear();
+      renderSelection();
     }
 
     function populateIconPicker() {
@@ -531,8 +715,23 @@
       });
     }
 
+    // Batch icon selection for multi-cell
     function selectIcon(icon) {
-      if (currentCell) {
+      if (selectedCells.size > 1) {
+        pushUndo();
+        selectedCells.forEach(key => {
+          const [row, col] = key.split(',');
+          const idx = gridData[row][col].indexOf(icon);
+          if (idx === -1) {
+            gridData[row][col].push(icon);
+          } else {
+            gridData[row][col].splice(idx, 1);
+          }
+        });
+        rerenderAllCells();
+        renderSelection();
+      } else if (currentCell) {
+        pushUndo();
         const row = currentCell.getAttribute('data-row');
         const col = currentCell.getAttribute('data-col');
         const idx = gridData[row][col].indexOf(icon);
@@ -605,6 +804,7 @@
         };
         toggle.style.opacity = explored ? "1" : "0.5";
       }
+      onMapChange();
     }
 
     function closeIconPicker() {
@@ -679,6 +879,7 @@
       if (confirm("This will clear all map data. Are you sure you want to continue?")) {
         initializeGrid();
         rerenderAllCells();
+        onMapChange();
       }
     }
 
@@ -959,6 +1160,7 @@
         }
       }
       rerenderAllCells();
+      onMapChange();
     }
 
     function saveMapLocally() {
@@ -1020,6 +1222,48 @@
       document.getElementById('utcModeLabel').style.opacity = useLocalTime ? '0.5' : '1';
     }
 
+    function autoSaveMap() {
+      const saveData = { gridData, exploredGrid };
+      localStorage.setItem('dd_map_autosave', JSON.stringify(saveData));
+    }
+
+    function autoLoadMap() {
+      const saveData = localStorage.getItem('dd_map_autosave');
+      if (!saveData) return;
+      try {
+        const parsed = JSON.parse(saveData);
+        if (parsed.gridData && parsed.exploredGrid) {
+          gridData = parsed.gridData;
+          exploredGrid = parsed.exploredGrid;
+          rerenderAllCells();
+        }
+      } catch {}
+    }
+
+    function onMapChange() {
+      autoSaveMap();
+    }
+
+    const _oldRenderCellIcons = renderCellIcons;
+    renderCellIcons = function(cell, icons) {
+      _oldRenderCellIcons(cell, icons);
+      onMapChange();
+    };
+
+    const _oldClearMap = clearMap;
+    clearMap = function() {
+      _oldClearMap();
+      onMapChange();
+    };
+
+    const _oldExploreAllCells = exploreAllCells;
+    exploreAllCells = function() {
+      _oldExploreAllCells();
+      onMapChange();
+    };
+
+    setInterval(autoSaveMap, 30000);
+
     function initializeApp() {
       renderLegend();
       initializeGrid();
@@ -1042,6 +1286,351 @@
     document.getElementById('saveLocalButton').onclick = saveMapLocally;
     document.getElementById('loadLocalButton').onclick = loadMapLocally;
     document.getElementById('exploreAllButton').onclick = exploreAllCells;
+    document.getElementById('undoButton').onclick = undo;
+    document.getElementById('redoButton').onclick = redo;
+
+    document.getElementById('legendToggleBtn').onclick = function() {
+      const legend = document.getElementById('legendPanel');
+      const icon = document.getElementById('legendToggleIcon');
+      legend.classList.toggle('collapsed');
+      icon.textContent = legend.classList.contains('collapsed') ? '►' : '▼';
+    };
+
+    document.getElementById('legendToggleBtn').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.click();
+      }
+    });
+
+    ['exportPngButton','saveLocalButton','loadLocalButton','exploreAllButton','clearButton'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.title = el.textContent;
+        el.setAttribute('aria-label', el.textContent);
+        el.setAttribute('tabindex', '0');
+      }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+        e.preventDefault();
+        redo();
+      }
+    });
+
+    gridContainer.addEventListener('click', function(e) {
+      if (e.target === gridContainer) clearSelection();
+    });
+
+    window.addEventListener('DOMContentLoaded', autoLoadMap);
+
+    // --- High Contrast Mode ---
+    const highContrastBtn = document.getElementById('highContrastBtn');
+    highContrastBtn.addEventListener('click', function() {
+      const enabled = document.body.classList.toggle('high-contrast');
+      this.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+      localStorage.setItem('dd_map_high_contrast', enabled ? '1' : '0');
+    });
+    window.addEventListener('DOMContentLoaded', function() {
+      if (localStorage.getItem('dd_map_high_contrast') === '1') {
+        document.body.classList.add('high-contrast');
+        highContrastBtn.setAttribute('aria-pressed', 'true');
+      }
+    });
+
+    // --- Export as JSON ---
+    document.getElementById('exportJsonButton').onclick = function() {
+      const data = { gridData, exploredGrid };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'dune_map.json';
+      link.click();
+    };
+
+    // --- Import from JSON (file input) ---
+    document.getElementById('importJsonButton').onclick = function() {
+      document.getElementById('importJsonInput').click();
+    };
+    document.getElementById('importJsonInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = JSON.parse(evt.target.result);
+          if (data.gridData && data.exploredGrid) {
+            gridData = data.gridData;
+            exploredGrid = data.exploredGrid;
+            rerenderAllCells();
+            alert('Map imported!');
+          } else {
+            alert('Invalid map file.');
+          }
+        } catch {
+          alert('Failed to import map.');
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // --- Import from JSON (drag-and-drop) ---
+    document.body.addEventListener('dragover', function(e) {
+      e.preventDefault();
+    });
+    document.body.addEventListener('drop', function(e) {
+      e.preventDefault();
+      if (e.dataTransfer.files.length) {
+        const file = e.dataTransfer.files[0];
+        if (file.type === 'application/json' || file.name.endsWith('.json')) {
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            try {
+              const data = JSON.parse(evt.target.result);
+              if (data.gridData && data.exploredGrid) {
+                gridData = data.gridData;
+                exploredGrid = data.exploredGrid;
+                rerenderAllCells();
+                alert('Map imported!');
+              } else {
+                alert('Invalid map file.');
+              }
+            } catch {
+              alert('Failed to import map.');
+            }
+          };
+          reader.readAsText(file);
+        }
+      }
+    });
+
+    // --- ARIA roles and keyboard navigation for legend and grid ---
+    const legendIcons = document.getElementById('legendIcons');
+    legendIcons.addEventListener('keydown', function(e) {
+      const items = Array.from(legendIcons.querySelectorAll('.legend-item'));
+      const idx = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown' && idx < items.length - 1) {
+        items[idx + 1].focus();
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp' && idx > 0) {
+        items[idx - 1].focus();
+        e.preventDefault();
+      }
+    });
+
+    const gridEl = document.getElementById('gridContainer');
+    gridEl.addEventListener('keydown', function(e) {
+      const cells = Array.from(gridEl.querySelectorAll('.cell'));
+      const idx = cells.indexOf(document.activeElement);
+      if (idx === -1) return;
+      let nextIdx = idx;
+      if (e.key === 'ArrowRight' && (idx + 1) % 9 !== 0) nextIdx++;
+      else if (e.key === 'ArrowLeft' && idx % 9 !== 0) nextIdx--;
+      else if (e.key === 'ArrowDown' && idx + 9 < 81) nextIdx += 9;
+      else if (e.key === 'ArrowUp' && idx - 9 >= 0) nextIdx -= 9;
+      if (nextIdx !== idx) {
+        cells[nextIdx].focus();
+        e.preventDefault();
+      }
+    });
+
+    // --- Versioning ---
+    function getVersionList() {
+      const versions = JSON.parse(localStorage.getItem('dd_map_versions') || '[]');
+      return versions;
+    }
+    function saveVersion() {
+      const name = prompt('Enter a name for this version:');
+      if (!name) return;
+      const versions = getVersionList();
+      const timestamp = new Date().toISOString();
+      versions.push({
+        name,
+        timestamp,
+        data: { gridData, exploredGrid }
+      });
+      localStorage.setItem('dd_map_versions', JSON.stringify(versions));
+      alert('Version saved!');
+    }
+    function loadVersion() {
+      const versions = getVersionList();
+      if (!versions.length) return alert('No saved versions.');
+      let msg = 'Select a version to load:\n';
+      versions.forEach((v, i) => {
+        msg += `${i + 1}: ${v.name} (${v.timestamp})\n`;
+      });
+      const idx = parseInt(prompt(msg)) - 1;
+      if (isNaN(idx) || idx < 0 || idx >= versions.length) return;
+      gridData = versions[idx].data.gridData;
+      exploredGrid = versions[idx].data.exploredGrid;
+      rerenderAllCells();
+      alert('Version loaded!');
+    }
+    document.getElementById('saveVersionButton').onclick = saveVersion;
+    document.getElementById('loadVersionButton').onclick = loadVersion;
+
+    // --- Shareable Link ---
+    function getShareableLink() {
+      const data = { gridData, exploredGrid };
+      const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
+      const url = `${location.origin}${location.pathname}?map=${encoded}`;
+      prompt('Copy this link to share your map:', url);
+    }
+    document.getElementById('shareLinkButton').onclick = getShareableLink;
+
+    // --- Load from shareable link ---
+    (function loadFromUrl() {
+      const params = new URLSearchParams(location.search);
+      if (params.has('map')) {
+        try {
+          const decoded = decodeURIComponent(params.get('map'));
+          const json = JSON.parse(decodeURIComponent(escape(atob(decoded))));
+          if (json.gridData && json.exploredGrid) {
+            gridData = json.gridData;
+            exploredGrid = json.exploredGrid;
+            rerenderAllCells();
+            alert('Loaded map from link!');
+          }
+        } catch {}
+      }
+    })();
+
+    // --- SVG Export ---
+    document.getElementById('exportSvgButton').onclick = function() {
+      const gridSize = 9;
+      const cellSize = 100;
+      const gap = 2;
+      const svgWidth = gridSize * (cellSize + gap);
+      const svgHeight = gridSize * (cellSize + gap);
+      let svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${svgWidth}' height='${svgHeight}' style='background:#000'>`;
+      for (let row = 8; row >= 0; row--) {
+        for (let col = 0; col < 9; col++) {
+          const x = col * (cellSize + gap);
+          const y = (8 - row) * (cellSize + gap);
+          svg += `<rect x='${x}' y='${y}' width='${cellSize}' height='${cellSize}' fill='${exploredGrid[row][col] ? '#222' : '#111'}' stroke='#ffe066' stroke-width='2'/>`;
+          svg += `<text x='${x + 8}' y='${y + 22}' font-size='18' fill='#ffe066' font-family='Arial' font-weight='bold'>${String.fromCharCode(65 + row) + (col + 1)}</text>`;
+          gridData[row][col].forEach((icon, i) => {
+            svg += `<text x='${x + 20}' y='${y + 40 + i * 22}' font-size='16' fill='#fff' font-family='Arial'>${icon.replace('Icon','').replace('.png','')}</text>`;
+          });
+        }
+      }
+      svg += '</svg>';
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'dune_map.svg';
+      link.click();
+    };
+
+    // --- Zoom & Pan ---
+    let gridScale = 1;
+    let gridTranslate = { x: 0, y: 0 };
+    const gridPanWrapper = document.getElementById('gridPanWrapper');
+    function updateGridTransform() {
+      gridEl.style.transform = `scale(${gridScale}) translate(${gridTranslate.x / gridScale}px, ${gridTranslate.y / gridScale}px)`;
+    }
+    function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+    function zoomGrid(factor, centerX, centerY) {
+      const prevScale = gridScale;
+      gridScale = clamp(gridScale * factor, 0.5, 3);
+      if (centerX !== undefined && centerY !== undefined) {
+        const rect = gridEl.getBoundingClientRect();
+        const dx = (centerX - rect.left - gridTranslate.x) / prevScale;
+        const dy = (centerY - rect.top - gridTranslate.y) / prevScale;
+        gridTranslate.x -= dx * (gridScale - prevScale);
+        gridTranslate.y -= dy * (gridScale - prevScale);
+      }
+      updateGridTransform();
+    }
+    function panGrid(dx, dy) {
+      gridTranslate.x += dx;
+      gridTranslate.y += dy;
+      updateGridTransform();
+    }
+    function resetGridZoom() {
+      gridScale = 1;
+      gridTranslate = { x: 0, y: 0 };
+      updateGridTransform();
+    }
+    document.getElementById('zoomInBtn').onclick = () => zoomGrid(1.2, gridEl.offsetWidth/2, gridEl.offsetHeight/2);
+    document.getElementById('zoomOutBtn').onclick = () => zoomGrid(1/1.2, gridEl.offsetWidth/2, gridEl.offsetHeight/2);
+    document.getElementById('resetZoomBtn').onclick = resetGridZoom;
+    gridPanWrapper.addEventListener('wheel', function(e) {
+      if (e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.1 : 0.9;
+      zoomGrid(factor, e.clientX, e.clientY);
+    }, { passive: false });
+    let isPanning = false, panStart = {x:0, y:0};
+    gridPanWrapper.addEventListener('mousedown', function(e) {
+      if (e.button !== 0) return;
+      isPanning = true;
+      panStart = { x: e.clientX - gridTranslate.x, y: e.clientY - gridTranslate.y };
+      gridPanWrapper.style.cursor = 'grabbing';
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (!isPanning) return;
+      gridTranslate.x = e.clientX - panStart.x;
+      gridTranslate.y = e.clientY - panStart.y;
+      updateGridTransform();
+    });
+    document.addEventListener('mouseup', function() {
+      isPanning = false;
+      gridPanWrapper.style.cursor = '';
+    });
+    let lastTouchDist = null, lastTouchCenter = null;
+    gridPanWrapper.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 2) {
+        lastTouchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        lastTouchCenter = {
+          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+          y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+        };
+      }
+    });
+    gridPanWrapper.addEventListener('touchmove', function(e) {
+      if (e.touches.length === 1 && !lastTouchDist) {
+        gridTranslate.x += e.touches[0].clientX - (lastTouchCenter?.x || e.touches[0].clientX);
+        gridTranslate.y += e.touches[0].clientY - (lastTouchCenter?.y || e.touches[0].clientY);
+        lastTouchCenter = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        updateGridTransform();
+      } else if (e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const center = {
+          x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+          y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+        };
+        if (lastTouchDist) {
+          const factor = dist / lastTouchDist;
+          zoomGrid(factor, center.x, center.y);
+        }
+        lastTouchDist = dist;
+        lastTouchCenter = center;
+      }
+    }, { passive: false });
+    gridPanWrapper.addEventListener('touchend', function(e) {
+      if (e.touches.length < 2) lastTouchDist = null;
+      if (e.touches.length === 0) lastTouchCenter = null;
+    });
+    ['zoomInBtn','zoomOutBtn','resetZoomBtn'].forEach(id => {
+      const btn = document.getElementById(id);
+      btn.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          btn.click();
+        }
+      });
+    });
   </script>
   <div style="margin-top:40px; text-align:center;">
     <a href="https://awakening.wiki/Fremen_with_Benefits" target="_blank" style="text-decoration:none; color:inherit;">
