@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <title>Dune Awakening Deep Desert Mapping</title>
   <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
@@ -19,7 +25,7 @@
       display: flex;
       align-items: flex-start;
       gap: 40px;
-      justify-content: center; /* Add this line to center the grid and legend horizontally */
+      justify-content: center;
     }
     .description-box {
       background: rgba(30,30,30,0.85);
@@ -51,12 +57,12 @@
     }
     .grid-label-row,
     .grid-label-col {
-      display: none !important; /* Hide top and side labels */
+      display: none !important;
     }
     .grid-container {
       display: grid;
-      grid-template-columns: repeat(9, 100px);   /* Enlarged cells */
-      grid-template-rows: repeat(9, 100px);      /* Enlarged cells */
+      grid-template-columns: repeat(9, 100px);
+      grid-template-rows: repeat(9, 100px);
       gap: 2px;
       background: transparent;
       box-shadow: 0 0 20px #222;
@@ -95,7 +101,7 @@
     }
     .cell-icons {
       display: flex;
-      flex-direction: column; /* Stack rows vertically */
+      flex-direction: column;
       flex-wrap: wrap;
       align-items: flex-start;
       justify-content: flex-start;
@@ -129,6 +135,8 @@
       font-size: 13px;
       position: static;
       box-sizing: border-box;
+      /* Prevent children from stretching legend width */
+      width: 180px;
     }
     .legend-title {
       font-weight: bold;
@@ -172,7 +180,6 @@
       color: #ffe066 !important;
       opacity: 0.7;
     }
-    /* Add to your <style> section for even better contrast */
     #useLocalTime {
       accent-color: #ffe066;
     }
@@ -192,6 +199,7 @@
       justify-content: center;
       align-items: center;
       margin-bottom: 4px;
+      width: 100%;
     }
     .switch-label {
       display: flex;
@@ -200,7 +208,9 @@
       font-weight: bold;
       font-size: 1.05em;
       gap: 6px;
-      min-width: 0; /* Prevents stretching */
+      min-width: 0;
+      width: 100%;
+      justify-content: space-between;
     }
     .switch {
       position: relative;
@@ -208,7 +218,7 @@
       width: 44px;
       height: 24px;
       margin: 0 2px;
-      flex-shrink: 0; /* Prevents slider from stretching legend width */
+      flex-shrink: 0;
     }
     .switch input {
       opacity: 0;
@@ -246,14 +256,14 @@
       background: linear-gradient(90deg, #ffe066 0%, #ffd700 100%);
       color: #222;
       border: none;
-      border-radius: 8px;     /* Slightly more rounded */
-      padding: 14px 0;        /* Taller buttons */
-      font-size: 1.08em;      /* Slightly larger text */
+      border-radius: 8px;
+      padding: 14px 0;
+      font-size: 1.08em;
       font-weight: bold;
-      letter-spacing: 0.03em; /* Slightly more spacing between letters */
+      letter-spacing: 0.03em;
       box-shadow: 0 2px 8px #2224;
       cursor: pointer;
-      margin: 0 0 2px 0;      /* Small bottom margin for stacking */
+      margin: 0 0 2px 0;
       transition: background 0.2s, color 0.2s, transform 0.1s;
       outline: none;
     }
@@ -263,64 +273,17 @@
       transform: translateY(-2px) scale(1.03);
       box-shadow: 0 4px 16px #ffe06655;
     }
-    /* Add these styles to your <style> section for the slider switch */
-    .switch-label {
-      display: flex;
-      align-items: center;
-      color: #ffe066;
-      font-weight: bold;
-      font-size: 1.05em;
-      gap: 6px;
-    }
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 44px;
-      height: 24px;
-      margin: 0 2px;
-    }
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: #444;
-      border-radius: 24px;
-      transition: background 0.2s;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background: #ffe066;
-      border-radius: 50%;
-      transition: transform 0.2s;
-      box-shadow: 0 1px 4px #2226;
-    }
-    .switch input:checked + .slider {
-      background: #ffe066;
-    }
-    .switch input:checked + .slider:before {
-      background: #444;
-      transform: translateX(20px);
-    }
   </style>
 </head>
 <body>
-  <h1>Dune Awakening Deep Desert Mapping</h1>
-  <!-- Add this timer display under your <h1> or wherever you want it visible -->
+  <div style="display:flex; align-items:center; justify-content:center; margin-bottom:10px;">
+    <img src="arrakis.png" alt="Arrakis Icon" style="width:54px; height:54px; margin-right:16px; vertical-align:middle;">
+    <h1 style="color:#fff; margin:0; font-size:2.2em; letter-spacing:0.03em;">Dune Awakening Deep Desert Mapping</h1>
+  </div>
   <div id="stormTimer" style="color:#ffe066; font-size:1.15em; font-weight:bold; margin-bottom:12px; text-align:center;">
     Next Coriolis Storm: calculating...
   </div>
   <div class="main-flex">
-    <!-- Description box on the left -->
     <div class="description-box">
       <div class="description-title">How to Use</div>
       <div class="description-content">
@@ -366,7 +329,6 @@
     <div style="background:#fff; padding:20px; border-radius:8px; max-width:600px;">
       <h3>Select an Icon</h3>
       <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
-      <!-- Add Check and Confirm buttons -->
       <div style="margin-top:10px; display:flex; gap:10px;">
         <button id="checkSelectionButton" type="button">Check</button>
         <button id="confirmSelectionButton" type="button">Confirm</button>
@@ -380,9 +342,8 @@
 
     const gridContainer = document.getElementById('gridContainer');
     let gridData = [];
-    let exploredGrid = []; // New: tracks explored state
+    let exploredGrid = [];
 
-    // List of PNG/SVG icon filenames (relative to your project)
     const iconList = [
       "IconAuthorizedBase.png",
       "IconCave.png",
@@ -411,7 +372,6 @@
 
     let currentCell = null;
 
-    // Make legend icons draggable
     function renderLegend() {
       const legend = document.getElementById('legendIcons');
       legend.innerHTML = '';
@@ -424,7 +384,6 @@
         `;
       });
 
-      // Add dragstart event to legend icons
       document.querySelectorAll('.legend-item').forEach(item => {
         item.addEventListener('dragstart', function (e) {
           e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
@@ -432,7 +391,6 @@
       });
     }
 
-    // Initializes a 9x9 grid with reversed letter labels (I at top, A at bottom)
     function initializeGrid() {
       gridContainer.innerHTML = "";
       gridData = [];
@@ -442,7 +400,7 @@
         exploredGrid[row] = [];
         for (let col = 0; col < 9; col++) {
           gridData[row][col] = [];
-          exploredGrid[row][col] = false; // default unexplored
+          exploredGrid[row][col] = false;
           const cell = document.createElement('div');
           cell.classList.add('cell');
           cell.setAttribute('data-row', row);
@@ -455,13 +413,11 @@
       makeCellsDroppable();
     }
 
-    // Show icon picker when a cell is clicked
     function handleCellClick(event) {
       currentCell = event.currentTarget;
       document.getElementById('iconPickerModal').style.display = 'flex';
     }
 
-    // Populate icon picker grid
     function populateIconPicker() {
       const grid = document.getElementById('iconPickerGrid');
       grid.innerHTML = "";
@@ -478,34 +434,29 @@
       });
     }
 
-    // When an icon is selected, add/remove it in the cell (toggle)
     function selectIcon(icon) {
       if (currentCell) {
         const row = currentCell.getAttribute('data-row');
         const col = currentCell.getAttribute('data-col');
         const idx = gridData[row][col].indexOf(icon);
         if (idx === -1) {
-          gridData[row][col].push(icon); // Add icon
+          gridData[row][col].push(icon);
         } else {
-          gridData[row][col].splice(idx, 1); // Remove icon if already present
+          gridData[row][col].splice(idx, 1);
         }
         renderCellIcons(currentCell, gridData[row][col]);
       }
-      // Keep picker open for multi-select
     }
 
-    // Helper to render all icons in a cell and show cell label (I at top, A at bottom)
     function renderCellIcons(cell, icons) {
       const row = cell.getAttribute('data-row');
       const col = cell.getAttribute('data-col');
       const label = String.fromCharCode(65 + parseInt(row)) + (parseInt(col) + 1);
 
-      // If icons are present, auto-explore the cell
       if (icons.length > 0 && !exploredGrid[row][col]) {
         exploredGrid[row][col] = true;
       }
 
-      // Checkmark overlay or "explore" button
       const explored = exploredGrid[row][col];
       let checkHtml = explored
         ? `<span class="explored-toggle" style="position:absolute;top:2px;right:4px;z-index:3;cursor:pointer;font-size:18px;color:#ffe066;text-shadow:0 0 2px #222,0 0 8px #ffe066;" title="Mark unexplored">&#x2714;</span>`
@@ -528,33 +479,27 @@
       cell.classList.remove("explored", "unexplored");
       cell.classList.add(exploredClass);
 
-      // Add toggle event
       const toggle = cell.querySelector('.explored-toggle');
       if (toggle) {
         toggle.onclick = (e) => {
           e.stopPropagation();
-          // Only allow toggling if no icons in cell
           if (gridData[row][col].length === 0) {
             exploredGrid[row][col] = !exploredGrid[row][col];
             renderCellIcons(cell, icons);
           }
         };
-        // Style checkmark faded if not explored
         toggle.style.opacity = explored ? "1" : "0.5";
       }
     }
 
-    // Close the icon picker
     function closeIconPicker() {
       document.getElementById('iconPickerModal').style.display = 'none';
       currentCell = null;
     }
 
-    // Outputs the grid data in a coordinate: icons format (from A at top to I at bottom)
     function exportMapData() {
       let output = "Cell\t\tIcons\n";
       output += "-------------------------\n";
-      // Loop from row 0 (A/top) to row 8 (I/bottom)
       for (let row = 0; row < 9; row++) {
         for (let col = 0; col < 9; col++) {
           if (gridData[row][col].length) {
@@ -571,9 +516,7 @@
       console.log("Exported Map Data:\n" + output);
     }
 
-    // Exports the grid data as JSON
     function exportMapDataAsJson() {
-      // Define the layers as in your example
       const layers = [
         { Name: "Shipwreck", IconName: "Shipwreck", Description: "Shipwreck" },
         { Name: "TestingStation", IconName: "TestingStation", Description: "Testing station" },
@@ -585,10 +528,8 @@
         { Name: "AuthorizedBase", IconName: "AuthorizedBase", Description: "Guild base" }
       ];
 
-      // Collect all placed icons as simple entries (e.g. "I1,Shipwreck" for top row, "A1,..." for bottom)
-      // FIX: Use same letter order as grid (I at top, A at bottom)
       const simpleEntries = [];
-      for (let row = 8; row >= 0; row--) { // I (8) at top, A (0) at bottom
+      for (let row = 8; row >= 0; row--) {
         for (let col = 0; col < 9; col++) {
           gridData[row][col].forEach(icon => {
             let iconName = icon.replace(/^Icon/, '').replace(/\.png$/i, '');
@@ -612,7 +553,6 @@
         }
       };
 
-      // Download as JSON file
       const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -620,7 +560,6 @@
       link.click();
     }
 
-    // Clears the grid after confirmation
     function clearMap() {
       if (confirm("This will clear all map data. Are you sure you want to continue?")) {
         initializeGrid();
@@ -628,9 +567,8 @@
       }
     }
 
-    // Exports the grid as a PNG image (draws SVG icons, from I to A)
     function exportAsPng() {
-      const cellSize = 150; // ENLARGED
+      const cellSize = 150;
       const gap = 2;
       const gridSize = 9;
       const backgroundSrc = 'background.jpg';
@@ -645,12 +583,10 @@
         name: iconNames[idx]
       }));
 
-      // Calculate legend width and height
       const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140;
       const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing +
         legendItems.length * (legendIconSize + legendSpacing);
 
-      // Add extra space at the top for the date
       const dateHeight = 60;
       const gridWidth = gridSize * (cellSize + gap);
       const gridHeight = gridSize * (cellSize + gap);
@@ -669,7 +605,6 @@
         });
       }
 
-      // Gather all unique icons used in the grid
       const usedIcons = new Set();
       for (let row = 0; row < gridSize; row++) {
         for (let col = 0; col < gridSize; col++) {
@@ -677,7 +612,6 @@
         }
       }
 
-      // Also load all legend icons
       const iconPromises = {};
       iconList.forEach(icon => {
         iconPromises[icon] = loadImage(iconPath + icon);
@@ -693,11 +627,9 @@
           iconMap[icon] = iconImages[i++];
         }
 
-        // Draw black background for date area
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, dateHeight);
 
-        // Draw date at the top
         const now = new Date();
         const dateStr = useLocalTime
           ? now.toLocaleString()
@@ -707,26 +639,21 @@
         ctx.textBaseline = "middle";
         ctx.fillText(dateStr, legendWidth + 20, dateHeight / 2);
 
-        // Draw faded background image for grid area
         ctx.globalAlpha = 0.4;
         ctx.drawImage(backgroundImage, legendWidth, dateHeight, gridWidth, gridHeight);
         ctx.globalAlpha = 1.0;
 
-        // Draw the legend background
         ctx.fillStyle = "rgba(30,30,30,0.85)";
         ctx.fillRect(0, dateHeight, legendWidth, legendHeight);
 
-        // Draw the legend title
         ctx.font = `bold ${legendTitleSize}px Arial`;
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "top";
         ctx.fillText(legendTitle, legendPadding, dateHeight + legendPadding);
 
-        // Draw legend items
         let legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
         ctx.font = `${legendTextSize}px Arial`;
         for (const item of legendItems) {
-          // Icon
           if (iconMap[item.icon]) {
             ctx.drawImage(
               iconMap[item.icon],
@@ -736,7 +663,6 @@
               legendIconSize
             );
           }
-          // Text
           ctx.fillStyle = "#fff";
           ctx.fillText(
             item.name,
@@ -746,25 +672,21 @@
           legendY += legendIconSize + legendSpacing;
         }
 
-        // Draw the grid and icons (row 8 at top, 0 at bottom, so A is bottom, I is top)
         for (let row = 8; row >= 0; row--) {
           for (let col = 0; col < gridSize; col++) {
-            const canvasRow = 8 - row; // so row 8 (I) is at top, row 0 (A) is at bottom
+            const canvasRow = 8 - row;
             const x = legendWidth + col * (cellSize + gap);
             const y = dateHeight + canvasRow * (cellSize + gap);
 
-            // Draw cell border
             ctx.strokeStyle = '#222';
             ctx.lineWidth = 2;
             ctx.strokeRect(x, y, cellSize, cellSize);
 
-            // Draw cell label using I (top) to A (bottom)
             ctx.font = "bold 24px Arial";
             ctx.fillStyle = "rgba(255,255,255,0.8)";
             ctx.textBaseline = "top";
             ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
 
-            // Draw up to 9 icons in a 3x3 grid, enlarge and center based on count
             const icons = gridData[row][col];
             const n = icons.length;
             if (n > 0) {
@@ -794,7 +716,6 @@
                   [cellSize / 2 + 32, cellSize / 2 + 32]
                 ];
               } else {
-                // Arrange in a 3x3 grid for 5-9 icons
                 iconSize = 40;
                 positions = [];
                 const grid = 3;
@@ -822,7 +743,6 @@
               }
             }
 
-            // Draw fog overlay if not explored
             if (!exploredGrid[row][col]) {
               ctx.fillStyle = "rgba(30,30,30,0.55)";
               ctx.fillRect(x, y, cellSize, cellSize);
@@ -830,14 +750,41 @@
           }
         }
 
-        const link = document.createElement('a');
-        link.download = 'grid.png';
-        link.href = canvas.toDataURL();
-        link.click();
+        // Load fwb.png and add signature at the bottom
+        loadImage('fwb.png').then(fwbImg => {
+          // Calculate signature area
+          const sigHeight = 54;
+          const sigMargin = 18;
+          const sigY = canvas.height - sigHeight - sigMargin;
+          const sigX = legendWidth + 20;
+
+          // Draw semi-transparent bar for signature
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.fillStyle = "#222";
+          ctx.fillRect(sigX - 16, sigY - 8, 380, sigHeight + 16);
+          ctx.globalAlpha = 1.0;
+
+          // Draw FWB thumbnail
+          ctx.drawImage(fwbImg, sigX, sigY, sigHeight, sigHeight);
+
+          // Draw text
+          ctx.font = "bold 28px Arial";
+          ctx.fillStyle = "#ffe066";
+          ctx.textBaseline = "middle";
+          ctx.fillText("Provided by Fremen with Benefits", sigX + sigHeight + 18, sigY + sigHeight / 2);
+
+          ctx.restore();
+
+          // Download as before
+          const link = document.createElement('a');
+          link.download = 'grid.png';
+          link.href = canvas.toDataURL();
+          link.click();
+        });
       });
     }
 
-    // Make grid cells droppable
     function makeCellsDroppable() {
       document.querySelectorAll('.cell').forEach(cell => {
         cell.addEventListener('dragover', function (e) {
@@ -856,7 +803,6 @@
       });
     }
 
-    // When reloading the grid, re-render icons in each cell (I at top, A at bottom)
     function rerenderAllCells() {
       const cells = document.querySelectorAll('.cell');
       let idx = 0;
@@ -868,7 +814,6 @@
       makeCellsDroppable();
     }
 
-    // Add check and confirm button logic
     document.getElementById('checkSelectionButton').onclick = function() {
       if (currentCell) {
         const row = currentCell.getAttribute('data-row');
@@ -891,33 +836,24 @@
       closeIconPicker();
     };
 
-    // Explore All button logic
-    document.getElementById('exploreAllButton').onclick = function() {
+    function exploreAllCells() {
       for (let row = 0; row < 9; row++) {
         for (let col = 0; col < 9; col++) {
           exploredGrid[row][col] = true;
         }
       }
       rerenderAllCells();
-    };
+    }
 
-    // Save map to localStorage
-    document.getElementById('saveLocalButton').onclick = function() {
-      const saveData = {
-        gridData: gridData,
-        exploredGrid: exploredGrid
-      };
+    function saveMapLocally() {
+      const saveData = { gridData, exploredGrid };
       localStorage.setItem('dd_map_save', JSON.stringify(saveData));
       alert('Map saved locally!');
-    };
+    }
 
-    // Load map from localStorage
-    document.getElementById('loadLocalButton').onclick = function() {
+    function loadMapLocally() {
       const saveData = localStorage.getItem('dd_map_save');
-      if (!saveData) {
-        alert('No saved map found.');
-        return;
-      }
+      if (!saveData) return alert('No saved map found.');
       try {
         const parsed = JSON.parse(saveData);
         if (parsed.gridData && parsed.exploredGrid) {
@@ -928,30 +864,24 @@
         } else {
           alert('Saved data is invalid.');
         }
-      } catch (e) {
+      } catch {
         alert('Failed to load map.');
       }
-    };
+    }
 
-    // Add this function and call it once on page load
     function updateStormTimer() {
       const timerDiv = document.getElementById('stormTimer');
       const now = new Date();
 
-      // Find next Tuesday 04:00 UTC
       const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
       let next = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), utcNow.getUTCDate(), 4, 0, 0, 0));
-      // 0=Sun, 1=Mon, 2=Tue, ..., 6=Sat
       const day = utcNow.getUTCDay();
       if (day > 2 || (day === 2 && utcNow.getUTCHours() >= 4)) {
-        // If after Tuesday 04:00 UTC, go to next week
         next.setUTCDate(next.getUTCDate() + ((9 - day) % 7));
       } else if (day < 2 || (day === 2 && utcNow.getUTCHours() < 4)) {
-        // If before Tuesday, move to this week's Tuesday
         next.setUTCDate(next.getUTCDate() + ((2 - day + 7) % 7));
       }
 
-      // Calculate difference
       const diffMs = next.getTime() - utcNow.getTime();
       if (diffMs <= 0) {
         timerDiv.textContent = "Next Coriolis Storm: calculating...";
@@ -967,30 +897,36 @@
         `Next Coriolis Storm: ${days}d ${hours}h ${mins}m ${secs}s (Tuesday 04:00 UTC)`;
     }
 
-    // Call on load and set interval
-    updateStormTimer();
-    setInterval(updateStormTimer, 1000);
-
-    // Initialize everything on page load
-    renderLegend();
-    initializeGrid();
-    populateIconPicker();
-    rerenderAllCells();
-
-    // Button event listeners
-    document.getElementById('clearButton').onclick = clearMap;
-    document.getElementById('exportPngButton').onclick = exportAsPng;
-    document.getElementById('exportJsonButton').onclick = exportMapDataAsJson;
-
-    // Update the event listener for the slider toggle:
-    document.getElementById('useLocalTime').addEventListener('change', function() {
-      useLocalTime = this.checked;
-      // Always keep left "Local" and right "UTC"
+    function updateTimeToggleHighlight() {
       document.getElementById('timeModeLabel').style.fontWeight = useLocalTime ? 'bold' : 'normal';
       document.getElementById('timeModeLabel').style.opacity = useLocalTime ? '1' : '0.5';
       document.getElementById('utcModeLabel').style.fontWeight = useLocalTime ? 'normal' : 'bold';
       document.getElementById('utcModeLabel').style.opacity = useLocalTime ? '0.5' : '1';
+    }
+
+    function initializeApp() {
+      renderLegend();
+      initializeGrid();
+      populateIconPicker();
+      rerenderAllCells();
+      updateTimeToggleHighlight();
+      updateStormTimer();
+      setInterval(updateStormTimer, 1000);
+    }
+
+    initializeApp();
+
+    document.getElementById('useLocalTime').addEventListener('change', function() {
+      useLocalTime = this.checked;
+      updateTimeToggleHighlight();
     });
+
+    document.getElementById('clearButton').onclick = clearMap;
+    document.getElementById('exportPngButton').onclick = exportAsPng;
+    document.getElementById('exportJsonButton').onclick = exportMapDataAsJson;
+    document.getElementById('saveLocalButton').onclick = saveMapLocally;
+    document.getElementById('loadLocalButton').onclick = loadMapLocally;
+    document.getElementById('exploreAllButton').onclick = exploreAllCells;
   </script>
   <div style="margin-top:40px; text-align:center;">
     <a href="https://awakening.wiki/Fremen_with_Benefits" target="_blank" style="text-decoration:none; color:inherit;">
@@ -1002,7 +938,7 @@
   </div>
   <div style="margin-top:18px; text-align:center;">
     <span style="color:#bbb; font-size:0.95em; background:rgba(30,30,30,0.7); padding:6px 18px; border-radius:8px; display:inline-block;">
-      Disclaimer: All assets and watermarks belong to Fremen with Benefits and Xtrophic.
+      Disclaimer: All assets and watermarks belong to Funcom, Fremen with Benefits and Xtrophic.
     </span>
   </div>
 </body>
