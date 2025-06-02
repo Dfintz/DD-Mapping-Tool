@@ -202,6 +202,54 @@
       transform: translateY(-2px) scale(1.03);
       box-shadow: 0 4px 16px #ffe06655;
     }
+    /* Add these styles to your <style> section for the slider switch */
+    .switch-label {
+      display: flex;
+      align-items: center;
+      color: #ffe066;
+      font-weight: bold;
+      font-size: 1.05em;
+      gap: 6px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      margin: 0 2px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #444;
+      border-radius: 24px;
+      transition: background 0.2s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: #ffe066;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 4px #2226;
+    }
+    .switch input:checked + .slider {
+      background: #ffe066;
+    }
+    .switch input:checked + .slider:before {
+      background: #444;
+      transform: translateX(20px);
+    }
   </style>
 </head>
 <body>
@@ -221,10 +269,15 @@
       <div class="legend-title">Legend</div>
       <div id="legendIcons"></div>
       <div class="side-controls">
+        <!-- Replace the time toggle in your .side-controls with this slider switch markup -->
         <div class="time-toggle">
-          <label>
-            <input type="checkbox" id="useLocalTime" checked>
-            <span id="timeModeLabel">Local</span> time
+          <label class="switch-label">
+            <span id="timeModeLabel" style="margin-right:10px;">Local</span>
+            <label class="switch">
+              <input type="checkbox" id="useLocalTime" checked>
+              <span class="slider"></span>
+            </label>
+            <span style="margin-left:10px;">UTC</span>
           </label>
         </div>
         <button id="exploreAllButton" class="pretty-btn">Explore All</button>
@@ -464,13 +517,13 @@
       ];
 
       // Collect all placed icons as simple entries (e.g. "I1,Shipwreck" for top row, "A1,..." for bottom)
+      // FIX: Use same letter order as grid (I at top, A at bottom)
       const simpleEntries = [];
-      for (let row = 0; row < 9; row++) {
+      for (let row = 8; row >= 0; row--) { // I (8) at top, A (0) at bottom
         for (let col = 0; col < 9; col++) {
           gridData[row][col].forEach(icon => {
             let iconName = icon.replace(/^Icon/, '').replace(/\.png$/i, '');
-            // Reverse the letter order: I (row 0/top) ... A (row 8/bottom)
-            const coord = String.fromCharCode(65 + (8 - row)) + (col + 1);
+            const coord = String.fromCharCode(65 + row) + (col + 1);
             simpleEntries.push(`${coord},${iconName}`);
           });
         }
@@ -860,6 +913,7 @@
     document.getElementById('exportPngButton').onclick = exportAsPng;
     document.getElementById('exportJsonButton').onclick = exportMapDataAsJson;
 
+    // Update the event listener for the slider toggle:
     document.getElementById('useLocalTime').addEventListener('change', function() {
       useLocalTime = this.checked;
       document.getElementById('timeModeLabel').textContent = useLocalTime ? 'Local' : 'UTC';
