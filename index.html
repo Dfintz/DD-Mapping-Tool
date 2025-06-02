@@ -19,6 +19,7 @@
       display: flex;
       align-items: flex-start;
       gap: 40px;
+      justify-content: center; /* Add this line to center the grid and legend horizontally */
     }
     .grid-outer {
       display: flex;
@@ -158,8 +159,8 @@
     .side-controls {
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      margin-top: 18px;
+      gap: 18px;              /* More space between buttons */
+      margin-top: 24px;       /* More space above controls */
       align-items: stretch;
     }
     .time-toggle label {
@@ -184,13 +185,14 @@
       background: linear-gradient(90deg, #ffe066 0%, #ffd700 100%);
       color: #222;
       border: none;
-      border-radius: 6px;
-      padding: 10px 0;
-      font-size: 1em;
+      border-radius: 8px;     /* Slightly more rounded */
+      padding: 14px 0;        /* Taller buttons */
+      font-size: 1.08em;      /* Slightly larger text */
       font-weight: bold;
+      letter-spacing: 0.03em; /* Slightly more spacing between letters */
       box-shadow: 0 2px 8px #2224;
       cursor: pointer;
-      margin: 0;
+      margin: 0 0 2px 0;      /* Small bottom margin for stacking */
       transition: background 0.2s, color 0.2s, transform 0.1s;
       outline: none;
     }
@@ -204,11 +206,9 @@
 </head>
 <body>
   <h1>Dune Awakening Deep Desert Mapping</h1>
-  <div style="margin-bottom:10px;">
-    <label style="color:#ffe066; font-weight:bold; font-size:1.1em;">
-      <input type="checkbox" id="useLocalTime" checked style="accent-color:#ffe066;">
-      Show date/time in <span id="timeModeLabel" style="color:#fff700;">Local</span> time
-    </label>
+  <!-- Add this timer display under your <h1> or wherever you want it visible -->
+  <div id="stormTimer" style="color:#ffe066; font-size:1.15em; font-weight:bold; margin-bottom:12px; text-align:center;">
+    Next Coriolis Storm: calculating...
   </div>
   <p>Click on any cell to set its content, or drag and drop from Legend. When you’re finished updating the map, use the export to png or json button to review your grid or clear to start over. You can also save and load the current state of your map locally. Lastly you can set the time to either UTC or your local time.</p>
   <div class="main-flex">
@@ -810,6 +810,44 @@
         alert('Failed to load map.');
       }
     };
+
+    // Add this function and call it once on page load
+    function updateStormTimer() {
+      const timerDiv = document.getElementById('stormTimer');
+      const now = new Date();
+
+      // Find next Tuesday 04:00 UTC
+      const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
+      let next = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), utcNow.getUTCDate(), 4, 0, 0, 0));
+      // 0=Sun, 1=Mon, 2=Tue, ..., 6=Sat
+      const day = utcNow.getUTCDay();
+      if (day > 2 || (day === 2 && utcNow.getUTCHours() >= 4)) {
+        // If after Tuesday 04:00 UTC, go to next week
+        next.setUTCDate(next.getUTCDate() + ((9 - day) % 7));
+      } else if (day < 2 || (day === 2 && utcNow.getUTCHours() < 4)) {
+        // If before Tuesday, move to this week's Tuesday
+        next.setUTCDate(next.getUTCDate() + ((2 - day + 7) % 7));
+      }
+
+      // Calculate difference
+      const diffMs = next.getTime() - utcNow.getTime();
+      if (diffMs <= 0) {
+        timerDiv.textContent = "Next Coriolis Storm: calculating...";
+        return;
+      }
+      const diffSec = Math.floor(diffMs / 1000);
+      const days = Math.floor(diffSec / 86400);
+      const hours = Math.floor((diffSec % 86400) / 3600);
+      const mins = Math.floor((diffSec % 3600) / 60);
+      const secs = diffSec % 60;
+
+      timerDiv.textContent =
+        `Next Coriolis Storm: ${days}d ${hours}h ${mins}m ${secs}s (Tuesday 04:00 UTC)`;
+    }
+
+    // Call on load and set interval
+    updateStormTimer();
+    setInterval(updateStormTimer, 1000);
 
     // Initialize everything on page load
     renderLegend();
