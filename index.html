@@ -895,7 +895,7 @@
       </div>
       <div class="timer-phases" id="timerPhases">
         <div class="timer-phase" id="buildupPhase">
-          <span class="phase-label">⚡ EU Buildup:</span>
+          <span class="phase-label">⚡ Storm Buildup:</span>
           <span class="phase-time" id="buildupTime">calculating...</span>
         </div>
         <div class="timer-phase" id="hitPhase">
@@ -2148,6 +2148,11 @@
       localStorage.setItem('dd_map_high_contrast', enabled ? '1' : '0');
       showNotification(`High contrast mode ${enabled ? 'enabled' : 'disabled'}`, 'info');
     });
+    // Restore high contrast mode on load
+    if (localStorage.getItem('dd_map_high_contrast') === '1') {
+      document.body.classList.add('high-contrast');
+      highContrastBtn.setAttribute('aria-pressed', 'true');
+    }
 
     gridContainer.addEventListener('click', function(e) {
       if (e.target === gridContainer) clearSelection();
@@ -2209,49 +2214,33 @@
       reader.readAsText(file);
     });    // --- Import from JSON (drag-and-drop) ---
     document.body.addEventListener('dragover', function(e) {
-      // Only prevent default for file drops, not legend icon drags
-      if (e.dataTransfer.types.includes('Files')) {
-        e.preventDefault();
-      }
+      e.preventDefault();
     });
     document.body.addEventListener('drop', function(e) {
-      // Only handle file drops, ignore legend icon drops and other non-file drops
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        e.preventDefault();
+      // Only handle file drops, ignore legend icon drags
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
-        if (file.type === 'application/json' || file.name.endsWith('.json')) {
-          const indicator = showProgressIndicator('Importing dropped file...');
-          const reader = new FileReader();
-          
-          reader.onload = function(evt) {
-            try {
-              const data = JSON.parse(evt.target.result);
-              const result = importMapDataSafe(data);
-              hideProgressIndicator();
-              
-              if (result.success) {
-                showNotification(result.message, 'success');
-              } else {
-                showNotification(result.message, 'error');
-              }
-            } catch (error) {
-              hideProgressIndicator();
-              console.error('Import failed:', error);
-              showNotification('Invalid JSON file format', 'error');
-            }
-          };
-          
-          reader.onerror = function() {
-            hideProgressIndicator();
-            showNotification('Failed to read file', 'error');
-          };
-          
-          reader.readAsText(file);
-        } else {
-          showNotification('Please drop a JSON file', 'warning');
+        if (!file.name.endsWith('.json')) {
+          showNotification('Please drop a JSON file.', 'error');
+          return;
         }
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          try {
+            const data = JSON.parse(evt.target.result);
+            const result = importMapDataSafe(data);
+            if (result.success) {
+              showNotification('Map imported successfully!', 'success');
+            } else {
+              showNotification(result.message, 'error');
+            }
+          } catch (err) {
+            showNotification('Invalid JSON file', 'error');
+          }
+        };
+        reader.readAsText(file);
+        e.preventDefault();
       }
-      // For non-file drops (legend icons), do nothing and let the grid cell handlers take care of it
     });
 
     // --- ARIA roles and keyboard navigation for legend and grid ---
