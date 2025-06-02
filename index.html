@@ -2128,6 +2128,7 @@
         reader.readAsText(file);
         e.preventDefault();
       }
+      // If not a file drop, do nothing (suppresses JSON warning on icon drag)
     });
 
     // --- ARIA roles and keyboard navigation for legend and grid ---
@@ -2384,4 +2385,3 @@
   </script>
 </body>
 </html>
-`
