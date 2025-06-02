@@ -269,16 +269,18 @@
       background: linear-gradient(90deg, #ffe066 0%, #ffd700 100%);
       color: #222;
       border: none;
-      border-radius: 8px;
-      padding: 14px 0;
+      border-radius: 22px;         /* More round */
+      padding: 14px 32px;          /* Wider buttons */
+      min-width: 180px;            /* Minimum width for consistency */
       font-size: 1.08em;
       font-weight: bold;
       letter-spacing: 0.03em;
       box-shadow: 0 2px 8px #2224;
       cursor: pointer;
-      margin: 0 0 2px 0;
+      margin: 0 0 10px 0;          /* More vertical space between buttons */
       transition: background 0.2s, color 0.2s, transform 0.1s;
       outline: none;
+      display: inline-block;
     }
     .pretty-btn:hover, .pretty-btn:focus {
       background: linear-gradient(90deg, #fff6b0 0%, #ffe066 100%);
@@ -958,3 +960,4 @@
   </div>
 </body>
 </html>
+`
