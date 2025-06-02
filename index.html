@@ -151,6 +151,13 @@
 </head>
 <body>
   <h1>Dune Awakening Deep Desert Mapping</h1>
+  <!-- Add this toggle button above or near your controls/buttons, e.g. after <h1> -->
+  <div style="margin-bottom:10px;">
+    <label>
+      <input type="checkbox" id="useLocalTime" checked>
+      Show date/time in <span id="timeModeLabel">Local</span> time
+    </label>
+  </div>
   <p>Click on any cell to set its content. When you’re finished updating the map, use the export button to review your grid or clear to start over.</p>
   <div class="main-flex">
     <div class="grid-outer">
@@ -162,6 +169,8 @@
         <button id="exploreAllButton">Explore All</button>
         <button id="exportPngButton">Export as PNG</button>
         <button id="exportJsonButton">Export as JSON</button>
+        <button id="saveLocalButton">Save Map Locally</button>
+        <button id="loadLocalButton">Load Map</button>
       </div>
     </div>
     <div class="legend">
@@ -185,6 +194,8 @@
   </div>
 
   <script>
+    let useLocalTime = true;
+
     const gridContainer = document.getElementById('gridContainer');
     let gridData = [];
     let exploredGrid = []; // New: tracks explored state
@@ -505,10 +516,13 @@
         ctx.fillRect(0, 0, canvas.width, dateHeight);
 
         // Draw date at the top
+        const now = new Date();
+        const dateStr = useLocalTime
+          ? now.toLocaleString()
+          : now.toUTCString();
         ctx.font = "bold 32px Arial";
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "middle";
-        const dateStr = new Date().toUTCString(); // Use UTC time
         ctx.fillText(dateStr, legendWidth + 20, dateHeight / 2);
 
         // Draw faded background image for grid area
@@ -705,6 +719,38 @@
       rerenderAllCells();
     };
 
+    // Save map to localStorage
+    document.getElementById('saveLocalButton').onclick = function() {
+      const saveData = {
+        gridData: gridData,
+        exploredGrid: exploredGrid
+      };
+      localStorage.setItem('dd_map_save', JSON.stringify(saveData));
+      alert('Map saved locally!');
+    };
+
+    // Load map from localStorage
+    document.getElementById('loadLocalButton').onclick = function() {
+      const saveData = localStorage.getItem('dd_map_save');
+      if (!saveData) {
+        alert('No saved map found.');
+        return;
+      }
+      try {
+        const parsed = JSON.parse(saveData);
+        if (parsed.gridData && parsed.exploredGrid) {
+          gridData = parsed.gridData;
+          exploredGrid = parsed.exploredGrid;
+          rerenderAllCells();
+          alert('Map loaded!');
+        } else {
+          alert('Saved data is invalid.');
+        }
+      } catch (e) {
+        alert('Failed to load map.');
+      }
+    };
+
     // Initialize everything on page load
     renderLegend();
     initializeGrid();
@@ -715,6 +761,20 @@
     document.getElementById('clearButton').onclick = clearMap;
     document.getElementById('exportPngButton').onclick = exportAsPng;
     document.getElementById('exportJsonButton').onclick = exportMapDataAsJson;
+
+    document.getElementById('useLocalTime').addEventListener('change', function() {
+      useLocalTime = this.checked;
+      document.getElementById('timeModeLabel').textContent = useLocalTime ? 'Local' : 'UTC';
+    });
   </script>
+  <div style="margin-top:40px; text-align:center;">
+    <a href="https://awakening.wiki/Fremen_with_Benefits" target="_blank" style="text-decoration:none; color:inherit;">
+      <img src="fremen_with_benefits.png" alt="Fremen with Benefits" style="max-width:220px; width:100%; border-radius:12px; box-shadow:0 2px 16px #222; margin-bottom:10px;">
+      <div style="font-family:Arial,sans-serif; font-size:1.2em; color:#ffe066; font-weight:bold;">
+        Created by Fremen with Benefits
+      </div>
+    </a>
+  </div>
 </body>
 </html>
+``` 
