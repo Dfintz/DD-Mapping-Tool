@@ -69,6 +69,19 @@
       width: 900px;
       height: 900px;
       z-index: 1;
+      position: relative;
+    }
+    .grid-container::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border: 4px solid #a259ff;
+      border-radius: 10px;
+      box-shadow: 0 0 24px 2px #a259ff99;
+      z-index: 10;
+      width: 100%;
+      height: 100%;
     }
     .cell {
       border: 1.5px solid #222;
@@ -750,29 +763,31 @@
           }
         }
 
-        // Load fwb.png and add signature at the bottom
+        // Load fwb.png and add signature at the top right, same line as date
         loadImage('fwb.png').then(fwbImg => {
-          // Calculate signature area
-          const sigHeight = 54;
+          const sigHeight = 44;
           const sigMargin = 18;
-          const sigY = canvas.height - sigHeight - sigMargin;
-          const sigX = legendWidth + 20;
+          const sigY = (dateHeight - sigHeight) / 2;
+          const sigText = "Provided by Fremen with Benefits";
+          ctx.font = "bold 24px Arial";
+          const textWidth = ctx.measureText(sigText).width;
+          const sigX = canvas.width - sigMargin - sigHeight - 12 - textWidth;
 
           // Draw semi-transparent bar for signature
           ctx.save();
           ctx.globalAlpha = 0.85;
           ctx.fillStyle = "#222";
-          ctx.fillRect(sigX - 16, sigY - 8, 380, sigHeight + 16);
+          ctx.fillRect(sigX - 16, sigY - 8, textWidth + sigHeight + 44, sigHeight + 16);
           ctx.globalAlpha = 1.0;
 
           // Draw FWB thumbnail
           ctx.drawImage(fwbImg, sigX, sigY, sigHeight, sigHeight);
 
           // Draw text
-          ctx.font = "bold 28px Arial";
+          ctx.font = "bold 24px Arial";
           ctx.fillStyle = "#ffe066";
           ctx.textBaseline = "middle";
-          ctx.fillText("Provided by Fremen with Benefits", sigX + sigHeight + 18, sigY + sigHeight / 2);
+          ctx.fillText(sigText, sigX + sigHeight + 12, sigY + sigHeight / 2);
 
           ctx.restore();
 
@@ -943,4 +958,3 @@
   </div>
 </body>
 </html>
-``` 
