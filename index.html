@@ -362,8 +362,8 @@
         padding-bottom: 0;
       }
       .legend-item img {
-        width: 16px;
-        height: 16px;
+        width: 24px;
+        height: 24px;
       }
       .pretty-btn {
         min-width: 120px;
@@ -379,8 +379,8 @@
     }
 
     .legend-item img {
-      width: 24px;
-      height: 24px;
+      width: 36px;
+      height: 36px;
     }
 
     body.high-contrast {
@@ -441,23 +441,15 @@
         - You can set the time to either UTC or your local time for the export to png.
       </div>
     </div>
-    <!-- New controls area under description box -->
-    <div class="main-controls" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom:18px;">
-      <div style="display:flex; gap:32px; justify-content:center; margin-bottom:10px;">
-        <div style="display:flex; flex-direction:column; gap:10px;">
-          <button id="saveVersionButton" class="pretty-btn">Save Map</button>
-          <button id="loadVersionButton" class="pretty-btn">Load Map</button>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:10px;">
-          <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
-          <button id="importJsonButton" class="pretty-btn">Import from JSON</button>
-          <input type="file" id="importJsonInput" accept="application/json" style="display:none;" />
-        </div>
-      </div>
-      <div style="display:flex; gap:18px; justify-content:center;">
-        <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
-        <button id="shareLinkButton" class="pretty-btn">Get Shareable Link</button>
-      </div>
+    <!-- Unified controls row under description box -->
+    <div class="main-controls" style="width:100%; display:flex; flex-direction:row; flex-wrap:wrap; justify-content:center; align-items:center; gap:14px; margin-bottom:18px;">
+      <button id="saveVersionButton" class="pretty-btn">Save Map</button>
+      <button id="loadVersionButton" class="pretty-btn">Load Map</button>
+      <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
+      <button id="importJsonButton" class="pretty-btn">Import from JSON</button>
+      <input type="file" id="importJsonInput" accept="application/json" style="display:none;" />
+      <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
+      <button id="shareLinkButton" class="pretty-btn">Get Shareable Link</button>
     </div>
     <div class="grid-outer">
       <div style="display:flex;">
@@ -695,6 +687,21 @@
       const grid = document.getElementById('iconPickerGrid');
       grid.innerHTML = "";
       let selectedIcon = null;
+
+      // Determine which icons are present in the current cell or all selected cells
+      let presentIcons = new Set();
+      if (selectedCells.size > 1) {
+        // Multi-cell: collect all icons present in any selected cell
+        selectedCells.forEach(key => {
+          const [row, col] = key.split(',');
+          gridData[row][col].forEach(icon => presentIcons.add(icon));
+        });
+      } else if (currentCell) {
+        const row = currentCell.getAttribute('data-row');
+        const col = currentCell.getAttribute('data-col');
+        gridData[row][col].forEach(icon => presentIcons.add(icon));
+      }
+
       iconList.forEach(icon => {
         const img = document.createElement('img');
         img.src = iconPath + icon;
@@ -702,12 +709,17 @@
         img.style.width = "24px";
         img.style.height = "24px";
         img.style.cursor = "pointer";
-        img.style.border = "2px solid transparent";
+        img.style.border = presentIcons.has(icon) ? "2.5px solid #a259e6" : "2px solid transparent";
         img.style.borderRadius = "6px";
         img.title = icon.replace('.png','').replace('Icon','');
         img.onclick = () => {
           // Remove border from all icons
-          Array.from(grid.children).forEach(child => child.style.border = "2px solid transparent");
+          Array.from(grid.children).forEach(child => {
+            // Only remove border if not present in the cell(s)
+            if (!presentIcons.has(child.alt)) {
+              child.style.border = "2px solid transparent";
+            }
+          });
           img.style.border = "2.5px solid #a259e6";
           selectedIcon = icon;
           selectIcon(icon);
@@ -1511,3 +1523,4 @@
   </div>
 </body>
 </html>
+```
