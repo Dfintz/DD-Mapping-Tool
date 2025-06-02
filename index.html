@@ -21,6 +21,30 @@
       gap: 40px;
       justify-content: center; /* Add this line to center the grid and legend horizontally */
     }
+    .description-box {
+      background: rgba(30,30,30,0.85);
+      color: #ffe066;
+      border-radius: 10px;
+      padding: 18px 18px 18px 18px;
+      min-width: 220px;
+      max-width: 260px;
+      margin-right: 32px;
+      font-size: 1em;
+      box-shadow: 0 2px 12px #2228;
+      align-self: flex-start;
+    }
+    .description-title {
+      font-weight: bold;
+      font-size: 1.1em;
+      color: #fff;
+      margin-bottom: 8px;
+      letter-spacing: 0.03em;
+    }
+    .description-content {
+      color: #ffe066;
+      font-size: 0.98em;
+      line-height: 1.6;
+    }
     .grid-outer {
       display: flex;
       flex-direction: column;
@@ -159,27 +183,64 @@
     .side-controls {
       display: flex;
       flex-direction: column;
-      gap: 18px;              /* More space between buttons */
-      margin-top: 24px;       /* More space above controls */
+      gap: 18px;
+      margin-top: 24px;
       align-items: stretch;
     }
-    .time-toggle label {
+    .time-toggle {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .switch-label {
+      display: flex;
+      align-items: center;
       color: #ffe066;
       font-weight: bold;
       font-size: 1.05em;
-      display: flex;
-      align-items: center;
       gap: 6px;
+      min-width: 0; /* Prevents stretching */
     }
-    #useLocalTime {
-      accent-color: #ffe066;
-      width: 18px;
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      margin: 0 2px;
+      flex-shrink: 0; /* Prevents slider from stretching legend width */
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #444;
+      border-radius: 24px;
+      transition: background 0.2s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
       height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: #ffe066;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 4px #2226;
     }
-    #timeModeLabel {
-      color: #fff700;
-      font-weight: bold;
-      margin-left: 2px;
+    .switch input:checked + .slider {
+      background: #ffe066;
+    }
+    .switch input:checked + .slider:before {
+      background: #444;
+      transform: translateX(20px);
     }
     .pretty-btn {
       background: linear-gradient(90deg, #ffe066 0%, #ffd700 100%);
@@ -258,8 +319,17 @@
   <div id="stormTimer" style="color:#ffe066; font-size:1.15em; font-weight:bold; margin-bottom:12px; text-align:center;">
     Next Coriolis Storm: calculating...
   </div>
-  <p>Click on any cell to set its content, or drag and drop from Legend. When you’re finished updating the map, use the export to png or json button to review your grid or clear to start over. You can also save and load the current state of your map locally. Lastly you can set the time to either UTC or your local time.</p>
   <div class="main-flex">
+    <!-- Description box on the left -->
+    <div class="description-box">
+      <div class="description-title">How to Use</div>
+      <div class="description-content">
+        Click on any cell to set its content, or drag and drop from Legend.<br>
+        When you’re finished updating the map, use the export to PNG or JSON button to review your grid or clear to start over.<br>
+        You can also save and load the current state of your map locally.<br>
+        Lastly, you can set the time to either UTC or your local time.
+      </div>
+    </div>
     <div class="grid-outer">
       <div style="display:flex;">
         <div class="grid-container" id="gridContainer"></div>
@@ -269,7 +339,6 @@
       <div class="legend-title">Legend</div>
       <div id="legendIcons"></div>
       <div class="side-controls">
-        <!-- Replace the time toggle in your .side-controls with this slider switch markup -->
         <div class="time-toggle">
           <label class="switch-label">
             <span id="timeModeLabel" style="margin-right:10px;">Local</span>
@@ -277,7 +346,7 @@
               <input type="checkbox" id="useLocalTime" checked>
               <span class="slider"></span>
             </label>
-            <span style="margin-left:10px;">UTC</span>
+            <span id="utcModeLabel" style="margin-left:10px;">UTC</span>
           </label>
         </div>
         <button id="exploreAllButton" class="pretty-btn">Explore All</button>
@@ -916,7 +985,11 @@
     // Update the event listener for the slider toggle:
     document.getElementById('useLocalTime').addEventListener('change', function() {
       useLocalTime = this.checked;
-      document.getElementById('timeModeLabel').textContent = useLocalTime ? 'Local' : 'UTC';
+      // Always keep left "Local" and right "UTC"
+      document.getElementById('timeModeLabel').style.fontWeight = useLocalTime ? 'bold' : 'normal';
+      document.getElementById('timeModeLabel').style.opacity = useLocalTime ? '1' : '0.5';
+      document.getElementById('utcModeLabel').style.fontWeight = useLocalTime ? 'normal' : 'bold';
+      document.getElementById('utcModeLabel').style.opacity = useLocalTime ? '0.5' : '1';
     });
   </script>
   <div style="margin-top:40px; text-align:center;">
@@ -934,3 +1007,4 @@
   </div>
 </body>
 </html>
+``` 
