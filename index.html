@@ -27,8 +27,8 @@
     }    .main-flex {
       display: flex;
       align-items: flex-start;
-      justify-content: center; /* Center the grid and side panels horizontally */
-      gap: 40px;
+      justify-content: center;
+      gap: 24px;
       width: 100%;
       max-width: none;
       position: relative;
@@ -91,20 +91,19 @@
       display: flex;
       flex-direction: column;
       align-items: center; /* Center the grid horizontally */
-      margin-left: 300px; /* Make space for the controls */
+      margin-left: 0;
     }    .main-controls {
-      width: 100%;
       display: flex;
       flex-direction: column;
-      flex-wrap: wrap;
+      align-items: flex-end;
       justify-content: flex-start;
-      align-items: center;
-      gap: 8px;
-      margin: 20px 0 20px 0;
-      max-width: 280px;
-      position: absolute;
-      top: 150px; /* Position at reasonable height */
-      left: 0;
+      margin-right: 32px;
+      margin-top: 24px;
+      min-width: 200px;
+      max-width: 220px;
+      position: static;
+      top: unset;
+      left: unset;
       z-index: 99;
     }
     /* Unified controls row under description box */
@@ -801,26 +800,8 @@
       background: linear-gradient(90deg, #777 0%, #999 100%);
     }
 
-    .main-controls {
-      position: absolute;
-      top: 250px; /* Position below description box */
-      left: 0;
-      z-index: 99;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-      align-items: center;
-      gap: 8px;
-      margin: 20px 0 20px 0;
-      max-width: 280px;
-    }
-      /* Unified controls row under description box */
-    .main-controls .pretty-btn {
-      margin: 4px 0;
-      min-width: 140px;
-      width: 100%;
+    .side-controls {
+      margin-top: 24px;
     }
   </style>
 </head>
@@ -853,8 +834,8 @@
         </div>
       </div>
     </div>
-  <div class="main-flex">
-    <div class="main-controls">
+  <div class="main-flex" style="align-items: flex-start;">
+    <div class="main-controls" style="margin-right: 32px; margin-top: 24px; align-items: flex-end; min-width: 200px; max-width: 220px;">
       <button id="helpButton" class="pretty-btn">Help & Shortcuts</button>
       <button id="saveVersionButton" class="pretty-btn">Save Map</button>
       <button id="loadVersionButton" class="pretty-btn">Load Map</button>
@@ -864,7 +845,7 @@
       <input type="file" id="importJsonInput" accept="application/json" style="display:none;" />
       <button id="shareLinkButton" class="pretty-btn">Get Shareable Link</button>
     </div>
-    <div class="grid-outer">
+    <div class="grid-outer" style="margin-left: 0;">
       <div style="display:flex;">
         <div class="grid-container" id="gridContainer" role="grid" aria-label="Map grid"></div>
       </div>
@@ -876,7 +857,7 @@
       </button>
       <div id="legendIcons" role="list" aria-label="Map legend icons"></div>
     </div>
-    <div class="side-controls">
+    <div class="side-controls" style="margin-top: 24px;">
       <div class="time-toggle">
         <label class="switch-label">
           <span id="timeModeLabel" style="margin-right:10px;">Local</span>
@@ -2403,3 +2384,4 @@
   </script>
 </body>
 </html>
+`
