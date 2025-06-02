@@ -18,9 +18,6 @@
     h1 {
       color: #fff;
     }
-    p {
-      color: #ccc;
-    }
     .main-flex {
       display: flex;
       align-items: flex-start;
@@ -31,7 +28,7 @@
       background: rgba(30,30,30,0.85);
       color: #ffe066;
       border-radius: 10px;
-      padding: 18px 18px 18px 18px;
+      padding: 18px;
       min-width: 220px;
       max-width: 260px;
       margin-right: 32px;
@@ -70,15 +67,6 @@
       height: 900px;
       z-index: 1;
       position: relative;
-    }
-    .grid-container::after {
-      content: "";
-      position: absolute;
-      pointer-events: none;
-      top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 10;
-      width: 100%;
-      height: 100%;
     }
     .cell {
       border: 1.5px solid #222;
@@ -145,7 +133,6 @@
       font-size: 13px;
       position: static;
       box-sizing: border-box;
-      /* Prevent children from stretching legend width */
       width: 180px;
     }
     .legend-title {
@@ -170,6 +157,10 @@
     .controls {
       margin-top: 30px;
       text-align: center;
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
     }
     .cell.unexplored::after {
       content: "";
@@ -266,15 +257,15 @@
       background: linear-gradient(90deg, #ffe066 0%, #ffd700 100%);
       color: #222;
       border: none;
-      border-radius: 22px;         /* More round */
-      padding: 14px 32px;          /* Wider buttons */
-      min-width: 180px;            /* Minimum width for consistency */
+      border-radius: 22px;
+      padding: 14px 32px;
+      min-width: 180px;
       font-size: 1.08em;
       font-weight: bold;
       letter-spacing: 0.03em;
       box-shadow: 0 2px 8px #2224;
       cursor: pointer;
-      margin: 0 0 10px 0;          /* More vertical space between buttons */
+      margin: 0 0 10px 0;
       transition: background 0.2s, color 0.2s, transform 0.1s;
       outline: none;
       display: inline-block;
@@ -351,7 +342,6 @@
 
   <script>
     let useLocalTime = true;
-
     const gridContainer = document.getElementById('gridContainer');
     let gridData = [];
     let exploredGrid = [];
@@ -381,19 +371,28 @@
       "Titanium"
     ];
     const iconPath = "Icons/";
-
     let currentCell = null;
 
     function renderLegend() {
       const legend = document.getElementById('legendIcons');
       legend.innerHTML = '';
       iconList.forEach((icon, idx) => {
-        legend.innerHTML += `
-          <div class="legend-item" draggable="true" data-icon="${icon}">
-            <img src="${iconPath + icon}" alt="${iconNames[idx]}">
-            <span>${iconNames[idx]}</span>
-          </div>
-        `;
+        // Use textContent for span and setAttribute for img to avoid XSS
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.setAttribute('draggable', 'true');
+        div.setAttribute('data-icon', icon);
+
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.alt = iconNames[idx];
+
+        const span = document.createElement('span');
+        span.textContent = iconNames[idx];
+
+        div.appendChild(img);
+        div.appendChild(span);
+        legend.appendChild(div);
       });
 
       document.querySelectorAll('.legend-item').forEach(item => {
@@ -476,18 +475,36 @@
 
       let exploredClass = explored ? "explored" : "unexplored";
 
-      let html = `<span class="cell-label">${label}</span>
-        <div class="cell-icons" style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding-top:20px;">
-      `;
+      // Build the cell content safely
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = `<span class="cell-label"></span>
+        <div class="cell-icons" style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding-top:20px;"></div>${checkHtml}`;
+
+      // Set label safely
+      wrapper.querySelector('.cell-label').textContent = label;
+
+      // Add icons safely
+      const iconsGrid = wrapper.querySelector('.cell-icons');
       for (let i = 0; i < 9; i++) {
+        const iconDiv = document.createElement('div');
+        iconDiv.style.display = "flex";
+        iconDiv.style.alignItems = "center";
+        iconDiv.style.justifyContent = "center";
         if (icons[i]) {
-          html += `<div style="display:flex;align-items:center;justify-content:center;"><img src="${iconPath + icons[i]}" alt="" draggable="false" style="width:32px;height:32px;"></div>`;
-        } else {
-          html += `<div></div>`;
+          const img = document.createElement('img');
+          img.src = iconPath + icons[i];
+          img.alt = "";
+          img.draggable = false;
+          img.style.width = "32px";
+          img.style.height = "32px";
+          iconDiv.appendChild(img);
         }
+        iconsGrid.appendChild(iconDiv);
       }
-      html += `</div>${checkHtml}`;
-      cell.innerHTML = html;
+
+      // Replace cell content
+      cell.innerHTML = '';
+      Array.from(wrapper.childNodes).forEach(n => cell.appendChild(n));
       cell.classList.remove("explored", "unexplored");
       cell.classList.add(exploredClass);
 
@@ -762,7 +779,7 @@
           }
         }
 
-        // Load fwb.png and add signature at the top right, same line as date
+        // Signature at top right, same line as date
         loadImage('fwb.png').then(fwbImg => {
           const sigHeight = 44;
           const sigMargin = 18;
@@ -772,17 +789,14 @@
           const textWidth = ctx.measureText(sigText).width;
           const sigX = canvas.width - sigMargin - sigHeight - 12 - textWidth;
 
-          // Draw semi-transparent bar for signature
           ctx.save();
           ctx.globalAlpha = 0.85;
           ctx.fillStyle = "#222";
           ctx.fillRect(sigX - 16, sigY - 8, textWidth + sigHeight + 44, sigHeight + 16);
           ctx.globalAlpha = 1.0;
 
-          // Draw FWB thumbnail
           ctx.drawImage(fwbImg, sigX, sigY, sigHeight, sigHeight);
 
-          // Draw text
           ctx.font = "bold 24px Arial";
           ctx.fillStyle = "#ffe066";
           ctx.textBaseline = "middle";
@@ -790,7 +804,6 @@
 
           ctx.restore();
 
-          // Download as before
           const link = document.createElement('a');
           link.download = 'grid.png';
           link.href = canvas.toDataURL();
