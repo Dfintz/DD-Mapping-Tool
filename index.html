@@ -73,7 +73,8 @@
     .legend-icons {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
+      gap: 1.2rem 1rem; /* Increased gap for more space between icons */
+      justify-content: flex-start;
     }
     .legend-icon {
       width: 36px;
@@ -86,6 +87,10 @@
       cursor: pointer;
       border: 2px solid transparent;
       transition: border 0.2s;
+    }
+    .legend-icon span {
+      margin-bottom: 2px;
+      display: block;
     }
     .legend-icon.selected, .legend-icon:focus {
       border: 2px solid #ffe082;
