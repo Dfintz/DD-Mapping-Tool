@@ -987,14 +987,10 @@
     </div>
     <div class="right-sidebar">
       <div class="main-controls">
-        <button id="helpButton" class="pretty-btn">Help & Shortcuts</button>
-        <button id="saveVersionButton" class="pretty-btn">Save Map</button>
-        <button id="loadVersionButton" class="pretty-btn">Load Map</button>
-        <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
-        <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
-        <button id="importJsonButton" class="pretty-btn">Import from JSON</button>
-        <input type="file" id="importJsonInput" accept="application/json" style="display:none;" />
-        <button id="shareLinkButton" class="pretty-btn">Get Shareable Link</button>
+        <button id="exploreAllButton" class="pretty-btn">Explore All</button>
+        <button id="undoButton" class="pretty-btn">Undo</button>
+        <button id="redoButton" class="pretty-btn">Redo</button>
+        <button id="clearButton" class="pretty-btn">Clear Map</button>
       </div>
       <div class="side-controls">
         <div class="time-toggle">
@@ -1007,10 +1003,6 @@
             <span id="utcModeLabel" style="margin-left:10px;">UTC</span>
           </label>
         </div>
-        <button id="exploreAllButton" class="pretty-btn">Explore All</button>
-        <button id="undoButton" class="pretty-btn">Undo</button>
-        <button id="redoButton" class="pretty-btn">Redo</button>
-        <button id="clearButton" class="pretty-btn">Clear Map</button>
       </div>
     </div>
   </div><!-- Icon Picker Modal -->
@@ -1023,61 +1015,6 @@
         <button class="icon-picker-btn cancel" onclick="closeIconPicker()">Cancel</button>
       </div>
       <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;">Icon placed!</div>
-    </div>
-  </div>
-
-  <!-- Help Modal -->
-  <div id="helpModal">
-    <div class="help-content">
-      <h2 class="help-title">📖 Arrakis Field Manual</h2>
-      
-      <div class="help-section">
-        <h3>🛈 How to Use</h3>
-        <ul style="color:#ffe066; font-size:1em; line-height:1.6; margin-bottom:10px;">
-          <li>Click on any cell to set its content, or drag and drop from Legend.</li>
-          <li>When you're finished updating the map, use the export to PNG button to download your grid or clear to start over.</li>
-          <li>You can import/export your map as JSON, or save/load named versions.</li>
-          <li>You can set the time to either UTC or your local time for the export to png.</li>
-        </ul>
-      </div>
-
-      <div class="help-section">
-        <h3>🔑 Keyboard Shortcuts</h3>
-        <div class="help-shortcut">
-          <span class="help-key">Shift+Click</span>
-          <span class="help-description">Multi-select cells</span>
-        </div>
-      </div>
-
-      <div class="help-section">
-        <h3>🗺️ Map Controls</h3>
-        <div class="help-shortcut">
-          <span class="help-key">Click</span>
-          <span class="help-description">Select cell and open icon picker</span>
-        </div>
-        <div class="help-shortcut">
-          <span class="help-key">Drag</span>
-          <span class="help-description">Drag legend icons to grid cells</span>
-        </div>
-        <div class="help-shortcut">
-          <span class="help-key">✓</span>
-          <span class="help-description">Toggle cell explored/unexplored</span>
-        </div>
-        <div class="help-shortcut">
-          <span class="help-key">Arrow Keys</span>
-          <span class="help-description">Navigate grid and legend</span>
-        </div>
-      </div>      <div class="help-section">
-        <h3>📁 File Operations</h3>
-        <div class="help-shortcut">
-          <span class="help-key">Auto-save</span>
-          <span class="help-description">Your work is automatically saved locally</span>
-        </div>
-        <div class="help-shortcut">
-          <span class="help-key">Share Link</span>
-          <span class="help-description">Generate shareable URLs with map data</span>
-        </div>
-      </div><button class="help-close" onclick="closeHelp()">Close Manual</button>
     </div>
   </div>
 
@@ -1603,68 +1540,7 @@
       currentCell = null;
     }
 
-    function exportMapData() {
-      let output = "Cell\t\tIcons\n";
-      output += "-------------------------\n";
-      for (let row = 0; row < 9; row++) {
-        for (let col = 0; col < 9; col++) {
-          if (gridData[row][col].length) {
-            const coord = String.fromCharCode(65 + row) + (col + 1);
-            const icons = gridData[row][col].map(i => resourcePoiIconNames[resourcePoiIcons.indexOf(i)] || houseIconNames[houseIcons.indexOf(i)]).join(", ");
-            output += coord + "\t" + icons + "\n";
-          }
-        }
-      }
-      if (output === "Cell\t\tIcons\n-------------------------\n") {
-        output += "(No icons placed on the map)";
-      }
-      alert("Exported Map Data:\n" + output);
-      console.log("Exported Map Data:\n" + output);
-    }
-
-    function exportMapDataAsJson() {
-      const layers = [
-        { Name: "Shipwreck", IconName: "Shipwreck", Description: "Shipwreck" },
-        { Name: "TestingStation", IconName: "TestingStation", Description: "Testing station" },
-        { Name: "Cave", IconName: "Cave", Description: "Cave" },
-        { Name: "Spice", IconName: "Spice", Description: "Spice ring" },
-        { Name: "Titanium", IconName: "Titanium", Description: "Titanium" },
-        { Name: "Stravidium", IconName: "Stravidium", Description: "Stravidium" },
-        { Name: "Poi", IconName: "Poi", Description: "Point of interest" },
-        { Name: "AuthorizedBase", IconName: "AuthorizedBase", Description: "Guild base" }
-      ];
-
-      const simpleEntries = [];
-      for (let row = 8; row >= 0; row--) {
-        for (let col = 0; col < 9; col++) {
-          gridData[row][col].forEach(icon => {
-            let iconName = icon.replace(/^Icon/, '').replace(/\.png$/i, '');
-            const coord = String.fromCharCode(65 + row) + (col + 1);
-            simpleEntries.push(`${coord},${iconName}`);
-          });
-        }
-      }
-
-      const json = {
-        GridSize: 9,
-        IconSize: 48,
-        GridMapSize: 150,
-        IconsFolder: "Icons",
-        Layers: layers,
-        ActiveMap: {
-          Help: "This is a sample map. It contains a list of simple entries that is used for easy entering of map coordinates by using comma or semicolon separation of entries. Ex 'A1,G4'\r\nYou may also enter detailed entries that include a grid location, name, description and coordinates within the grid.\r\n",
-          ScoutedGrids: "",
-          SimpleEntries: simpleEntries,
-          DetailedEntries: []
-        }
-      };
-
-      const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = "map_export.json";
-      link.click();
-    }    function clearMap() {
+    function clearMap() {
       if (confirm("This will clear all map data. Are you sure you want to continue?")) {
         try {
           pushUndo(); // Allow undoing clear operation
@@ -1677,217 +1553,6 @@
           showNotification('Failed to clear map', 'error');
         }
       }
-    }
-
-    function exportAsPng() {
-      const cellSize = 150;
-      const gap = 2;
-      const gridSize = 9;
-      const backgroundSrc = 'background.jpg';
-      const legendPadding = 30;
-      const legendIconSize = 40;
-      const legendTextSize = 22;
-      const legendSpacing = 18;
-      const legendTitleSize = 26;
-      const legendTitle = "Legend";
-
-      // Split legend items for left and right columns
-      const leftLegendItems = resourcePoiIcons.map((icon, idx) => ({ icon, name: resourcePoiIconNames[idx] }));
-      const rightLegendItems = houseIcons.map((icon, idx) => ({ icon, name: houseIconNames[idx] }));
-
-      // Calculate legend heights (use max of both columns)
-      const legendRows = Math.max(leftLegendItems.length, rightLegendItems.length);
-      const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing + legendRows * (legendIconSize + legendSpacing);
-      const dateHeight = 60;
-      const gridWidth = gridSize * (cellSize + gap);
-      const gridHeight = gridSize * (cellSize + gap);
-      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140; // width for one legend column
-
-      // New canvas width: legend left + grid + legend right
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = legendWidth * 2 + gridWidth;
-      canvas.height = Math.max(gridHeight + dateHeight, legendHeight + dateHeight);
-
-      function loadImage(src) {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => resolve(img);
-          img.onerror = reject;
-          img.src = src;
-        });
-      }
-
-      const iconPromises = {};
-      [...resourcePoiIcons, ...houseIcons].forEach(icon => {
-        iconPromises[icon] = loadImage(iconPath + icon);
-      });
-
-      Promise.all([
-        loadImage(backgroundSrc),
-        ...Object.values(iconPromises)
-      ]).then(([backgroundImage, ...iconImages]) => {
-        const iconMap = {};
-        let i = 0;
-        for (const icon of [...resourcePoiIcons, ...houseIcons]) {
-          iconMap[icon] = iconImages[i++];
-        }
-
-        // Date/time bar
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, canvas.width, dateHeight);
-        const now = new Date();
-        const dateStr = useLocalTime ? now.toLocaleString() : now.toUTCString();
-        ctx.font = "bold 32px Arial";
-        ctx.fillStyle = "#fff";
-        ctx.textBaseline = "middle";
-        ctx.fillText(dateStr, legendWidth + 20, dateHeight / 2);
-
-        // Background
-        ctx.globalAlpha = 0.4;
-        ctx.drawImage(backgroundImage, legendWidth, dateHeight, gridWidth, gridHeight);
-        ctx.globalAlpha = 1.0;
-
-        // Left legend (resources/POIs)
-        ctx.fillStyle = "rgba(30,30,30,0.85)";
-        ctx.fillRect(0, dateHeight, legendWidth, legendHeight);
-        ctx.font = `bold ${legendTitleSize}px Arial`;
-        ctx.fillStyle = "#fff";
-        ctx.textBaseline = "top";
-        ctx.fillText(legendTitle, legendPadding, dateHeight + legendPadding);
-        let legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
-        ctx.font = `${legendTextSize}px Arial`;
-        leftLegendItems.forEach(item => {
-          if (iconMap[item.icon]) {
-            ctx.drawImage(iconMap[item.icon], legendPadding, legendY, legendIconSize, legendIconSize);
-          }
-          ctx.fillStyle = "#fff";
-          ctx.fillText(item.name, legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
-          legendY += legendIconSize + legendSpacing;
-        });
-
-        // Right legend (houses)
-        ctx.fillStyle = "rgba(30,30,30,0.85)";
-        ctx.fillRect(canvas.width - legendWidth, dateHeight, legendWidth, legendHeight);
-        ctx.font = `bold ${legendTitleSize}px Arial`;
-        ctx.fillStyle = "#fff";
-        ctx.textBaseline = "top";
-        ctx.fillText(legendTitle, canvas.width - legendWidth + legendPadding, dateHeight + legendPadding);
-        legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
-        ctx.font = `${legendTextSize}px Arial`;
-        rightLegendItems.forEach(item => {
-          if (iconMap[item.icon]) {
-            ctx.drawImage(iconMap[item.icon], canvas.width - legendWidth + legendPadding, legendY, legendIconSize, legendIconSize);
-          }
-          ctx.fillStyle = "#fff";
-          ctx.fillText(item.name, canvas.width - legendWidth + legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
-          legendY += legendIconSize + legendSpacing;
-        });
-
-        // Draw grid
-        for (let row = 8; row >= 0; row--) {
-          for (let col = 0; col < gridSize; col++) {
-            const canvasRow = 8 - row;
-            const x = legendWidth + col * (cellSize + gap);
-            const y = dateHeight + canvasRow * (cellSize + gap);
-            ctx.strokeStyle = '#222';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, cellSize, cellSize);
-            ctx.font = "bold 24px Arial";
-            ctx.fillStyle = "rgba(255,255,255,0.8)";
-            ctx.textBaseline = "top";
-            ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
-            const icons = gridData[row][col];
-            const n = icons.length;
-            if (n > 0) {
-              let iconSize, positions;
-              if (n === 1) {
-                iconSize = 90;
-                positions = [[cellSize / 2, cellSize / 2 + 10]];
-              } else if (n === 2) {
-                iconSize = 70;
-                positions = [
-                  [cellSize / 2 - 35, cellSize / 2 + 10],
-                  [cellSize / 2 + 35, cellSize / 2 + 10]
-                ];
-              } else if (n === 3) {
-                iconSize = 60;
-                positions = [
-                  [cellSize / 2, cellSize / 2 - 30],
-                  [cellSize / 2 - 38, cellSize / 2 + 32],
-                  [cellSize / 2 + 38, cellSize / 2 + 32]
-                ];
-              } else if (n === 4) {
-                iconSize = 54;
-                positions = [
-                  [cellSize / 2 - 32, cellSize / 2 - 24],
-                  [cellSize / 2 + 32, cellSize / 2 - 24],
-                  [cellSize / 2 - 32, cellSize / 2 + 32],
-                  [cellSize / 2 + 32, cellSize / 2 + 32]
-                ];
-              } else {
-                iconSize = 40;
-                positions = [];
-                const grid = 3;
-                const offset = (cellSize - grid * iconSize) / 2;
-                for (let i = 0; i < Math.min(n, 9); i++) {
-                  const gx = i % 3;
-                  const gy = Math.floor(i / 3);
-                  positions.push([
-                    offset + gx * iconSize + iconSize / 2,
-                    30 + offset + gy * iconSize + iconSize / 2
-                  ]);
-                }
-              }
-              for (let i = 0; i < Math.min(n, 9); i++) {
-                const icon = icons[i];
-                if (icon && iconMap[icon]) {
-                  ctx.drawImage(
-                    iconMap[icon],
-                    x + positions[i][0] - iconSize / 2,
-                    y + positions[i][1] - iconSize / 2,
-                    iconSize,
-                    iconSize
-                  );
-                }
-              }
-            }
-            if (!exploredGrid[row][col]) {
-              ctx.fillStyle = "rgba(30,30,30,0.55)";
-              ctx.fillRect(x, y, cellSize, cellSize);
-            } else {
-              ctx.fillStyle = "rgba(255,255,255,0.13)";
-              ctx.fillRect(x, y, cellSize, cellSize);
-            }
-          }
-        }
-
-        // Signature at top right, same line as date
-        loadImage('fwb.png').then(fwbImg => {
-          const sigHeight = 44;
-          const sigMargin = 18;
-          const sigY = (dateHeight - sigHeight) / 2;
-          const sigText = "Provided by Fremen with Benefits";
-          ctx.font = "bold 24px Arial";
-          const textWidth = ctx.measureText(sigText).width;
-          const sigX = canvas.width - sigMargin - sigHeight - 12 - textWidth;
-          ctx.save();
-          ctx.globalAlpha = 0.85;
-          ctx.fillStyle = "#222";
-          ctx.fillRect(sigX - 16, sigY - 8, textWidth + sigHeight + 44, sigHeight + 16);
-          ctx.globalAlpha = 1.0;
-          ctx.drawImage(fwbImg, sigX, sigY, sigHeight, sigHeight);
-          ctx.font = "bold 24px Arial";
-          ctx.fillStyle = "#ffe066";
-          ctx.textBaseline = "middle";
-          ctx.fillText(sigText, sigX + sigHeight + 12, sigY + sigHeight / 2);
-          ctx.restore();
-          const link = document.createElement('a');
-          link.download = 'grid.png';
-          link.href = canvas.toDataURL();
-          link.click();
-        });
-      });
     }
 
     function makeCellsDroppable() {
@@ -2184,36 +1849,6 @@
       return true;
     }
 
-    // Enhanced import function with validation
-    function importMapDataSafe(data) {
-      try {
-        if (!data || typeof data !== 'object') {
-          throw new Error('Invalid import data: must be object');
-        }
-        
-        if (!data.gridData || !data.exploredGrid) {
-          throw new Error('Invalid import data: missing gridData or exploredGrid');
-        }
-        
-        // Validate data before importing
-        validateGridData(data.gridData);
-        validateExploredGrid(data.exploredGrid);
-        
-        // Create backup before importing
-        pushUndo();
-        
-        gridData = data.gridData;
-        exploredGrid = data.exploredGrid;
-        rerenderAllCells();
-        onMapChange();
-        
-        return { success: true, message: 'Map imported successfully!' };
-      } catch (error) {
-        console.error('Import failed:', error);
-        return { success: false, message: `Import failed: ${error.message}` };
-      }
-    }
-
     function initializeApp() {
       renderLegend();
       initializeGrid();
@@ -2228,7 +1863,6 @@
     initializeApp();
 
     document.getElementById('clearButton').onclick = clearMap;
-    document.getElementById('exportPngButton').onclick = exportAsPng;
     document.getElementById('exploreAllButton').onclick = exploreAllCells;
     document.getElementById('undoButton').onclick = undo;
     document.getElementById('redoButton').onclick = redo;
@@ -2247,7 +1881,7 @@
       }
     });
 
-    ['exportPngButton','exploreAllButton','clearButton'].forEach(id => {
+    ['exploreAllButton','clearButton'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
         el.title = el.textContent;
@@ -2258,222 +1892,10 @@
       if (e.target === gridContainer) clearSelection();
     });    window.addEventListener('DOMContentLoaded', function() {
       autoLoadMapEnhanced();
-    });// --- Export as JSON ---
-    document.getElementById('exportJsonButton').onclick = function() {
-      try {
-        const data = { gridData, exploredGrid };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'dune_map.json';
-        link.click();
-        showNotification('Map exported successfully!', 'success');
-      } catch (error) {
-        console.error('Export failed:', error);
-        showNotification('Failed to export map', 'error');
-      }
-    };
-
-    // --- Import from JSON (file input) ---
-    document.getElementById('importJsonButton').onclick = function() {
-      document.getElementById('importJsonInput').click();
-    };    document.getElementById('importJsonInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      const indicator = showProgressIndicator('Importing map...');
-      const reader = new FileReader();
-      
-      reader.onload = function(evt) {
-        try {
-          const data = JSON.parse(evt.target.result);
-          const result = importMapDataSafe(data);
-          hideProgressIndicator();
-          
-          if (result.success) {
-            showNotification(result.message, 'success');
-          } else {
-            showNotification(result.message, 'error');
-          }
-        } catch (error) {
-          hideProgressIndicator();
-          console.error('Import failed:', error);
-          showNotification('Invalid JSON file format', 'error');
-        }
-      };
-      
-      reader.onerror = function() {
-        hideProgressIndicator();
-        showNotification('Failed to read file', 'error');
-      };
-      
-      reader.readAsText(file);
-    });    // --- Import from JSON (drag-and-drop) ---
-    document.body.addEventListener('dragover', function(e) {
-      e.preventDefault();
-    });
-    document.body.addEventListener('drop', function(e) {
-      // Only handle file drops, ignore legend icon drags
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0];
-        if (!file.name.endsWith('.json')) {
-          showNotification('Please drop a JSON file.', 'error');
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          try {
-            const data = JSON.parse(evt.target.result);
-            const result = importMapDataSafe(data);
-            if (result.success) {
-              showNotification('Map imported successfully!', 'success');
-            } else {
-              showNotification(result.message, 'error');
-            }
-          } catch (err) {
-            showNotification('Invalid JSON file', 'error');
-          }
-        };
-        reader.readAsText(file);
-        e.preventDefault();
-      }
-      // If not a file drop, do nothing (suppresses JSON warning on icon drag)
-    });
-
-    // --- ARIA roles and keyboard navigation for legend and grid ---
-    const legendIcons = document.getElementById('legendIcons');
-    legendIcons.addEventListener('keydown', function(e) {
-      const items = Array.from(legendIcons.querySelectorAll('.legend-item'));
-      const idx = items.indexOf(document.activeElement);
-      if (e.key === 'ArrowDown' && idx < items.length - 1) {
-        items[idx + 1].focus();
-        e.preventDefault();
-      } else if (e.key === 'ArrowUp' && idx > 0) {
-        items[idx - 1].focus();
-        e.preventDefault();
-      }
-    });
-
-    const gridEl = document.getElementById('gridContainer');
-    gridEl.addEventListener('keydown', function(e) {
-      const cells = Array.from(gridEl.querySelectorAll('.cell'));
-      const idx = cells.indexOf(document.activeElement);
-      if (idx === -1) return;
-      let nextIdx = idx;
-      if (e.key === 'ArrowRight' && (idx + 1) % 9 !== 0) nextIdx++;
-      else if (e.key === 'ArrowLeft' && idx % 9 !== 0) nextIdx--;
-      else if (e.key === 'ArrowDown' && idx + 9 < 81) nextIdx += 9;
-      else if (e.key === 'ArrowUp' && idx - 9 >= 0) nextIdx -= 9;
-      if (nextIdx !== idx) {
-        cells[nextIdx].focus();
-        e.preventDefault();
-      }
-    });
-
-    // --- Versioning ---
-    function getVersionList() {
-      const versions = JSON.parse(localStorage.getItem('dd_map_versions') || '[]');
-      return versions;
-    }    function saveVersion() {
-      const name = prompt('Enter a name for this version:');
-      if (!name) return;
-      
-      try {
-        const versions = getVersionList();
-        const timestamp = new Date().toISOString();
-        versions.push({ name, timestamp, data: { gridData, exploredGrid } });
-        localStorage.setItem('dd_map_versions', JSON.stringify(versions));
-        showNotification('Map version saved successfully!', 'success');
-      } catch (error) {
-        console.error('Save failed:', error);
-        showNotification('Failed to save map version', 'error');
-      }
-    }    function loadVersion() {
-      const versions = getVersionList();
-      if (!versions.length) {
-        showNotification('No saved map versions found', 'warning');
-        return;
-      }
-      
-      let msg = 'Select a version to load:\n';
-      versions.forEach((v, i) => {
-        msg += `${i + 1}: ${v.name} (${v.timestamp})\n`;
-      });
-      
-      const idx = parseInt(prompt(msg)) - 1;
-      if (isNaN(idx) || idx < 0 || idx >= versions.length) return;
-      
-      try {
-        const version = versions[idx];
-        const result = importMapDataSafe(version.data);
-        if (result.success) {
-          showNotification('Map version loaded successfully!', 'success');
-        } else {
-          showNotification(result.message, 'error');
-        }
-      } catch (error) {
-        console.error('Load failed:', error);
-        showNotification('Failed to load map version', 'error');
-      }
-    }
-    document.getElementById('saveVersionButton').onclick = saveVersion;
-    document.getElementById('loadVersionButton').onclick = loadVersion;
-    document.getElementById('saveVersionButton').textContent = 'Save Map';
-    document.getElementById('loadVersionButton').textContent = 'Load Map';    // --- Shareable Link ---
-    function getShareableLink() {
-      try {
-        const data = { gridData, exploredGrid };
-        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
-        const url = `${location.origin}${location.pathname}?map=${encoded}`;
-        
-        // Try to copy to clipboard if available
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(url).then(() => {
-            showNotification('Shareable link copied to clipboard!', 'success');
-          }).catch(() => {
-            // Fallback to prompt
-            prompt('Copy this link to share your map:', url);
-          });
-        } else {
-          // Fallback to prompt
-          prompt('Copy this link to share your map:', url);
-        }
-      } catch (error) {
-        console.error('Failed to generate shareable link:', error);
-        showNotification('Failed to generate shareable link', 'error');
-      }
-    }
-    document.getElementById('shareLinkButton').onclick = getShareableLink;    // --- Load from shareable link ---
-    (function loadFromUrl() {
-      const params = new URLSearchParams(location.search);
-      if (params.has('map')) {
-        try {
-          const decoded = decodeURIComponent(params.get('map'));
-          const json = JSON.parse(decodeURIComponent(escape(atob(decoded))));
-          const result = importMapDataSafe(json);
-          if (result.success) {
-            showNotification('Map loaded from shareable link!', 'success');
-            // Clean URL after loading
-            const newUrl = location.origin + location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
-          } else {
-            showNotification(result.message, 'error');
-          }
-        } catch (error) {
-          console.error('Failed to load from link:', error);
-          showNotification('Invalid or corrupted shareable link', 'error');
-        }
-      }
-    })();    // --- Polish: Add tooltips to all controls ---
+    });    // --- Polish: Add tooltips to all controls ---
     const tooltipMappings = {
       'undoButton': 'Undo (Ctrl+Z)',
       'redoButton': 'Redo (Ctrl+Y)',
-      'exportPngButton': 'Export as PNG',
-      'exportJsonButton': 'Export as JSON (Ctrl+E)',
-      'importJsonButton': 'Import from JSON (Ctrl+I)',
-      'saveVersionButton': 'Save Map Version (Ctrl+S)',
-      'loadVersionButton': 'Load Map Version (Ctrl+O)',
-      'shareLinkButton': 'Get Shareable Link',
       'clearButton': 'Clear Map (Delete selected)',
       'exploreAllButton': 'Mark All Cells as Explored'
     };
@@ -2535,73 +1957,6 @@
         setTimeout(() => notification.remove(), 300);
       }, duration);
     }
-
-    // Progress indicator for long operations
-    function showProgressIndicator(text = 'Processing...') {
-      const indicator = document.createElement('div');
-      indicator.id = 'progress-indicator';
-      // Add any additional logic or DOM insertion here if needed
-    }
-
-    // --- Button Event Handlers ---
-    document.addEventListener('DOMContentLoaded', function() {
-      // Help button
-      document.getElementById('helpButton').onclick = function() {
-        document.getElementById('helpModal').style.display = 'flex';
-      };
-      window.closeHelp = function() {
-        document.getElementById('helpModal').style.display = 'none';
-      };
-
-      // Save Map (version)
-      document.getElementById('saveVersionButton').onclick = saveVersion;
-      // Load Map (version)
-      document.getElementById('loadVersionButton').onclick = loadVersion;
-      // Export as PNG
-      document.getElementById('exportPngButton').onclick = exportAsPng;
-      // Export as JSON
-      document.getElementById('exportJsonButton').onclick = function() {
-        try {
-          const data = { gridData, exploredGrid };
-          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-          const link = document.createElement('a');
-          link.href = URL.createObjectURL(blob);
-          link.download = 'dune_map.json';
-          link.click();
-          showNotification('Map exported successfully!', 'success');
-        } catch (error) {
-          console.error('Export failed:', error);
-          showNotification('Failed to export map', 'error');
-        }
-      };
-      // Import from JSON
-      document.getElementById('importJsonButton').onclick = function() {
-        document.getElementById('importJsonInput').click();
-      };
-      document.getElementById('importJsonInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          try {
-            const data = JSON.parse(evt.target.result);
-            const result = importMapDataSafe(data);
-            if (result.success) {
-              showNotification(result.message, 'success');
-            } else {
-              showNotification(result.message, 'error');
-            }
-          } catch (error) {
-            showNotification('Failed to import map', 'error');
-          }
-        };
-        reader.readAsText(file);
-      });
-      // Shareable Link (stub)
-      document.getElementById('shareLinkButton').onclick = function() {
-        showNotification('Shareable link feature coming soon!', 'info');
-      };
-    });
   </script>
 </body>
 </html>
