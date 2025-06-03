@@ -2177,8 +2177,19 @@
       exportContainer.appendChild(mainContent);
       document.body.appendChild(exportContainer);
 
-      // Wait for images to load, then capture
-      setTimeout(() => {
+      // Wait for all images in the export container to load
+      function waitForImagesToLoad(container) {
+        const images = Array.from(container.querySelectorAll('img'));
+        return Promise.all(images.map(img => {
+          if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+          return new Promise(resolve => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+        }));
+      }
+
+      waitForImagesToLoad(exportContainer).then(() => {
         html2canvas(exportContainer, {
           backgroundColor: '#181818',
           useCORS: true,
@@ -2200,7 +2211,7 @@
           document.body.removeChild(exportContainer);
           showNotification('Failed to export PNG', 'error');
         });
-      }, 1000);
+      });
     }// Enhanced button handler attachment with better error handling
     function attachButtonHandlers() {
       // Wait a bit for DOM to be fully ready
