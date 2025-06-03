@@ -1988,7 +1988,7 @@
       setTimeout(() => {
         notification.style.transform = 'translateX(100%)';
         setTimeout(() => notification.remove(), 300);      }, duration);
-    }    // Enhanced Export PNG function with background and header
+    }    // Enhanced Export PNG function with background and header matching the desired layout
     function exportAsPng() {
       if (!window.html2canvas) {
         showNotification('PNG export requires html2canvas library.', 'error');
@@ -2003,78 +2003,153 @@
       exportContainer.style.top = '-10000px';
       exportContainer.style.left = '-10000px';
       exportContainer.style.width = '1200px';
-      exportContainer.style.height = '1400px';
+      exportContainer.style.height = '800px';
       exportContainer.style.backgroundColor = '#000';
       exportContainer.style.backgroundImage = 'url(background.jpg)';
       exportContainer.style.backgroundSize = 'cover';
       exportContainer.style.backgroundPosition = 'center';
-      exportContainer.style.padding = '40px';
+      exportContainer.style.padding = '20px';
       exportContainer.style.boxSizing = 'border-box';
       exportContainer.style.fontFamily = 'Arial, sans-serif';
       
-      // Create header section
-      const header = document.createElement('div');
-      header.style.display = 'flex';
-      header.style.justifyContent = 'space-between';
-      header.style.alignItems = 'center';
-      header.style.marginBottom = '20px';
-      header.style.padding = '15px 20px';
-      header.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-      header.style.borderRadius = '10px';
-      header.style.border = '2px solid #ffe066';
+      // Create top header bar
+      const topBar = document.createElement('div');
+      topBar.style.display = 'flex';
+      topBar.style.justifyContent = 'space-between';
+      topBar.style.alignItems = 'center';
+      topBar.style.marginBottom = '20px';
+      topBar.style.padding = '8px 0';
       
-      // Left side: Timestamp
+      // Left side: Timestamp (like "Tue, 03 Jun 2025 08:24:09 GMT")
       const timestampDiv = document.createElement('div');
-      timestampDiv.style.color = '#ffe066';
-      timestampDiv.style.fontSize = '18px';
+      timestampDiv.style.color = '#ffffff';
+      timestampDiv.style.fontSize = '16px';
       timestampDiv.style.fontWeight = 'bold';
+      timestampDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+      timestampDiv.style.padding = '5px 10px';
+      timestampDiv.style.borderRadius = '5px';
       
-      // Get current timestamp based on time mode
+      // Get current timestamp in the exact format from the image
       const now = new Date();
-      let timestampText;
-      if (useLocalTime) {
-        timestampText = `Exported: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
-      } else {
-        const utcTime = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-        timestampText = `Exported: ${utcTime.toISOString().split('T')[0]} ${utcTime.toISOString().split('T')[1].split('.')[0]} UTC`;
-      }
-      timestampDiv.textContent = timestampText;
+      const options = { 
+        weekday: 'short', 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit', 
+        timeZone: useLocalTime ? undefined : 'UTC'
+      };
+      const timeString = now.toLocaleDateString('en-GB', options).replace(',', '');
+      timestampDiv.textContent = timeString + (useLocalTime ? '' : ' GMT');
       
-      // Right side: FWB logo and attribution
+      // Right side: FWB logo and "Provided by Fremen with Benefits"
       const attributionDiv = document.createElement('div');
       attributionDiv.style.display = 'flex';
       attributionDiv.style.alignItems = 'center';
-      attributionDiv.style.gap = '10px';
+      attributionDiv.style.gap = '8px';
+      attributionDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+      attributionDiv.style.padding = '5px 10px';
+      attributionDiv.style.borderRadius = '5px';
       
       const fwbLogo = document.createElement('img');
       fwbLogo.src = 'fwb.png';
-      fwbLogo.style.height = '32px';
+      fwbLogo.style.height = '24px';
       fwbLogo.style.width = 'auto';
       fwbLogo.crossOrigin = 'anonymous';
       
       const attributionText = document.createElement('span');
-      attributionText.textContent = 'By Fremen with Benefits';
-      attributionText.style.color = '#ffe066';
-      attributionText.style.fontSize = '16px';
+      attributionText.textContent = 'Provided by Fremen with Benefits';
+      attributionText.style.color = '#ffffff';
+      attributionText.style.fontSize = '14px';
       attributionText.style.fontWeight = 'bold';
       
       attributionDiv.appendChild(fwbLogo);
       attributionDiv.appendChild(attributionText);
       
-      header.appendChild(timestampDiv);
-      header.appendChild(attributionDiv);
+      topBar.appendChild(timestampDiv);
+      topBar.appendChild(attributionDiv);
       
-      // Create a clone of the main map area
-      const originalGrid = document.querySelector('.main-flex');
-      const gridClone = originalGrid.cloneNode(true);
-      gridClone.style.transform = 'scale(0.85)';
-      gridClone.style.transformOrigin = 'top center';
-      gridClone.style.margin = '0 auto';
-      gridClone.style.maxWidth = '1100px';
+      // Create main content area (legend + grid)
+      const mainContent = document.createElement('div');
+      mainContent.style.display = 'flex';
+      mainContent.style.gap = '20px';
+      mainContent.style.height = 'calc(100% - 60px)';
       
-      // Assemble the export container
-      exportContainer.appendChild(header);
-      exportContainer.appendChild(gridClone);
+      // Create legend section (left side)
+      const legendSection = document.createElement('div');
+      legendSection.style.width = '200px';
+      legendSection.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      legendSection.style.padding = '15px';
+      legendSection.style.borderRadius = '8px';
+      legendSection.style.overflowY = 'auto';
+      
+      // Legend title
+      const legendTitle = document.createElement('div');
+      legendTitle.textContent = 'Legend';
+      legendTitle.style.color = '#ffffff';
+      legendTitle.style.fontSize = '18px';
+      legendTitle.style.fontWeight = 'bold';
+      legendTitle.style.marginBottom = '15px';
+      legendTitle.style.textAlign = 'center';
+      
+      legendSection.appendChild(legendTitle);
+      
+      // Add all legend items
+      const allIcons = [...resourcePoiIcons, ...houseIcons];
+      const allNames = [...resourcePoiIconNames, ...houseIconNames];
+      
+      allIcons.forEach((icon, index) => {
+        const legendItem = document.createElement('div');
+        legendItem.style.display = 'flex';
+        legendItem.style.alignItems = 'center';
+        legendItem.style.gap = '8px';
+        legendItem.style.marginBottom = '8px';
+        legendItem.style.fontSize = '12px';
+        legendItem.style.color = '#ffffff';
+        
+        const iconImg = document.createElement('img');
+        iconImg.src = iconPath + icon;
+        iconImg.style.width = '20px';
+        iconImg.style.height = '20px';
+        iconImg.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+        iconImg.style.borderRadius = '3px';
+        iconImg.style.padding = '2px';
+        
+        const iconName = document.createElement('span');
+        iconName.textContent = allNames[index];
+        iconName.style.fontSize = '11px';
+        
+        legendItem.appendChild(iconImg);
+        legendItem.appendChild(iconName);
+        legendSection.appendChild(legendItem);
+      });
+      
+      // Create grid section (right side)
+      const gridSection = document.createElement('div');
+      gridSection.style.flex = '1';
+      gridSection.style.display = 'flex';
+      gridSection.style.justifyContent = 'center';
+      gridSection.style.alignItems = 'center';
+      
+      // Clone just the grid container, not the entire main-flex
+      const originalGridContainer = document.getElementById('gridContainer');
+      const gridClone = originalGridContainer.cloneNode(true);
+      gridClone.style.width = '540px';
+      gridClone.style.height = '540px';
+      gridClone.style.backgroundColor = '#666';
+      gridClone.style.border = '2px solid #333';
+      gridClone.style.borderRadius = '8px';
+      
+      gridSection.appendChild(gridClone);
+      
+      // Assemble everything
+      mainContent.appendChild(legendSection);
+      mainContent.appendChild(gridSection);
+      
+      exportContainer.appendChild(topBar);
+      exportContainer.appendChild(mainContent);
       document.body.appendChild(exportContainer);
       
       // Wait for images to load, then capture
@@ -2082,12 +2157,12 @@
         html2canvas(exportContainer, {
           backgroundColor: '#000',
           useCORS: true,
-          scale: 1.5,
+          scale: 2,
           logging: false,
           allowTaint: true,
           foreignObjectRendering: true,
           width: 1200,
-          height: 1400
+          height: 800
         }).then(canvas => {
           // Clean up the temporary container
           document.body.removeChild(exportContainer);
@@ -2103,7 +2178,7 @@
           document.body.removeChild(exportContainer);
           showNotification('Failed to export PNG', 'error');
         });
-      }, 500); // Wait for images to load
+      }, 1000); // Wait longer for images to load
     }// Enhanced button handler attachment with better error handling
     function attachButtonHandlers() {
       // Wait a bit for DOM to be fully ready
