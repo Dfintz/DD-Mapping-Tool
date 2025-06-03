@@ -1988,11 +1988,8 @@
       setTimeout(() => {
         notification.style.transform = 'translateX(100%)';
         setTimeout(() => notification.remove(), 300);      }, duration);
-    }
-
-    // Export PNG function
+    }    // Enhanced Export PNG function with background and header
     function exportAsPng() {
-      const gridArea = document.querySelector('.main-flex');
       if (!window.html2canvas) {
         showNotification('PNG export requires html2canvas library.', 'error');
         return;
@@ -2000,23 +1997,114 @@
       
       showNotification('Exporting PNG...', 'info');
       
-      html2canvas(gridArea, {
-        backgroundColor: null,
-        useCORS: true,
-        scale: 2,
-        logging: false,
-        allowTaint: true,
-        foreignObjectRendering: true
-      }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = 'dune-desert-map.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        showNotification('PNG exported successfully!', 'success');
-      }).catch(err => {
-        console.error('PNG export error:', err);
-        showNotification('Failed to export PNG', 'error');
-      });    }    // Enhanced button handler attachment with better error handling
+      // Create a temporary container for the export
+      const exportContainer = document.createElement('div');
+      exportContainer.style.position = 'absolute';
+      exportContainer.style.top = '-10000px';
+      exportContainer.style.left = '-10000px';
+      exportContainer.style.width = '1200px';
+      exportContainer.style.height = '1400px';
+      exportContainer.style.backgroundColor = '#000';
+      exportContainer.style.backgroundImage = 'url(background.jpg)';
+      exportContainer.style.backgroundSize = 'cover';
+      exportContainer.style.backgroundPosition = 'center';
+      exportContainer.style.padding = '40px';
+      exportContainer.style.boxSizing = 'border-box';
+      exportContainer.style.fontFamily = 'Arial, sans-serif';
+      
+      // Create header section
+      const header = document.createElement('div');
+      header.style.display = 'flex';
+      header.style.justifyContent = 'space-between';
+      header.style.alignItems = 'center';
+      header.style.marginBottom = '20px';
+      header.style.padding = '15px 20px';
+      header.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      header.style.borderRadius = '10px';
+      header.style.border = '2px solid #ffe066';
+      
+      // Left side: Timestamp
+      const timestampDiv = document.createElement('div');
+      timestampDiv.style.color = '#ffe066';
+      timestampDiv.style.fontSize = '18px';
+      timestampDiv.style.fontWeight = 'bold';
+      
+      // Get current timestamp based on time mode
+      const now = new Date();
+      let timestampText;
+      if (useLocalTime) {
+        timestampText = `Exported: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+      } else {
+        const utcTime = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
+        timestampText = `Exported: ${utcTime.toISOString().split('T')[0]} ${utcTime.toISOString().split('T')[1].split('.')[0]} UTC`;
+      }
+      timestampDiv.textContent = timestampText;
+      
+      // Right side: FWB logo and attribution
+      const attributionDiv = document.createElement('div');
+      attributionDiv.style.display = 'flex';
+      attributionDiv.style.alignItems = 'center';
+      attributionDiv.style.gap = '10px';
+      
+      const fwbLogo = document.createElement('img');
+      fwbLogo.src = 'fwb.png';
+      fwbLogo.style.height = '32px';
+      fwbLogo.style.width = 'auto';
+      fwbLogo.crossOrigin = 'anonymous';
+      
+      const attributionText = document.createElement('span');
+      attributionText.textContent = 'By Fremen with Benefits';
+      attributionText.style.color = '#ffe066';
+      attributionText.style.fontSize = '16px';
+      attributionText.style.fontWeight = 'bold';
+      
+      attributionDiv.appendChild(fwbLogo);
+      attributionDiv.appendChild(attributionText);
+      
+      header.appendChild(timestampDiv);
+      header.appendChild(attributionDiv);
+      
+      // Create a clone of the main map area
+      const originalGrid = document.querySelector('.main-flex');
+      const gridClone = originalGrid.cloneNode(true);
+      gridClone.style.transform = 'scale(0.85)';
+      gridClone.style.transformOrigin = 'top center';
+      gridClone.style.margin = '0 auto';
+      gridClone.style.maxWidth = '1100px';
+      
+      // Assemble the export container
+      exportContainer.appendChild(header);
+      exportContainer.appendChild(gridClone);
+      document.body.appendChild(exportContainer);
+      
+      // Wait for images to load, then capture
+      setTimeout(() => {
+        html2canvas(exportContainer, {
+          backgroundColor: '#000',
+          useCORS: true,
+          scale: 1.5,
+          logging: false,
+          allowTaint: true,
+          foreignObjectRendering: true,
+          width: 1200,
+          height: 1400
+        }).then(canvas => {
+          // Clean up the temporary container
+          document.body.removeChild(exportContainer);
+          
+          // Download the image
+          const link = document.createElement('a');
+          link.download = `dune-desert-map-${new Date().toISOString().split('T')[0]}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          showNotification('PNG exported successfully with background and header!', 'success');
+        }).catch(err => {
+          console.error('PNG export error:', err);
+          document.body.removeChild(exportContainer);
+          showNotification('Failed to export PNG', 'error');
+        });
+      }, 500); // Wait for images to load
+    }// Enhanced button handler attachment with better error handling
     function attachButtonHandlers() {
       // Wait a bit for DOM to be fully ready
       setTimeout(() => {
