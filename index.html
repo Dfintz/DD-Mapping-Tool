@@ -1994,226 +1994,202 @@
         showNotification('PNG export requires html2canvas library.', 'error');
         return;
       }
-      
       showNotification('Exporting PNG...', 'info');
-      
+
       // Create a temporary container for the export
       const exportContainer = document.createElement('div');
       exportContainer.style.position = 'absolute';
       exportContainer.style.top = '-10000px';
       exportContainer.style.left = '-10000px';
       exportContainer.style.width = '1200px';
-      exportContainer.style.height = '800px';
-      exportContainer.style.backgroundColor = '#000';
+      exportContainer.style.height = '900px';
+      exportContainer.style.backgroundColor = '#181818';
       exportContainer.style.backgroundImage = 'url(background.jpg)';
       exportContainer.style.backgroundSize = 'cover';
       exportContainer.style.backgroundPosition = 'center';
-      exportContainer.style.padding = '20px';
+      exportContainer.style.padding = '0';
       exportContainer.style.boxSizing = 'border-box';
       exportContainer.style.fontFamily = 'Arial, sans-serif';
-      
+
       // Create top header bar
       const topBar = document.createElement('div');
       topBar.style.display = 'flex';
       topBar.style.justifyContent = 'space-between';
       topBar.style.alignItems = 'center';
-      topBar.style.marginBottom = '20px';
-      topBar.style.padding = '8px 0';
-      
-      // Left side: Timestamp (like "Tue, 03 Jun 2025 08:24:09 GMT")
-      const timestampDiv = document.createElement('div');
-      timestampDiv.style.color = '#ffffff';
-      timestampDiv.style.fontSize = '16px';
-      timestampDiv.style.fontWeight = 'bold';
-      timestampDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-      timestampDiv.style.padding = '5px 10px';
-      timestampDiv.style.borderRadius = '5px';
-      
-      // Get current timestamp in the exact format from the image
+      topBar.style.background = '#111';
+      topBar.style.height = '36px';
+      topBar.style.padding = '0 0 0 0';
+      topBar.style.margin = '0';
+      topBar.style.width = '100%';
+
+      // Left: Timestamp (MM/DD/YYYY, H:MM:SS AM/PM)
       const now = new Date();
-      const options = { 
-        weekday: 'short', 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit', 
-        timeZone: useLocalTime ? undefined : 'UTC'
-      };
-      const timeString = now.toLocaleDateString('en-GB', options).replace(',', '');
-      timestampDiv.textContent = timeString + (useLocalTime ? '' : ' GMT');
-      
-      // Right side: FWB logo and "Provided by Fremen with Benefits"
+      let timestampText = now.toLocaleString('en-US', { hour12: true });
+      const timestampDiv = document.createElement('div');
+      timestampDiv.textContent = timestampText;
+      timestampDiv.style.color = '#fff';
+      timestampDiv.style.fontWeight = 'bold';
+      timestampDiv.style.fontSize = '18px';
+      timestampDiv.style.marginLeft = '16px';
+      timestampDiv.style.letterSpacing = '0.5px';
+      timestampDiv.style.fontFamily = 'Arial, sans-serif';
+
+      // Right: FWB logo + Provided by Fremen with Benefits
       const attributionDiv = document.createElement('div');
       attributionDiv.style.display = 'flex';
       attributionDiv.style.alignItems = 'center';
-      attributionDiv.style.gap = '8px';
-      attributionDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-      attributionDiv.style.padding = '5px 10px';
-      attributionDiv.style.borderRadius = '5px';
-      
+      attributionDiv.style.gap = '6px';
+      attributionDiv.style.marginRight = '16px';
       const fwbLogo = document.createElement('img');
       fwbLogo.src = 'fwb.png';
-      fwbLogo.style.height = '24px';
-      fwbLogo.style.width = 'auto';
+      fwbLogo.style.height = '22px';
+      fwbLogo.style.width = '22px';
+      fwbLogo.style.objectFit = 'contain';
+      fwbLogo.style.verticalAlign = 'middle';
       fwbLogo.crossOrigin = 'anonymous';
-      
       const attributionText = document.createElement('span');
       attributionText.textContent = 'Provided by Fremen with Benefits';
-      attributionText.style.color = '#ffffff';
-      attributionText.style.fontSize = '14px';
+      attributionText.style.color = '#ffe066';
       attributionText.style.fontWeight = 'bold';
-      
+      attributionText.style.fontSize = '16px';
+      attributionText.style.verticalAlign = 'middle';
       attributionDiv.appendChild(fwbLogo);
       attributionDiv.appendChild(attributionText);
-      
+
       topBar.appendChild(timestampDiv);
       topBar.appendChild(attributionDiv);
-        // Create main content area (left legend + grid + right legend)
+
+      // Main content: left legend, grid, right legend
       const mainContent = document.createElement('div');
       mainContent.style.display = 'flex';
-      mainContent.style.gap = '15px';
-      mainContent.style.height = 'calc(100% - 60px)';
-      
-      // Create LEFT legend section (Resources & POIs)
-      const leftLegendSection = document.createElement('div');
-      leftLegendSection.style.width = '150px';
-      leftLegendSection.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-      leftLegendSection.style.padding = '12px';
-      leftLegendSection.style.borderRadius = '8px';
-      leftLegendSection.style.overflowY = 'auto';
-      
-      // Left legend title
+      mainContent.style.flexDirection = 'row';
+      mainContent.style.justifyContent = 'center';
+      mainContent.style.alignItems = 'flex-start';
+      mainContent.style.width = '100%';
+      mainContent.style.height = '864px';
+      mainContent.style.margin = '0';
+      mainContent.style.background = 'none';
+
+      // Left legend (resources/POIs)
+      const leftLegend = document.createElement('div');
+      leftLegend.style.width = '180px';
+      leftLegend.style.background = '#222';
+      leftLegend.style.color = '#fff';
+      leftLegend.style.padding = '18px 0 0 0';
+      leftLegend.style.height = '864px';
+      leftLegend.style.display = 'flex';
+      leftLegend.style.flexDirection = 'column';
+      leftLegend.style.alignItems = 'flex-start';
+      leftLegend.style.fontSize = '15px';
+      leftLegend.style.fontFamily = 'Arial, sans-serif';
+      leftLegend.style.overflow = 'hidden';
       const leftLegendTitle = document.createElement('div');
       leftLegendTitle.textContent = 'Legend';
-      leftLegendTitle.style.color = '#ffffff';
-      leftLegendTitle.style.fontSize = '16px';
       leftLegendTitle.style.fontWeight = 'bold';
-      leftLegendTitle.style.marginBottom = '12px';
-      leftLegendTitle.style.textAlign = 'center';
-      
-      leftLegendSection.appendChild(leftLegendTitle);
-      
-      // Add resource/POI legend items to left side
-      resourcePoiIcons.forEach((icon, index) => {
-        const legendItem = document.createElement('div');
-        legendItem.style.display = 'flex';
-        legendItem.style.alignItems = 'center';
-        legendItem.style.gap = '6px';
-        legendItem.style.marginBottom = '6px';
-        legendItem.style.fontSize = '11px';
-        legendItem.style.color = '#ffffff';
-        
-        const iconImg = document.createElement('img');
-        iconImg.src = iconPath + icon;
-        iconImg.style.width = '18px';
-        iconImg.style.height = '18px';
-        iconImg.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-        iconImg.style.borderRadius = '3px';
-        iconImg.style.padding = '1px';
-        iconImg.style.flexShrink = '0';
-        
-        const iconName = document.createElement('span');
-        iconName.textContent = resourcePoiIconNames[index];
-        iconName.style.fontSize = '10px';
-        iconName.style.lineHeight = '1.2';
-        
-        legendItem.appendChild(iconImg);
-        legendItem.appendChild(iconName);
-        leftLegendSection.appendChild(legendItem);
+      leftLegendTitle.style.fontSize = '18px';
+      leftLegendTitle.style.margin = '0 0 18px 18px';
+      leftLegend.appendChild(leftLegendTitle);
+      resourcePoiIcons.forEach((icon, idx) => {
+        const item = document.createElement('div');
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '8px';
+        item.style.margin = '0 0 10px 18px';
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.style.width = '22px';
+        img.style.height = '22px';
+        img.style.objectFit = 'contain';
+        img.style.background = 'none';
+        img.style.borderRadius = '3px';
+        img.style.flexShrink = '0';
+        const label = document.createElement('span');
+        label.textContent = resourcePoiIconNames[idx];
+        label.style.fontSize = '15px';
+        item.appendChild(img);
+        item.appendChild(label);
+        leftLegend.appendChild(item);
       });
-      
-      // Create RIGHT legend section (Houses)
-      const rightLegendSection = document.createElement('div');
-      rightLegendSection.style.width = '150px';
-      rightLegendSection.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-      rightLegendSection.style.padding = '12px';
-      rightLegendSection.style.borderRadius = '8px';
-      rightLegendSection.style.overflowY = 'auto';
-      
-      // Right legend title
+
+      // Right legend (houses)
+      const rightLegend = document.createElement('div');
+      rightLegend.style.width = '180px';
+      rightLegend.style.background = '#222';
+      rightLegend.style.color = '#fff';
+      rightLegend.style.padding = '18px 0 0 0';
+      rightLegend.style.height = '864px';
+      rightLegend.style.display = 'flex';
+      rightLegend.style.flexDirection = 'column';
+      rightLegend.style.alignItems = 'flex-start';
+      rightLegend.style.fontSize = '15px';
+      rightLegend.style.fontFamily = 'Arial, sans-serif';
+      rightLegend.style.overflow = 'hidden';
       const rightLegendTitle = document.createElement('div');
       rightLegendTitle.textContent = 'Legend';
-      rightLegendTitle.style.color = '#ffffff';
-      rightLegendTitle.style.fontSize = '16px';
       rightLegendTitle.style.fontWeight = 'bold';
-      rightLegendTitle.style.marginBottom = '12px';
-      rightLegendTitle.style.textAlign = 'center';
-      
-      rightLegendSection.appendChild(rightLegendTitle);
-      
-      // Add house legend items to right side
-      houseIcons.forEach((icon, index) => {
-        const legendItem = document.createElement('div');
-        legendItem.style.display = 'flex';
-        legendItem.style.alignItems = 'center';
-        legendItem.style.gap = '6px';
-        legendItem.style.marginBottom = '6px';
-        legendItem.style.fontSize = '11px';
-        legendItem.style.color = '#ffffff';
-        
-        const iconImg = document.createElement('img');
-        iconImg.src = iconPath + icon;
-        iconImg.style.width = '18px';
-        iconImg.style.height = '18px';
-        iconImg.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-        iconImg.style.borderRadius = '3px';
-        iconImg.style.padding = '1px';
-        iconImg.style.flexShrink = '0';
-        
-        const iconName = document.createElement('span');
-        iconName.textContent = houseIconNames[index];
-        iconName.style.fontSize = '10px';
-        iconName.style.lineHeight = '1.2';
-        
-        legendItem.appendChild(iconImg);
-        legendItem.appendChild(iconName);
-        rightLegendSection.appendChild(legendItem);
-      });      
-      // Create grid section (center)
+      rightLegendTitle.style.fontSize = '18px';
+      rightLegendTitle.style.margin = '0 0 18px 18px';
+      rightLegend.appendChild(rightLegendTitle);
+      houseIcons.forEach((icon, idx) => {
+        const item = document.createElement('div');
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '8px';
+        item.style.margin = '0 0 10px 18px';
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.style.width = '22px';
+        img.style.height = '22px';
+        img.style.objectFit = 'contain';
+        img.style.background = 'none';
+        img.style.borderRadius = '3px';
+        img.style.flexShrink = '0';
+        const label = document.createElement('span');
+        label.textContent = houseIconNames[idx];
+        label.style.fontSize = '15px';
+        item.appendChild(img);
+        item.appendChild(label);
+        rightLegend.appendChild(item);
+      });
+
+      // Center grid
       const gridSection = document.createElement('div');
       gridSection.style.flex = '1';
       gridSection.style.display = 'flex';
       gridSection.style.justifyContent = 'center';
       gridSection.style.alignItems = 'center';
-      
-      // Clone just the grid container, not the entire main-flex
+      gridSection.style.height = '864px';
+      gridSection.style.background = 'none';
       const originalGridContainer = document.getElementById('gridContainer');
       const gridClone = originalGridContainer.cloneNode(true);
-      gridClone.style.width = '540px';
-      gridClone.style.height = '540px';
-      gridClone.style.backgroundColor = '#666';
+      gridClone.style.width = '648px';
+      gridClone.style.height = '648px';
+      gridClone.style.backgroundColor = '#665c4a';
       gridClone.style.border = '2px solid #333';
       gridClone.style.borderRadius = '8px';
-      
       gridSection.appendChild(gridClone);
-      
-      // Assemble everything: left legend + grid + right legend
-      mainContent.appendChild(leftLegendSection);
+
+      // Assemble
+      mainContent.appendChild(leftLegend);
       mainContent.appendChild(gridSection);
-      mainContent.appendChild(rightLegendSection);
-      
+      mainContent.appendChild(rightLegend);
       exportContainer.appendChild(topBar);
       exportContainer.appendChild(mainContent);
       document.body.appendChild(exportContainer);
-      
+
       // Wait for images to load, then capture
       setTimeout(() => {
         html2canvas(exportContainer, {
-          backgroundColor: '#000',
+          backgroundColor: '#181818',
           useCORS: true,
           scale: 2,
           logging: false,
           allowTaint: true,
           foreignObjectRendering: true,
           width: 1200,
-          height: 800
+          height: 900
         }).then(canvas => {
-          // Clean up the temporary container
           document.body.removeChild(exportContainer);
-          
-          // Download the image
           const link = document.createElement('a');
           link.download = `dune-desert-map-${new Date().toISOString().split('T')[0]}.png`;
           link.href = canvas.toDataURL('image/png');
@@ -2224,7 +2200,7 @@
           document.body.removeChild(exportContainer);
           showNotification('Failed to export PNG', 'error');
         });
-      }, 1000); // Wait longer for images to load
+      }, 1000);
     }// Enhanced button handler attachment with better error handling
     function attachButtonHandlers() {
       // Wait a bit for DOM to be fully ready
@@ -2283,4 +2259,3 @@
   </script>
 </body>
 </html>
-`
