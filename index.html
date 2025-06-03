@@ -2070,63 +2070,108 @@
       
       topBar.appendChild(timestampDiv);
       topBar.appendChild(attributionDiv);
-      
-      // Create main content area (legend + grid)
+        // Create main content area (left legend + grid + right legend)
       const mainContent = document.createElement('div');
       mainContent.style.display = 'flex';
-      mainContent.style.gap = '20px';
+      mainContent.style.gap = '15px';
       mainContent.style.height = 'calc(100% - 60px)';
       
-      // Create legend section (left side)
-      const legendSection = document.createElement('div');
-      legendSection.style.width = '200px';
-      legendSection.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-      legendSection.style.padding = '15px';
-      legendSection.style.borderRadius = '8px';
-      legendSection.style.overflowY = 'auto';
+      // Create LEFT legend section (Resources & POIs)
+      const leftLegendSection = document.createElement('div');
+      leftLegendSection.style.width = '150px';
+      leftLegendSection.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      leftLegendSection.style.padding = '12px';
+      leftLegendSection.style.borderRadius = '8px';
+      leftLegendSection.style.overflowY = 'auto';
       
-      // Legend title
-      const legendTitle = document.createElement('div');
-      legendTitle.textContent = 'Legend';
-      legendTitle.style.color = '#ffffff';
-      legendTitle.style.fontSize = '18px';
-      legendTitle.style.fontWeight = 'bold';
-      legendTitle.style.marginBottom = '15px';
-      legendTitle.style.textAlign = 'center';
+      // Left legend title
+      const leftLegendTitle = document.createElement('div');
+      leftLegendTitle.textContent = 'Legend';
+      leftLegendTitle.style.color = '#ffffff';
+      leftLegendTitle.style.fontSize = '16px';
+      leftLegendTitle.style.fontWeight = 'bold';
+      leftLegendTitle.style.marginBottom = '12px';
+      leftLegendTitle.style.textAlign = 'center';
       
-      legendSection.appendChild(legendTitle);
+      leftLegendSection.appendChild(leftLegendTitle);
       
-      // Add all legend items
-      const allIcons = [...resourcePoiIcons, ...houseIcons];
-      const allNames = [...resourcePoiIconNames, ...houseIconNames];
-      
-      allIcons.forEach((icon, index) => {
+      // Add resource/POI legend items to left side
+      resourcePoiIcons.forEach((icon, index) => {
         const legendItem = document.createElement('div');
         legendItem.style.display = 'flex';
         legendItem.style.alignItems = 'center';
-        legendItem.style.gap = '8px';
-        legendItem.style.marginBottom = '8px';
-        legendItem.style.fontSize = '12px';
+        legendItem.style.gap = '6px';
+        legendItem.style.marginBottom = '6px';
+        legendItem.style.fontSize = '11px';
         legendItem.style.color = '#ffffff';
         
         const iconImg = document.createElement('img');
         iconImg.src = iconPath + icon;
-        iconImg.style.width = '20px';
-        iconImg.style.height = '20px';
+        iconImg.style.width = '18px';
+        iconImg.style.height = '18px';
         iconImg.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
         iconImg.style.borderRadius = '3px';
-        iconImg.style.padding = '2px';
+        iconImg.style.padding = '1px';
+        iconImg.style.flexShrink = '0';
         
         const iconName = document.createElement('span');
-        iconName.textContent = allNames[index];
-        iconName.style.fontSize = '11px';
+        iconName.textContent = resourcePoiIconNames[index];
+        iconName.style.fontSize = '10px';
+        iconName.style.lineHeight = '1.2';
         
         legendItem.appendChild(iconImg);
         legendItem.appendChild(iconName);
-        legendSection.appendChild(legendItem);
+        leftLegendSection.appendChild(legendItem);
       });
       
-      // Create grid section (right side)
+      // Create RIGHT legend section (Houses)
+      const rightLegendSection = document.createElement('div');
+      rightLegendSection.style.width = '150px';
+      rightLegendSection.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      rightLegendSection.style.padding = '12px';
+      rightLegendSection.style.borderRadius = '8px';
+      rightLegendSection.style.overflowY = 'auto';
+      
+      // Right legend title
+      const rightLegendTitle = document.createElement('div');
+      rightLegendTitle.textContent = 'Legend';
+      rightLegendTitle.style.color = '#ffffff';
+      rightLegendTitle.style.fontSize = '16px';
+      rightLegendTitle.style.fontWeight = 'bold';
+      rightLegendTitle.style.marginBottom = '12px';
+      rightLegendTitle.style.textAlign = 'center';
+      
+      rightLegendSection.appendChild(rightLegendTitle);
+      
+      // Add house legend items to right side
+      houseIcons.forEach((icon, index) => {
+        const legendItem = document.createElement('div');
+        legendItem.style.display = 'flex';
+        legendItem.style.alignItems = 'center';
+        legendItem.style.gap = '6px';
+        legendItem.style.marginBottom = '6px';
+        legendItem.style.fontSize = '11px';
+        legendItem.style.color = '#ffffff';
+        
+        const iconImg = document.createElement('img');
+        iconImg.src = iconPath + icon;
+        iconImg.style.width = '18px';
+        iconImg.style.height = '18px';
+        iconImg.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+        iconImg.style.borderRadius = '3px';
+        iconImg.style.padding = '1px';
+        iconImg.style.flexShrink = '0';
+        
+        const iconName = document.createElement('span');
+        iconName.textContent = houseIconNames[index];
+        iconName.style.fontSize = '10px';
+        iconName.style.lineHeight = '1.2';
+        
+        legendItem.appendChild(iconImg);
+        legendItem.appendChild(iconName);
+        rightLegendSection.appendChild(legendItem);
+      });      
+      // Create grid section (center)
       const gridSection = document.createElement('div');
       gridSection.style.flex = '1';
       gridSection.style.display = 'flex';
@@ -2144,9 +2189,10 @@
       
       gridSection.appendChild(gridClone);
       
-      // Assemble everything
-      mainContent.appendChild(legendSection);
+      // Assemble everything: left legend + grid + right legend
+      mainContent.appendChild(leftLegendSection);
       mainContent.appendChild(gridSection);
+      mainContent.appendChild(rightLegendSection);
       
       exportContainer.appendChild(topBar);
       exportContainer.appendChild(mainContent);
