@@ -86,6 +86,7 @@
       cursor: pointer;
       border: 2px solid transparent;
       transition: border 0.2s;
+      padding: 8px; /* Increased padding for more space around icons */
     }
     .legend-icon.selected, .legend-icon:focus {
       border: 2px solid #ffe082;
@@ -158,20 +159,21 @@
       margin-top: 1.5rem;
     }
     .control-btn {
-      background: #2d2211;
-      color: #ffe082;
+      background: #ffe082;      /* Light yellow background */
+      color: #2d2211;           /* Very dark brown text */
       border: none;
       border-radius: 6px;
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
+      padding: 0.5rem 1.1rem;
+      font-size: 1.08rem;
       cursor: pointer;
-      font-weight: 600;
+      font-weight: 700;
       transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 6px #0002;
     }
     .control-btn:hover, .control-btn:focus {
-      background: #ffe082;
-      color: #2d2211;
-      outline: none;
+      background: #fff8e1;      /* Even lighter on hover/focus */
+      color: #1a1407;
+      outline: 2px solid #c2b280;
     }
     /* Storm Timer */
     #storm-timer {
