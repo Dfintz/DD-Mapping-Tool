@@ -950,15 +950,6 @@
   </div>
 
   <script>
-window.addEventListener('error', function(e) {
-  const errBox = document.createElement('div');
-  errBox.style = 'position:fixed;top:0;left:0;z-index:9999;background:#c00;color:#fff;padding:12px;font-size:18px;';
-  errBox.textContent = 'JS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
-  document.body.appendChild(errBox);
-  console.error('JS ERROR:', e);
-});
-console.log('Script loaded: about to initializeApp');
-
     let useLocalTime = true;
     const gridContainer = document.getElementById('gridContainer');
     let gridData = [];
@@ -967,12 +958,6 @@ console.log('Script loaded: about to initializeApp');
     let redoStack = [];
     let selectedCells = new Set();
     let isSelecting = false;
-
-    const baseResourceCount = 10; // First 10 are base/resources, rest are houses
-    const baseResourceIcons = iconList.slice(0, baseResourceCount);
-    const baseResourceNames = iconNames.slice(0, baseResourceCount);
-    const houseIcons = iconList.slice(baseResourceCount);
-    const houseNames = iconNames.slice(baseResourceCount);
 
     const iconList = [
       "AuthorizedBase.svg",
@@ -1192,7 +1177,7 @@ console.log('Script loaded: about to initializeApp');
     }
 
     function renderLegend() {
-      const legend = document.getElementById('legendPanel');
+      const legend = document.getElementById('legendIcons');
       legend.innerHTML = '';
       iconList.forEach((icon, idx) => {
         const div = document.createElement('div');
@@ -1202,10 +1187,6 @@ console.log('Script loaded: about to initializeApp');
         div.setAttribute('tabindex', '0');
         div.setAttribute('aria-label', iconNames[idx] + ' (drag to grid or click to select)');
         div.title = 'Drag to grid or click to select';
-        div.style.display = 'flex';
-        div.style.alignItems = 'center';
-        div.style.gap = '8px';
-        div.style.marginBottom = '6px';
         const img = document.createElement('img');
         img.src = iconPath + icon;
         img.alt = iconNames[idx];
@@ -1221,8 +1202,6 @@ console.log('Script loaded: about to initializeApp');
         div.addEventListener('keydown', function(e) {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            selectIcon(icon);
-            closeIconPicker();
           }
         });
       });
@@ -1563,14 +1542,11 @@ console.log('Script loaded: about to initializeApp');
       const dateHeight = 60;
       const gridWidth = gridSize * (cellSize + gap);
       const gridHeight = gridSize * (cellSize + gap);
-      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140; // width for one legend column
 
-      // New canvas width: legend left + grid + legend right
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       canvas.width = legendWidth + gridWidth;
       canvas.height = Math.max(gridHeight + dateHeight, legendHeight + dateHeight);
-      const ctx = canvas.getContext('2d');
 
       function loadImage(src) {
         return new Promise((resolve, reject) => {
@@ -1579,6 +1555,13 @@ console.log('Script loaded: about to initializeApp');
           img.onerror = reject;
           img.src = src;
         });
+      }
+
+      const usedIcons = new Set();
+      for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+          gridData[row][col].forEach(icon => usedIcons.add(icon));
+        }
       }
 
       const iconPromises = {};
@@ -1598,14 +1581,16 @@ console.log('Script loaded: about to initializeApp');
 
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, dateHeight);
+
         const now = new Date();
-        const dateStr = useLocalTime ? now.toLocaleString() : now.toUTCString();
+        const dateStr = useLocalTime
+          ? now.toLocaleString()
+          : now.toUTCString();
         ctx.font = "bold 32px Arial";
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "middle";
         ctx.fillText(dateStr, legendWidth + 20, dateHeight / 2);
 
-        // Background
         ctx.globalAlpha = 0.4;
         ctx.drawImage(backgroundImage, legendWidth, dateHeight, gridWidth, gridHeight);
         ctx.globalAlpha = 1.0;
@@ -1614,7 +1599,7 @@ console.log('Script loaded: about to initializeApp');
         ctx.fillRect(0, dateHeight, legendWidth, legendHeight);
 
         ctx.font = `bold ${legendTitleSize}px Arial`;
-        ctx.fillStyle = "#ffe066";
+        ctx.fillStyle = "#fff";
         ctx.textBaseline = "top";
         ctx.fillText(legendTitle, legendPadding, dateHeight + legendPadding);
 
@@ -1729,19 +1714,24 @@ console.log('Script loaded: about to initializeApp');
           ctx.font = "bold 24px Arial";
           const textWidth = ctx.measureText(sigText).width;
           const sigX = canvas.width - sigMargin - sigHeight - 12 - textWidth;
+
           ctx.save();
           ctx.globalAlpha = 0.85;
           ctx.fillStyle = "#222";
           ctx.fillRect(sigX - 16, sigY - 8, textWidth + sigHeight + 44, sigHeight + 16);
           ctx.globalAlpha = 1.0;
+
           ctx.drawImage(fwbImg, sigX, sigY, sigHeight, sigHeight);
+
           ctx.font = "bold 24px Arial";
           ctx.fillStyle = "#ffe066";
           ctx.textBaseline = "middle";
           ctx.fillText(sigText, sigX + sigHeight + 12, sigY + sigHeight / 2);
+
           ctx.restore();
+
           const link = document.createElement('a');
-          link.download = 'dune_deep_desert_map.png';
+          link.download = 'grid.png';
           link.href = canvas.toDataURL();
           link.click();
         });
@@ -1820,7 +1810,6 @@ console.log('Script loaded: about to initializeApp');
       // Calculate time differences
       const buildupDiff = nextBuildup.getTime() - utcNow.getTime();
       const hitDiff = nextStorm.getTime() - utcNow.getTime();
-
 
       // Reset all phase states
       [buildupPhase, hitPhase].forEach(phase => {
@@ -2071,7 +2060,6 @@ console.log('Script loaded: about to initializeApp');
     }
 
     function initializeApp() {
-      console.log('initializeApp called');
       renderLegendSafe();
       initializeGrid();
       populateIconPicker();
@@ -2134,8 +2122,7 @@ console.log('Script loaded: about to initializeApp');
     // --- Import from JSON (file input) ---
     document.getElementById('importJsonButton').onclick = function() {
       document.getElementById('importJsonInput').click();
-    };
-    document.getElementById('importJsonInput').addEventListener('change', function(e) {
+    };    document.getElementById('importJsonInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
       
@@ -2408,6 +2395,39 @@ console.log('Script loaded: about to initializeApp');
     document.querySelector('.help-close').onclick = function() {
       document.getElementById('helpModal').style.display = 'none';
     };
+    document.getElementById('saveVersionButton').onclick = saveVersion;
+    document.getElementById('loadVersionButton').onclick = loadVersion;
+    document.getElementById('exportJsonButton').onclick = exportMapDataAsJson;
+    document.getElementById('importJsonButton').onclick = function() {
+      document.getElementById('importJsonInput').click();
+    };
+    document.getElementById('importJsonInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = JSON.parse(evt.target.result);
+          const result = importMapDataSafe(data);
+          if (result.success) {
+            showNotification('Map imported successfully!', 'success');
+          } else {
+            showNotification(result.message, 'error');
+          }
+        } catch (err) {
+          showNotification('Invalid JSON file', 'error');
+        }
+      };
+      reader.readAsText(file);
+    });
+    document.getElementById('shareLinkButton').onclick = function() {
+      try {
+        const data = { gridData, exploredGrid };
+        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
+        const url = window.location.origin + window.location.pathname + '?map=' + encoded;
+        navigator.clipboard.writeText(url);
+        showNotification('Shareable link copied to clipboard!', 'success');
+      } catch (e) {
         showNotification('Failed to generate link', 'error');
       }
     };
