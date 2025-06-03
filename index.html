@@ -73,7 +73,7 @@
     .legend-icons {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
+      gap: 1.2rem 1rem; /* Increased gap for more space between icons */
     }
     .legend-icon {
       width: 36px;
@@ -663,23 +663,21 @@
       const legendPadding = 30;
       const legendIconSize = 40;
       const legendTextSize = 22;
-      const legendSpacing = 18;
+      const legendSpacing = 28; // Increased spacing for no overlap
       const legendTitleSize = 26;
       const legendTitle = "Legend";
 
-      // Split legend items for left and right columns
-      const leftLegendItems = resourcePoiIcons.map((icon, idx) => ({ icon, name: resourcePoiIconNames[idx] }));
-      const rightLegendItems = houseIcons.map((icon, idx) => ({ icon, name: houseIconNames[idx] }));
+      // Use your icon arrays and labels
+      const leftLegendItems = resourceIcons.map(icon => ({ icon, name: icon.label }));
+      const rightLegendItems = houseIcons.map(icon => ({ icon, name: icon.label }));
 
-      // Calculate legend heights (use max of both columns)
       const legendRows = Math.max(leftLegendItems.length, rightLegendItems.length);
       const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing + legendRows * (legendIconSize + legendSpacing);
       const dateHeight = 60;
       const gridWidth = gridSize * (cellSize + gap);
       const gridHeight = gridSize * (cellSize + gap);
-      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140; // width for one legend column
+      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140;
 
-      // New canvas width: legend left + grid + legend right
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       canvas.width = legendWidth * 2 + gridWidth;
@@ -694,9 +692,10 @@
         });
       }
 
+      // Load all icons
       const iconPromises = {};
-      [...resourcePoiIcons, ...houseIcons].forEach(icon => {
-        iconPromises[icon] = loadImage(iconPath + icon);
+      [...resourceIcons, ...houseIcons].forEach(icon => {
+        iconPromises[icon.name] = loadImage(icon.file.startsWith('..') ? icon.file : 'Icons/' + icon.file);
       });
 
       Promise.all([
@@ -705,15 +704,15 @@
       ]).then(([backgroundImage, ...iconImages]) => {
         const iconMap = {};
         let i = 0;
-        for (const icon of [...resourcePoiIcons, ...houseIcons]) {
-          iconMap[icon] = iconImages[i++];
+        for (const icon of [...resourceIcons, ...houseIcons]) {
+          iconMap[icon.name] = iconImages[i++];
         }
 
         // Date/time bar
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, dateHeight);
         const now = new Date();
-        const dateStr = useLocalTime ? now.toLocaleString() : now.toUTCString();
+        const dateStr = timezoneUTC ? now.toUTCString() : now.toLocaleString();
         ctx.font = "bold 32px Arial";
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "middle";
@@ -734,8 +733,8 @@
         let legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
         ctx.font = `${legendTextSize}px Arial`;
         leftLegendItems.forEach(item => {
-          if (iconMap[item.icon]) {
-            ctx.drawImage(iconMap[item.icon], legendPadding, legendY, legendIconSize, legendIconSize);
+          if (iconMap[item.icon.name]) {
+            ctx.drawImage(iconMap[item.icon.name], legendPadding, legendY, legendIconSize, legendIconSize);
           }
           ctx.fillStyle = "#fff";
           ctx.fillText(item.name, legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
@@ -752,8 +751,8 @@
         legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
         ctx.font = `${legendTextSize}px Arial`;
         rightLegendItems.forEach(item => {
-          if (iconMap[item.icon]) {
-            ctx.drawImage(iconMap[item.icon], canvas.width - legendWidth + legendPadding, legendY, legendIconSize, legendIconSize);
+          if (iconMap[item.icon.name]) {
+            ctx.drawImage(iconMap[item.icon.name], canvas.width - legendWidth + legendPadding, legendY, legendIconSize, legendIconSize);
           }
           ctx.fillStyle = "#fff";
           ctx.fillText(item.name, canvas.width - legendWidth + legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
@@ -773,7 +772,10 @@
             ctx.fillStyle = "rgba(255,255,255,0.8)";
             ctx.textBaseline = "top";
             ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
-            const icons = gridData[row][col];
+
+            // Get icons for this cell
+            const idx = row * gridSize + col;
+            const icons = mapState[idx] || [];
             const n = icons.length;
             if (n > 0) {
               let iconSize, positions;
@@ -817,9 +819,9 @@
               }
               for (let i = 0; i < Math.min(n, 9); i++) {
                 const icon = icons[i];
-                if (icon && iconMap[icon]) {
+                if (icon && iconMap[icon.name]) {
                   ctx.drawImage(
-                    iconMap[icon],
+                    iconMap[icon.name],
                     x + positions[i][0] - iconSize / 2,
                     y + positions[i][1] - iconSize / 2,
                     iconSize,
@@ -828,7 +830,9 @@
                 }
               }
             }
-            if (!exploredGrid[row][col]) {
+            // Cell overlay for explored/unexplored
+            const idx2 = row * gridSize + col;
+            if (!exploredState[idx2]) {
               ctx.fillStyle = "rgba(30,30,30,0.55)";
               ctx.fillRect(x, y, cellSize, cellSize);
             } else {
