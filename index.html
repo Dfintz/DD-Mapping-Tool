@@ -803,6 +803,92 @@
     .side-controls {
       margin-top: 24px;
     }
+
+    .legend-section-header {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin-bottom: 8px;
+      margin-top: 8px;
+      color: #ffe066;
+      letter-spacing: 0.5px;
+      text-align: left;
+    }
+
+    .legend.legend-split {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      background: none;
+      box-shadow: none;
+      padding: 0;
+    }
+    .legend-box {
+      background: rgba(30,30,30,0.92);
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+      padding: 12px 10px 10px 10px;
+      margin: 0;
+      min-width: 0;
+      width: 100%;
+      max-width: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .legend-box-resources {
+      border: 2px solid #ffe066;
+    }
+    .legend-box-houses {
+      border: 2px solid #a259e6;
+    }
+    .legend-box-houses .legend-section-header {
+      color: #a259e6;
+    }
+    .legend.legend-row {
+      display: block;
+      background: none;
+      box-shadow: none;
+      padding: 0;
+    }
+    .legend-row-inner {
+      display: flex;
+      flex-direction: row;
+      gap: 28px;
+      align-items: flex-start;
+      justify-content: center;
+      width: 100%;
+    }
+    .legend-houses-grid {
+      display: flex;
+      flex-direction: row;
+      gap: 18px;
+      width: 100%;
+    }
+    .legend-houses-col {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1 1 0;
+    }
+    @media (max-width: 1000px) {
+      .legend-row-inner {
+        flex-direction: column;
+        gap: 12px;
+      }
+      .legend-box {
+        width: 98vw;
+        max-width: 98vw;
+      }
+      .legend-houses-grid {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .legend-houses-col {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -959,82 +1045,24 @@
     let selectedCells = new Set();
     let isSelecting = false;
 
-    const iconList = [
-      "AuthorizedBase.svg",
-      "Cave.svg",
-      "HomeBase.svg",
-      "Poi.svg",
-      "Shipwreck.svg",
-      "ShipwreckX2.svg",
-      "Spice.svg",
-      "Stravidium.svg",
-      "TestingStation.svg",
-      "Titanium.svg",
-      // Add all House SVGs and any other new icons here
-      "House_Alexin.svg",
-      "House_Argpsaz.svg",
-      "House_Dyvetz.svg",
-      "House_Ecaz.svg",
-      "House_Hagal.svg",
-      "House_Hurata.svg",
-      "House_Imota.svg",
-      "House_Kenola.svg",
-      "House_Lindaren.svg",
-      "House_Maros.svg",
-      "House_Mikarrol.svg",
-      "House_Moritani.svg",
-      "House_Mutelli.svg",
-      "House_Novebruns.svg",
-      "House_Richese.svg",
-      "House_Sor.svg",
-      "House_Spinnette.svg",
-      "House_Taligari.svg",
-      "House_Thorvald.svg",
-      "House_Tseida.svg",
-      "House_Varota.svg",
-      "House_Vernius.svg",
-      "House_Wallach.svg",
-      "House_Wayku.svg",
-      "House_Wydras.svg"
+    const resourcePoiIconNames = [
+      'Authorized Base', 'Cave', 'Home Base', 'POI', 'Shipwreck', 'Shipwreck (x2)', 'Spice', 'Stravidium', 'Testing Station', 'Titanium'
+    ];
+    const resourcePoiIcons = [
+      'AuthorizedBase.svg', 'Cave.svg', 'HomeBase.svg', 'Poi.svg', 'Shipwreck.svg', 'ShipwreckX2.svg', 'Spice.svg', 'Stravidium.svg', 'TestingStation.svg', 'Titanium.svg'
     ];
 
-    const iconNames = [
-      "Authorized Base",
-      "Cave",
-      "Home Base",
-      "POI",
-      "Shipwreck",
-      "Shipwreck x2",
-      "Spice",
-      "Stravidium",
-      "Testing Station",
-      "Titanium",
-      // Add readable names for all new SVGs below, in the same order as iconList
-      "House Alexin",
-      "House Argpsaz",
-      "House Dyvetz",
-      "House Ecaz",
-      "House Hagal",
-      "House Hurata",
-      "House Imota",
-      "House Kenola",
-      "House Lindaren",
-      "House Maros",
-      "House Mikarrol",
-      "House Moritani",
-      "House Mutelli",
-      "House Novebruns",
-      "House Richese",
-      "House Sor",
-      "House Spinnette",
-      "House Taligari",
-      "House Thorvald",
-      "House Tseida",
-      "House Varota",
-      "House Vernius",
-      "House Wallach",
-      "House Wayku",
-      "House Wydras"
+    const houseIconNames = [
+      'House Alexin', 'House Argpsaz', 'House Dyvetz', 'House Ecaz', 'House Hagal', 'House Hurata', 'House Imota',
+      'House Kenola', 'House Lindaren', 'House Maros', 'House Mikarrol', 'House Moritani', 'House Mutelli',
+      'House Novebruns', 'House Richese', 'House Sor', 'House Spinnette', 'House Taligari', 'House Thorvald',
+      'House Tseida', 'House Varota', 'House Vernius', 'House Wallach', 'House Wayku', 'House Wydras'
+    ];
+    const houseIcons = [
+      'House_Alexin.svg', 'House_Argpsaz.svg', 'House_Dyvetz.svg', 'House_Ecaz.svg', 'House_Hagal.svg', 'House_Hurata.svg', 'House_Imota.svg',
+      'House_Kenola.svg', 'House_Lindaren.svg', 'House_Maros.svg', 'House_Mikarrol.svg', 'House_Moritani.svg', 'House_Mutelli.svg',
+      'House_Novebruns.svg', 'House_Richese.svg', 'House_Sor.svg', 'House_Spinnette.svg', 'House_Taligari.svg', 'House_Thorvald.svg',
+      'House_Tseida.svg', 'House_Varota.svg', 'House_Vernius.svg', 'House_Wallach.svg', 'House_Wayku.svg', 'House_Wydras.svg'
     ];
 
     const iconPath = "Icons/";
@@ -1096,17 +1124,130 @@
     }
 
     // Improved renderLegend with error handling
-    function renderLegendSafe() {
-      try {
-        renderLegend();
-      } catch (error) {
-        console.error('Failed to render legend:', error);
-        // Show user-friendly error message
-        const legend = document.getElementById('legendIcons');
-        if (legend) {
-          legend.innerHTML = '<p style="color: #ff6666;">Failed to load legend icons. Please refresh the page.</p>';
-        }
-      }
+    function renderLegend() {
+      const legend = document.getElementById('legendPanel');
+      legend.innerHTML = '';
+      legend.className = 'legend legend-split legend-row';
+
+      // Resources & POIs box
+      const resourcesBox = document.createElement('div');
+      resourcesBox.className = 'legend-box legend-box-resources';
+      const resourcesHeader = document.createElement('div');
+      resourcesHeader.className = 'legend-section-header';
+      resourcesHeader.textContent = 'Resources & POIs';
+      resourcesBox.appendChild(resourcesHeader);
+      resourcePoiIcons.forEach((icon, idx) => {
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.setAttribute('draggable', 'true');
+        div.setAttribute('data-icon', icon);
+        div.setAttribute('tabindex', '0');
+        div.setAttribute('aria-label', resourcePoiIconNames[idx] + ' (drag to grid or click to select)');
+        div.title = 'Drag to grid or click to select';
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.alt = resourcePoiIconNames[idx];
+        img.title = resourcePoiIconNames[idx];
+        const span = document.createElement('span');
+        span.textContent = resourcePoiIconNames[idx];
+        div.appendChild(img);
+        div.appendChild(span);
+        resourcesBox.appendChild(div);
+        div.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
+        });
+        div.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
+        });
+      });
+
+      // Houses box with 2 columns
+      const housesBox = document.createElement('div');
+      housesBox.className = 'legend-box legend-box-houses';
+      const housesHeader = document.createElement('div');
+      housesHeader.className = 'legend-section-header';
+      housesHeader.textContent = 'Houses';
+      housesBox.appendChild(housesHeader);
+
+      // Create a container for the two columns
+      const housesGrid = document.createElement('div');
+      housesGrid.className = 'legend-houses-grid';
+      // Split houses into two columns
+      const half = Math.ceil(houseIcons.length / 2);
+      const leftHouses = houseIcons.slice(0, half);
+      const rightHouses = houseIcons.slice(half);
+      const leftNames = houseIconNames.slice(0, half);
+      const rightNames = houseIconNames.slice(half);
+
+      // Create columns
+      const col1 = document.createElement('div');
+      col1.className = 'legend-houses-col';
+      leftHouses.forEach((icon, idx) => {
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.setAttribute('draggable', 'true');
+        div.setAttribute('data-icon', icon);
+        div.setAttribute('tabindex', '0');
+        div.setAttribute('aria-label', leftNames[idx] + ' (drag to grid or click to select)');
+        div.title = 'Drag to grid or click to select';
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.alt = leftNames[idx];
+        img.title = leftNames[idx];
+        const span = document.createElement('span');
+        span.textContent = leftNames[idx];
+        div.appendChild(img);
+        div.appendChild(span);
+        col1.appendChild(div);
+        div.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
+        });
+        div.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
+        });
+      });
+      const col2 = document.createElement('div');
+      col2.className = 'legend-houses-col';
+      rightHouses.forEach((icon, idx) => {
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.setAttribute('draggable', 'true');
+        div.setAttribute('data-icon', icon);
+        div.setAttribute('tabindex', '0');
+        div.setAttribute('aria-label', rightNames[idx] + ' (drag to grid or click to select)');
+        div.title = 'Drag to grid or click to select';
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.alt = rightNames[idx];
+        img.title = rightNames[idx];
+        const span = document.createElement('span');
+        span.textContent = rightNames[idx];
+        div.appendChild(img);
+        div.appendChild(span);
+        col2.appendChild(div);
+        div.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
+        });
+        div.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
+        });
+      });
+      housesGrid.appendChild(col1);
+      housesGrid.appendChild(col2);
+      housesBox.appendChild(housesGrid);
+
+      // Add both boxes to the legend, side by side
+      const legendRow = document.createElement('div');
+      legendRow.className = 'legend-row-inner';
+      legendRow.appendChild(resourcesBox);
+      legendRow.appendChild(housesBox);
+      legend.appendChild(legendRow);
     }
 
     // Debounced auto-save for better performance
@@ -1174,37 +1315,6 @@
 
     function cellKey(row, col) {
       return row + "," + col;
-    }
-
-    function renderLegend() {
-      const legend = document.getElementById('legendIcons');
-      legend.innerHTML = '';
-      iconList.forEach((icon, idx) => {
-        const div = document.createElement('div');
-        div.className = 'legend-item';
-        div.setAttribute('draggable', 'true');
-        div.setAttribute('data-icon', icon);
-        div.setAttribute('tabindex', '0');
-        div.setAttribute('aria-label', iconNames[idx] + ' (drag to grid or click to select)');
-        div.title = 'Drag to grid or click to select';
-        const img = document.createElement('img');
-        img.src = iconPath + icon;
-        img.alt = iconNames[idx];
-        img.title = iconNames[idx];
-        const span = document.createElement('span');
-        span.textContent = iconNames[idx];
-        div.appendChild(img);
-        div.appendChild(span);
-        legend.appendChild(div);
-        div.addEventListener('dragstart', function (e) {
-          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
-        });
-        div.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-          }
-        });
-      });
     }
 
     function initializeGrid() {
@@ -1302,7 +1412,7 @@
         gridData[row][col].forEach(icon => presentIcons.add(icon));
       }
 
-      iconList.forEach(icon => {
+      [...resourcePoiIcons, ...houseIcons].forEach(icon => {
         const img = document.createElement('img');
         img.src = iconPath + icon;
         img.alt = icon;
@@ -1410,9 +1520,9 @@
         if (icons[i]) {
           const img = document.createElement('img');
           img.src = iconPath + icons[i];
-          img.alt = iconNames[iconList.indexOf(icons[i])] || "";
+          img.alt = resourcePoiIconNames[resourcePoiIcons.indexOf(icons[i])] || houseIconNames[houseIcons.indexOf(icons[i])] || "";
           img.draggable = false;
-          img.title = iconNames[iconList.indexOf(icons[i])] || "";
+          img.title = resourcePoiIconNames[resourcePoiIcons.indexOf(icons[i])] || houseIconNames[houseIcons.indexOf(icons[i])] || "";
           iconContainer.appendChild(img);
         }
         iconsGrid.appendChild(iconContainer);
@@ -1450,7 +1560,7 @@
         for (let col = 0; col < 9; col++) {
           if (gridData[row][col].length) {
             const coord = String.fromCharCode(65 + row) + (col + 1);
-            const icons = gridData[row][col].map(i => iconNames[iconList.indexOf(i)]).join(", ");
+            const icons = gridData[row][col].map(i => resourcePoiIconNames[resourcePoiIcons.indexOf(i)] || houseIconNames[houseIcons.indexOf(i)]).join(", ");
             output += coord + "\t" + icons + "\n";
           }
         }
@@ -1530,22 +1640,23 @@
       const legendSpacing = 18;
       const legendTitleSize = 26;
       const legendTitle = "Legend";
-      const legendItems = iconList.map((icon, idx) => ({
-        icon,
-        name: iconNames[idx]
-      }));
 
-      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140;
-      const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing +
-        legendItems.length * (legendIconSize + legendSpacing);
+      // Split legend items for left and right columns
+      const leftLegendItems = resourcePoiIcons.map((icon, idx) => ({ icon, name: resourcePoiIconNames[idx] }));
+      const rightLegendItems = houseIcons.map((icon, idx) => ({ icon, name: houseIconNames[idx] }));
 
+      // Calculate legend heights (use max of both columns)
+      const legendRows = Math.max(leftLegendItems.length, rightLegendItems.length);
+      const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing + legendRows * (legendIconSize + legendSpacing);
       const dateHeight = 60;
       const gridWidth = gridSize * (cellSize + gap);
       const gridHeight = gridSize * (cellSize + gap);
+      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140; // width for one legend column
 
+      // New canvas width: legend left + grid + legend right
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      canvas.width = legendWidth + gridWidth;
+      canvas.width = legendWidth * 2 + gridWidth;
       canvas.height = Math.max(gridHeight + dateHeight, legendHeight + dateHeight);
 
       function loadImage(src) {
@@ -1557,15 +1668,8 @@
         });
       }
 
-      const usedIcons = new Set();
-      for (let row = 0; row < gridSize; row++) {
-        for (let col = 0; col < gridSize; col++) {
-          gridData[row][col].forEach(icon => usedIcons.add(icon));
-        }
-      }
-
       const iconPromises = {};
-      iconList.forEach(icon => {
+      [...resourcePoiIcons, ...houseIcons].forEach(icon => {
         iconPromises[icon] = loadImage(iconPath + icon);
       });
 
@@ -1575,70 +1679,74 @@
       ]).then(([backgroundImage, ...iconImages]) => {
         const iconMap = {};
         let i = 0;
-        for (const icon of iconList) {
+        for (const icon of [...resourcePoiIcons, ...houseIcons]) {
           iconMap[icon] = iconImages[i++];
         }
 
+        // Date/time bar
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, dateHeight);
-
         const now = new Date();
-        const dateStr = useLocalTime
-          ? now.toLocaleString()
-          : now.toUTCString();
+        const dateStr = useLocalTime ? now.toLocaleString() : now.toUTCString();
         ctx.font = "bold 32px Arial";
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "middle";
         ctx.fillText(dateStr, legendWidth + 20, dateHeight / 2);
 
+        // Background
         ctx.globalAlpha = 0.4;
         ctx.drawImage(backgroundImage, legendWidth, dateHeight, gridWidth, gridHeight);
         ctx.globalAlpha = 1.0;
 
+        // Left legend (resources/POIs)
         ctx.fillStyle = "rgba(30,30,30,0.85)";
         ctx.fillRect(0, dateHeight, legendWidth, legendHeight);
-
         ctx.font = `bold ${legendTitleSize}px Arial`;
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "top";
         ctx.fillText(legendTitle, legendPadding, dateHeight + legendPadding);
-
         let legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
         ctx.font = `${legendTextSize}px Arial`;
-        for (const item of legendItems) {
+        leftLegendItems.forEach(item => {
           if (iconMap[item.icon]) {
-            ctx.drawImage(
-              iconMap[item.icon],
-              legendPadding,
-              legendY,
-              legendIconSize,
-              legendIconSize
-            );
+            ctx.drawImage(iconMap[item.icon], legendPadding, legendY, legendIconSize, legendIconSize);
           }
           ctx.fillStyle = "#fff";
-          ctx.fillText(
-            item.name,
-            legendPadding + legendIconSize + 10,
-            legendY + (legendIconSize - legendTextSize) / 2
-          );
+          ctx.fillText(item.name, legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
           legendY += legendIconSize + legendSpacing;
-        }
+        });
 
+        // Right legend (houses)
+        ctx.fillStyle = "rgba(30,30,30,0.85)";
+        ctx.fillRect(canvas.width - legendWidth, dateHeight, legendWidth, legendHeight);
+        ctx.font = `bold ${legendTitleSize}px Arial`;
+        ctx.fillStyle = "#fff";
+        ctx.textBaseline = "top";
+        ctx.fillText(legendTitle, canvas.width - legendWidth + legendPadding, dateHeight + legendPadding);
+        legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
+        ctx.font = `${legendTextSize}px Arial`;
+        rightLegendItems.forEach(item => {
+          if (iconMap[item.icon]) {
+            ctx.drawImage(iconMap[item.icon], canvas.width - legendWidth + legendPadding, legendY, legendIconSize, legendIconSize);
+          }
+          ctx.fillStyle = "#fff";
+          ctx.fillText(item.name, canvas.width - legendWidth + legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
+          legendY += legendIconSize + legendSpacing;
+        });
+
+        // Draw grid
         for (let row = 8; row >= 0; row--) {
           for (let col = 0; col < gridSize; col++) {
             const canvasRow = 8 - row;
             const x = legendWidth + col * (cellSize + gap);
             const y = dateHeight + canvasRow * (cellSize + gap);
-
             ctx.strokeStyle = '#222';
             ctx.lineWidth = 2;
             ctx.strokeRect(x, y, cellSize, cellSize);
-
             ctx.font = "bold 24px Arial";
             ctx.fillStyle = "rgba(255,255,255,0.8)";
             ctx.textBaseline = "top";
             ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
-
             const icons = gridData[row][col];
             const n = icons.length;
             if (n > 0) {
@@ -1694,7 +1802,6 @@
                 }
               }
             }
-
             if (!exploredGrid[row][col]) {
               ctx.fillStyle = "rgba(30,30,30,0.55)";
               ctx.fillRect(x, y, cellSize, cellSize);
@@ -1714,22 +1821,17 @@
           ctx.font = "bold 24px Arial";
           const textWidth = ctx.measureText(sigText).width;
           const sigX = canvas.width - sigMargin - sigHeight - 12 - textWidth;
-
           ctx.save();
           ctx.globalAlpha = 0.85;
           ctx.fillStyle = "#222";
           ctx.fillRect(sigX - 16, sigY - 8, textWidth + sigHeight + 44, sigHeight + 16);
           ctx.globalAlpha = 1.0;
-
           ctx.drawImage(fwbImg, sigX, sigY, sigHeight, sigHeight);
-
           ctx.font = "bold 24px Arial";
           ctx.fillStyle = "#ffe066";
           ctx.textBaseline = "middle";
           ctx.fillText(sigText, sigX + sigHeight + 12, sigY + sigHeight / 2);
-
           ctx.restore();
-
           const link = document.createElement('a');
           link.download = 'grid.png';
           link.href = canvas.toDataURL();
@@ -1996,7 +2098,7 @@
           
           // Validate icon names
           data[row][col].forEach((icon, idx) => {
-            if (typeof icon !== 'string' || !iconList.includes(icon)) {
+            if (typeof icon !== 'string' || ![...resourcePoiIcons, ...houseIcons].includes(icon)) {
               console.warn(`Invalid icon at [${row}][${col}][${idx}]: ${icon}`);
               // Remove invalid icon
               data[row][col].splice(idx, 1);
@@ -2060,7 +2162,7 @@
     }
 
     function initializeApp() {
-      renderLegendSafe();
+      renderLegend();
       initializeGrid();
       populateIconPicker();
       rerenderAllCells();
@@ -2436,6 +2538,44 @@
       document.getElementById('descriptionToggleBtn').onclick = null;
       document.getElementById('descriptionToggleBtn').remove();
     } catch(e) {}
+
+    (function() {
+      // Remove old style if present
+      const oldStyle = document.getElementById('legend-box-wide-style');
+      if (oldStyle) oldStyle.remove();
+      if (!document.getElementById('legend-box-wider-style')) {
+        const style = document.createElement('style');
+        style.id = 'legend-box-wider-style';
+        style.textContent = `
+          .legend-box {
+            width: 420px !important;
+            max-width: 440px !important;
+            min-width: 0;
+            background: rgba(30,30,30,0.92);
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+            padding: 18px 22px 16px 22px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .legend-row-inner {
+            gap: 36px !important;
+          }
+          @media (max-width: 1000px) {
+            .legend-box {
+              width: 98vw !important;
+              max-width: 98vw !important;
+            }
+            .legend-row-inner {
+              gap: 12px !important;
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    })();
   </script>
 </body>
 </html>
