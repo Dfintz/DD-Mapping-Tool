@@ -1863,6 +1863,9 @@
       updateStormTimer();
       setInterval(updateStormTimer, 1000);
       window.addEventListener('resize', throttledResize);
+      
+      // Ensure button handlers are attached
+      attachButtonHandlers();
     }
 
     // Function to load shared maps from URL
@@ -2013,29 +2016,61 @@
       }).catch(err => {
         console.error('PNG export error:', err);
         showNotification('Failed to export PNG', 'error');
-      });
-    }
-
-    document.getElementById('exportPngButton').onclick = exportAsPng;
-    document.getElementById('shareLinkButton').onclick = function() {
-      try {
-        const data = { gridData, exploredGrid };
-        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
-        const url = `${location.origin}${location.pathname}?map=${encoded}`;
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(url).then(() => {
-            showNotification('Shareable link copied to clipboard!', 'success');
-          }).catch(() => {
-            prompt('Copy this link to share your map:', url);
-          });
-        } else {
-          prompt('Copy this link to share your map:', url);
+      });    }    // Enhanced button handler attachment with better error handling
+    function attachButtonHandlers() {
+      // Wait a bit for DOM to be fully ready
+      setTimeout(() => {
+        const exportBtn = document.getElementById('exportPngButton');
+        const shareBtn = document.getElementById('shareLinkButton');
+        
+        console.log('Attaching button handlers...');
+        console.log('Export button found:', !!exportBtn);
+        console.log('Share button found:', !!shareBtn);
+        
+        if (exportBtn) {
+          exportBtn.onclick = exportAsPng;
+          exportBtn.addEventListener('click', exportAsPng);
+          console.log('Export button handler attached');
         }
-      } catch (error) {
-        console.error('Failed to generate shareable link:', error);
-        showNotification('Failed to generate shareable link', 'error');
-      }
-    };
+        
+        if (shareBtn) {
+          const shareHandler = function(e) {
+            e.preventDefault();
+            console.log('Share button clicked');
+            try {
+              const data = { gridData, exploredGrid };
+              const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
+              const url = `${location.origin}${location.pathname}?map=${encoded}`;
+              if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(url).then(() => {
+                  showNotification('Shareable link copied to clipboard!', 'success');
+                }).catch(() => {
+                  prompt('Copy this link to share your map:', url);
+                });
+              } else {
+                prompt('Copy this link to share your map:', url);
+              }
+            } catch (error) {
+              console.error('Failed to generate shareable link:', error);
+              showNotification('Failed to generate shareable link', 'error');
+            }
+          };
+          
+          shareBtn.onclick = shareHandler;
+          shareBtn.addEventListener('click', shareHandler);
+          console.log('Share button handler attached');
+        }
+      }, 100);
+    }
+    
+    // Multiple attachment strategies to ensure handlers are set
+    document.addEventListener('DOMContentLoaded', attachButtonHandlers);
+    window.addEventListener('load', attachButtonHandlers);
+    
+    // Immediate attachment if DOM is already ready
+    if (document.readyState !== 'loading') {
+      attachButtonHandlers();
+    }
   </script>
 </body>
 </html>
