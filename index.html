@@ -2544,53 +2544,64 @@
     }
 
     // --- Button Event Handlers ---
-    document.getElementById('helpButton').onclick = function() {
-      document.getElementById('helpModal').style.display = 'flex';
-    };
-    document.querySelector('.help-close').onclick = function() {
-      document.getElementById('helpModal').style.display = 'none';
-    };
-    document.getElementById('saveVersionButton').onclick = saveVersion;
-    document.getElementById('loadVersionButton').onclick = loadVersion;
-    document.getElementById('exportJsonButton').onclick = exportMapDataAsJson;
-    document.getElementById('importJsonButton').onclick = function() {
-      document.getElementById('importJsonInput').click();
-    };
-    document.getElementById('importJsonInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
+    document.addEventListener('DOMContentLoaded', function() {
+      // Help button
+      document.getElementById('helpButton').onclick = function() {
+        document.getElementById('helpModal').style.display = 'flex';
+      };
+      window.closeHelp = function() {
+        document.getElementById('helpModal').style.display = 'none';
+      };
+
+      // Save Map (version)
+      document.getElementById('saveVersionButton').onclick = saveVersion;
+      // Load Map (version)
+      document.getElementById('loadVersionButton').onclick = loadVersion;
+      // Export as PNG
+      document.getElementById('exportPngButton').onclick = exportAsPng;
+      // Export as JSON
+      document.getElementById('exportJsonButton').onclick = function() {
         try {
-          const data = JSON.parse(evt.target.result);
-          const result = importMapDataSafe(data);
-          if (result.success) {
-            showNotification('Map imported successfully!', 'success');
-          } else {
-            showNotification(result.message, 'error');
-          }
-        } catch (err) {
-          showNotification('Invalid JSON file', 'error');
+          const data = { gridData, exploredGrid };
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'dune_map.json';
+          link.click();
+          showNotification('Map exported successfully!', 'success');
+        } catch (error) {
+          console.error('Export failed:', error);
+          showNotification('Failed to export map', 'error');
         }
       };
-      reader.readAsText(file);
-    });    document.getElementById('shareLinkButton').onclick = function() {
-      try {
-        const data = { gridData, exploredGrid };
-        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
-        const url = window.location.origin + window.location.pathname + '?map=' + encoded;
-        navigator.clipboard.writeText(url);
-        showNotification('Shareable link copied to clipboard!', 'success');
-      } catch (e) {
-        showNotification('Failed to generate link', 'error');
-      }
-    };
-    // Remove description box toggle JS if present
-    try {
-      document.getElementById('descriptionToggleBtn').onclick = null;
-      document.getElementById('descriptionToggleBtn').remove();
-    } catch(e) {}
+      // Import from JSON
+      document.getElementById('importJsonButton').onclick = function() {
+        document.getElementById('importJsonInput').click();
+      };
+      document.getElementById('importJsonInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          try {
+            const data = JSON.parse(evt.target.result);
+            const result = importMapDataSafe(data);
+            if (result.success) {
+              showNotification(result.message, 'success');
+            } else {
+              showNotification(result.message, 'error');
+            }
+          } catch (error) {
+            showNotification('Failed to import map', 'error');
+          }
+        };
+        reader.readAsText(file);
+      });
+      // Shareable Link (stub)
+      document.getElementById('shareLinkButton').onclick = function() {
+        showNotification('Shareable link feature coming soon!', 'info');
+      };
+    });
   </script>
 </body>
 </html>
-``` 
