@@ -552,12 +552,12 @@
     }    .legend-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 4px;
+      gap: 18px;           /* Increased from 8px to 18px for more space between icon and label */
+      padding: 8px 8px;    /* Increased padding for more vertical space */
       border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.2s;
-      margin-bottom: 4px;
+      margin-bottom: 10px; /* Increased margin for more space between legend rows */
     }
     
     .legend-item:hover {
@@ -582,6 +582,21 @@
       color: #fff;
       font-size: 13px;
       font-weight: normal;
+    }    .legend-houses-col {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;           /* Increased gap between house legend items */
+      flex: 1 1 0;
+    }
+    @media (max-width: 1000px) {
+      .legend-item {
+        gap: 12px;         /* Slightly less gap for mobile, but still increased */
+        padding: 6px 4px;
+        margin-bottom: 6px;
+      }
+      .legend-houses-col {
+        gap: 8px;
+      }
     }    /* Help Modal Styling - Dune Filmbook Style */
     #helpModal {
       display: none;
@@ -867,7 +882,7 @@
     .legend-houses-col {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 10px;           /* Increased gap between house legend items */
       flex: 1 1 0;
     }
     @media (max-width: 1000px) {
@@ -2568,3 +2583,4 @@
   </script>
 </body>
 </html>
+``` 
