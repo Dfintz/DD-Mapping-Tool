@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
+<head>  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Added mobile viewport -->
   <title>Dune Awakening Deep Desert Mapping</title>
+  <!-- Add html2canvas for PNG export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     *,
     *::before,
@@ -1849,17 +1850,44 @@
       }
       
       return true;
-    }
-
-    function initializeApp() {
+    }    function initializeApp() {
       renderLegend();
       initializeGrid();
       populateIconPicker();
+      
+      // Check for shared map in URL
+      loadSharedMapFromURL();
+      
       rerenderAllCells();
       updateTimeToggleHighlight();
       updateStormTimer();
       setInterval(updateStormTimer, 1000);
       window.addEventListener('resize', throttledResize);
+    }
+
+    // Function to load shared maps from URL
+    function loadSharedMapFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const mapData = urlParams.get('map');
+      
+      if (mapData) {
+        try {
+          const decoded = JSON.parse(decodeURIComponent(atob(mapData)));
+          if (decoded && decoded.gridData && decoded.exploredGrid) {
+            validateGridData(decoded.gridData);
+            validateExploredGrid(decoded.exploredGrid);
+            gridData = decoded.gridData;
+            exploredGrid = decoded.exploredGrid;
+            showNotification('Shared map loaded successfully!', 'success');
+          }
+        } catch (error) {
+          console.error('Failed to load shared map:', error);
+          showNotification('Failed to load shared map from URL', 'error');
+        }
+      } else {
+        // Try to auto-load from localStorage if no shared map
+        autoLoadMap();
+      }
     }
 
     initializeApp();
@@ -1956,8 +1984,36 @@
       // Auto remove
       setTimeout(() => {
         notification.style.transform = 'translateX(100%)';
-        setTimeout(() => notification.remove(), 300);
-      }, duration);
+        setTimeout(() => notification.remove(), 300);      }, duration);
+    }
+
+    // Export PNG function
+    function exportAsPng() {
+      const gridArea = document.querySelector('.main-flex');
+      if (!window.html2canvas) {
+        showNotification('PNG export requires html2canvas library.', 'error');
+        return;
+      }
+      
+      showNotification('Exporting PNG...', 'info');
+      
+      html2canvas(gridArea, {
+        backgroundColor: null,
+        useCORS: true,
+        scale: 2,
+        logging: false,
+        allowTaint: true,
+        foreignObjectRendering: true
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'dune-desert-map.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showNotification('PNG exported successfully!', 'success');
+      }).catch(err => {
+        console.error('PNG export error:', err);
+        showNotification('Failed to export PNG', 'error');
+      });
     }
 
     document.getElementById('exportPngButton').onclick = exportAsPng;
