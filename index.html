@@ -9,15 +9,10 @@
     *::before,
     *::after {
       box-sizing: border-box;
-    }
-
-    body {
+    }    body {
       font-family: Arial, sans-serif;
       margin: 20px;
       background-color: #000;
-      display: block;
-      flex-direction: unset;
-      align-items: unset;
     }
     h1 {
       color: #fff;
@@ -27,90 +22,61 @@
     }    .main-flex {
       display: flex;
       align-items: flex-start;
-      justify-content: center;
-      gap: 24px;
+      justify-content: flex-start;
+      gap: 32px;
       width: 100%;
       max-width: none;
       position: relative;
-    }
-    .description-box {
-      background: rgba(30,30,30,0.85);
-      color: #ffe066;
-      border-radius: 10px;
-      padding: 12px;
-      min-width: 200px;
-      max-width: 220px;
-      width: 200px;
-      font-size: 14px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
-      position: static;
-      box-sizing: border-box;
-      transition: max-height 0.3s, padding 0.3s;
-      overflow: hidden;
-      margin-left: 40px;
-      margin-top: 20px;
-      align-self: flex-start;
+      padding-left: 20px;
     }
     
-    .description-box.collapsed {
-      max-height: 38px;
-      padding-bottom: 0;
-    }
-    
-    .description-toggle {
-      background: none;
-      border: none;
-      color: #fff;
-      cursor: pointer;
+    .left-sidebar {
       display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 220px;
+      max-width: 220px;
+      flex-shrink: 0;
       align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      font-weight: bold;
-      padding: 0;
-      margin-bottom: 8px;
-      width: 100%;
-      text-align: left;
     }
     
-    .description-toggle:hover {
-      color: #ffe066;
-    }
-    
-    .description-toggle-title {
-      font-size: 1.1em;
-      letter-spacing: 0.03em;
-    }
-    
-    .description-content {
-      color: #ffe066;
-      font-size: 0.98em;
-      line-height: 1.6;
-      margin-top: 8px;
-    }    .grid-outer {
+    .right-sidebar {
       display: flex;
       flex-direction: column;
-      align-items: center; /* Center the grid horizontally */
-      margin-left: 0;
-    }    .main-controls {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      justify-content: flex-start;
-      margin-right: 32px;
-      margin-top: 24px;
-      min-width: 200px;
+      gap: 12px;
+      min-width: 220px;
       max-width: 220px;
+      flex-shrink: 0;
+      align-items: center;
+    }
+    
+    .main-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      margin: 0;
+      min-width: 200px;
+      max-width: 200px;
+      width: 100%;
       position: static;
       top: unset;
       left: unset;
       z-index: 99;
     }
-    /* Unified controls row under description box */
+    
     .main-controls .pretty-btn {
       margin: 4px 0;
       min-width: 140px;
       width: 100%;
+    }
+    
+    .grid-outer {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     .grid-label-row,
     .grid-label-col {
@@ -118,16 +84,14 @@
     }
     .grid-container {
       display: grid;
-      grid-template-columns: repeat(9, 100px);
-      grid-template-rows: repeat(9, 100px);
+      grid-template-columns: repeat(9, 1fr);
+      grid-template-rows: repeat(9, 1fr);
       gap: 2px;
-      background: transparent;
-      box-shadow: none;
       width: 900px;
       height: 900px;
-      z-index: 1;
-      position: relative;
-      touch-action: manipulation;
+      background: #222;
+      border-radius: 10px;
+      box-shadow: 0 0 16px #000a;
     }
     @media (max-width: 1000px) {
       .grid-container {
@@ -146,13 +110,17 @@
       justify-content: flex-start;
       align-items: flex-start;
       background-color: transparent;
-      font-size: 12px;
+      font-size: 1.1em;
       cursor: pointer;
       user-select: none;
       transition: background-color 0.2s;
       position: relative;
       overflow: hidden;
       touch-action: manipulation;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
     }
     .cell:hover, .cell:active {
       background-color: rgba(255,255,255,0.1);
@@ -197,22 +165,22 @@
       pointer-events: none;
       user-select: none;
       object-fit: contain;
-    }.legend {
-      margin-left: 40px;
-      align-self: flex-start;
+    }    .legend {
+      align-self: stretch;
       color: #fff;
       background: rgba(30,30,30,0.85);
-      padding: 12px;
+      padding: 8px 10px;
       border-radius: 10px;
-      min-width: 200px;
-      max-width: 220px;
-      width: 200px;
-      font-size: 14px;
+      min-width: 0;
+      max-width: none;
+      width: 100%;
+      font-size: 0.85em;
       position: static;
       box-sizing: border-box;
       transition: max-height 0.3s, padding 0.3s;
       overflow: hidden;
       box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+      margin-top: 0;
     }
     .legend.collapsed {
       max-height: 38px;
@@ -267,13 +235,14 @@
     #timeModeLabel {
       color: #fff700;
       font-weight: bold;
-    }
-    .side-controls {
+    }    .side-controls {
       display: flex;
       flex-direction: column;
       gap: 18px;
-      margin-top: 24px;
-      align-items: center; /* Center the buttons and toggle horizontally */
+      margin-top: 0;
+      align-items: stretch;
+      margin-left: 0;
+      width: 100%;
     }
     .time-toggle {
       display: flex;
@@ -337,10 +306,11 @@
       background: linear-gradient(90deg, #ffe066 0%, #ffd700 100%);
       color: #222;
       border: none;
-      border-radius: 22px;
-      padding: 14px 32px;
-      min-width: 180px;
-      font-size: 1.08em;
+      border-radius: 5px;
+      padding: 4px 10px;
+      min-width: 70px;
+      min-height: 28px;
+      font-size: 0.85em;
       font-weight: bold;
       letter-spacing: 0.03em;
       box-shadow: 0 2px 8px #2224;
@@ -458,39 +428,67 @@
     .server-selector option {
       background: #2a1810;
       color: #ffe066;
-    }
-
-    /* --- Mobile Mode --- */
-    @media (max-width: 1000px) {
-      .main-flex {
+    }    /* --- Mobile Mode --- */
+    @media (max-width: 1000px) {      .main-flex {
         flex-direction: column;
         align-items: center;
-        gap: 24px;
+        gap: 32px;
         max-width: 100vw;
+        padding-left: 0;
       }
-      .description-box,
-      .legend {
-        margin: 0 auto;
-        min-width: 0;
+        .left-sidebar {
+        min-width: 98vw;
         max-width: 98vw;
         width: 98vw;
-      }      .main-controls {
+        order: 2;
+        gap: 20px;
+        padding: 0 1vw;
+      }
+      
+      .grid-outer {
+        margin-left: 0;
+        margin-right: 0;
+        order: 1;
+      }
+      
+      .right-sidebar {
+        min-width: 98vw;
+        max-width: 98vw;
+        width: 98vw;
+        order: 3;
+        gap: 20px;
+        padding: 0 1vw;
+      }
+      
+      .main-controls {
         flex-direction: column;
         gap: 8px;
         margin: 16px auto;
-        width: 98vw;
-        max-width: 98vw;
+        width: 100%;
+        max-width: 100%;
+        margin-right: 0;
+        align-items: center;
       }
+      
       .main-controls .pretty-btn {
         width: 100%;
         min-width: unset;
         margin: 2px 0;
       }
-      .controls,
-      #stormTimer {
-        width: 98vw;
+      
+      .side-controls {
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        margin: 16px auto;
+      }        .legend {
+        margin: 0 auto;
         min-width: 0;
         max-width: 98vw;
+        width: 98vw;
+        margin-top: 16px;
+        font-size: 12px;
+        padding: 8px 4px 12px 4px;
       }
       .grid-container {
         width: 98vw;
@@ -512,16 +510,8 @@
       .cell-icons {
         padding: 18px 2px 2px 2px;
         gap: 1px;
-      }
-      .cell-icon-container {
+      }      .cell-icon-container {
         min-height: 18px;
-      }
-      .legend {
-        min-width: 0;
-        max-width: 98vw;
-        width: 98vw;
-        font-size: 12px;
-        padding: 8px 4px 12px 4px;
       }
       .legend.collapsed {
         max-height: 38px;
@@ -537,11 +527,11 @@
       }
       .legend-item span {
         font-size: 11px;
-      }
-      .pretty-btn {
+      }      .pretty-btn {
         min-width: 120px;
-        padding: 10px 10px;
+        padding: 12px 16px;
         font-size: 1em;
+        min-height: 44px; /* Better touch target for mobile */
       }
     }
     [aria-label][tabindex] {
@@ -552,12 +542,17 @@
     }    .legend-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 4px;
+      gap: 10px;
+      padding: 2px 0;
       border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.2s;
       margin-bottom: 4px;
+      min-height: 40px;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 0.85em;
+      min-width: 80px;
     }
     
     .legend-item:hover {
@@ -582,7 +577,13 @@
       color: #fff;
       font-size: 13px;
       font-weight: normal;
-    }    /* Help Modal Styling - Dune Filmbook Style */
+      flex: 1;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+      line-height: 1.3;
+      min-width: 0;
+    }/* Help Modal Styling - Dune Filmbook Style */
     #helpModal {
       display: none;
       position: fixed;
@@ -803,6 +804,148 @@
     .side-controls {
       margin-top: 24px;
     }
+
+    .legend-section-header {
+      font-weight: bold;
+      font-size: 1em;
+      margin-bottom: 6px;
+      margin-top: 8px;
+      color: #ffe066;
+      letter-spacing: 0.5px;
+      text-align: left;
+    }
+
+    .legend.legend-split {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      background: none;
+      box-shadow: none;
+      padding: 0;
+    }    .legend-box {
+      background: rgba(30,30,30,0.92);
+      border-radius: 12px;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.3);
+      padding: 8px 10px;
+      margin: 0 0 16px 0;
+      min-width: 120px;
+      max-width: 500px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      border: 3px solid transparent;
+      transition: all 0.3s ease;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    
+    .legend-box-resources {
+      border-color: #ffe066 !important;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.3), 0 0 12px rgba(255, 224, 102, 0.3) !important;
+    }
+    
+    .legend-box-houses {
+      border-color: #a259e6 !important;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.3), 0 0 12px rgba(162, 89, 230, 0.3) !important;
+    }
+    
+    .legend-box-houses .legend-section-header {
+      color: #a259e6;
+    }
+    .legend.legend-row {
+      display: block;
+      background: none;
+      box-shadow: none;
+      padding: 0;
+    }    .legend-row-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: stretch;
+      justify-content: flex-start;
+      width: 100%;
+      max-width: none;
+    }.legend-houses-grid {
+      display: flex;
+      flex-direction: row;
+      gap: 4px;
+      width: 100%;
+    }
+    .legend-houses-col {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1 1 0;
+      min-width: 0;
+      overflow: hidden;
+    }    @media (max-width: 1200px) {
+      .legend-row-inner {
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+      }
+      .legend-box {
+        width: 90vw !important;
+        max-width: 90vw !important;
+        min-width: 120px !important;
+      }
+      .legend-houses-grid {
+        flex-direction: column;
+        gap: 4px;
+      }
+      .legend-houses-col {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px;
+      }      .legend-item {
+        min-width: 80px;
+        flex: 0 0 auto;
+      }
+    }
+    .pretty-btn, .main-controls button, .side-controls button {
+      font-size: 0.6em;
+      padding: 2px 5px;
+      min-width: 35px;
+      min-height: 14px;
+      border-radius: 3px;
+    }
+    #legend-panel {
+      width: 220px;
+      min-width: 180px;
+      background: rgba(40, 30, 15, 0.98);
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 2px 8px #000a;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      height: fit-content;
+    }
+    /* If legendPanel is used as an id, ensure the HTML matches this id. */
+    #legendPanel {
+      width: 220px;
+      min-width: 180px;
+      background: rgba(40, 30, 15, 0.98);
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 2px 8px #000a;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      height: fit-content;
+      margin-top: 24px;
+      margin-bottom: 24px;
+      align-self: center;
+    }
+    .legend-box {
+      background: none;
+      box-shadow: none;
+      border-radius: 0;
+      padding: 0;
+      min-width: unset;
+      max-width: unset;
+    }
   </style>
 </head>
 <body>
@@ -833,47 +976,44 @@
           <span class="phase-time" id="hitTime">calculating...</span>
         </div>
       </div>
+    </div>  <div class="main-flex">
+    <div class="left-sidebar">
+      <div class="legend" id="legendPanel"></div>
     </div>
-  <div class="main-flex" style="align-items: flex-start;">
-    <div class="main-controls" style="margin-right: 32px; margin-top: 24px; align-items: flex-end; min-width: 200px; max-width: 220px;">
-      <button id="helpButton" class="pretty-btn">Help & Shortcuts</button>
-      <button id="saveVersionButton" class="pretty-btn">Save Map</button>
-      <button id="loadVersionButton" class="pretty-btn">Load Map</button>
-      <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
-      <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
-      <button id="importJsonButton" class="pretty-btn">Import from JSON</button>
-      <input type="file" id="importJsonInput" accept="application/json" style="display:none;" />
-      <button id="shareLinkButton" class="pretty-btn">Get Shareable Link</button>
-    </div>
-    <div class="grid-outer" style="margin-left: 0;">
+    <div class="grid-outer">
       <div style="display:flex;">
         <div class="grid-container" id="gridContainer" role="grid" aria-label="Map grid"></div>
       </div>
     </div>
-    <div class="legend" id="legendPanel">
-      <button class="legend-toggle" id="legendToggleBtn" aria-label="Toggle legend" tabindex="0" title="Show/hide legend">
-        <span id="legendToggleIcon">▼</span>
-        <span class="legend-title">Legend</span>
-      </button>
-      <div id="legendIcons" role="list" aria-label="Map legend icons"></div>
-    </div>
-    <div class="side-controls" style="margin-top: 24px;">
-      <div class="time-toggle">
-        <label class="switch-label">
-          <span id="timeModeLabel" style="margin-right:10px;">Local</span>
-          <label class="switch">
-            <input type="checkbox" id="useLocalTime" checked>
-            <span class="slider"></span>
-          </label>
-          <span id="utcModeLabel" style="margin-left:10px;">UTC</span>
-        </label>
+    <div class="right-sidebar">
+      <div class="main-controls">
+        <button id="helpButton" class="pretty-btn">Help & Shortcuts</button>
+        <button id="saveVersionButton" class="pretty-btn">Save Map</button>
+        <button id="loadVersionButton" class="pretty-btn">Load Map</button>
+        <button id="exportPngButton" class="pretty-btn">Export as PNG</button>
+        <button id="exportJsonButton" class="pretty-btn">Export as JSON</button>
+        <button id="importJsonButton" class="pretty-btn">Import from JSON</button>
+        <input type="file" id="importJsonInput" accept="application/json" style="display:none;" />
+        <button id="shareLinkButton" class="pretty-btn">Get Shareable Link</button>
       </div>
-      <button id="exploreAllButton" class="pretty-btn">Explore All</button>
-      <button id="undoButton" class="pretty-btn" title="Undo (Ctrl+Z)">Undo</button>
-      <button id="redoButton" class="pretty-btn" title="Redo (Ctrl+Y)">Redo</button>
-      <button id="clearButton" class="pretty-btn">Clear Map</button>
+      <div class="side-controls">
+        <div class="time-toggle">
+          <label class="switch-label">
+            <span id="timeModeLabel" style="margin-right:10px;">Local</span>
+            <label class="switch">
+              <input type="checkbox" id="useLocalTime" checked>
+              <span class="slider"></span>
+            </label>
+            <span id="utcModeLabel" style="margin-left:10px;">UTC</span>
+          </label>
+        </div>
+        <button id="exploreAllButton" class="pretty-btn">Explore All</button>
+        <button id="undoButton" class="pretty-btn">Undo</button>
+        <button id="redoButton" class="pretty-btn">Redo</button>
+        <button id="clearButton" class="pretty-btn">Clear Map</button>
+      </div>
     </div>
-  </div>  <!-- Icon Picker Modal -->
+  </div><!-- Icon Picker Modal -->
   <div id="iconPickerModal">
     <div class="icon-picker-content">
       <h3>Select an Icon</h3>
@@ -945,10 +1085,6 @@
   <div style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:32px;margin-bottom:18px;">
     <img src="fwb.png" alt="Fremen with Benefits Logo" style="height:44px;width:auto;margin-bottom:8px;filter:drop-shadow(0 2px 8px #2228);">
     <div style="color:#ffe066;font-size:1.08em;text-align:center;max-width:600px;text-shadow:0 1px 4px #222;">
-      Provided by <b>Fremen with Benefits</b> &mdash; This tool is a fan project and is not affiliated with Funcom or Legendary. All Dune trademarks and images are property of their respective owners.
-    </div>
-  </div>
-
   <script>
     let useLocalTime = true;
     const gridContainer = document.getElementById('gridContainer');
@@ -959,82 +1095,24 @@
     let selectedCells = new Set();
     let isSelecting = false;
 
-    const iconList = [
-      "AuthorizedBase.svg",
-      "Cave.svg",
-      "HomeBase.svg",
-      "Poi.svg",
-      "Shipwreck.svg",
-      "ShipwreckX2.svg",
-      "Spice.svg",
-      "Stravidium.svg",
-      "TestingStation.svg",
-      "Titanium.svg",
-      // Add all House SVGs and any other new icons here
-      "House_Alexin.svg",
-      "House_Argpsaz.svg",
-      "House_Dyvetz.svg",
-      "House_Ecaz.svg",
-      "House_Hagal.svg",
-      "House_Hurata.svg",
-      "House_Imota.svg",
-      "House_Kenola.svg",
-      "House_Lindaren.svg",
-      "House_Maros.svg",
-      "House_Mikarrol.svg",
-      "House_Moritani.svg",
-      "House_Mutelli.svg",
-      "House_Novebruns.svg",
-      "House_Richese.svg",
-      "House_Sor.svg",
-      "House_Spinnette.svg",
-      "House_Taligari.svg",
-      "House_Thorvald.svg",
-      "House_Tseida.svg",
-      "House_Varota.svg",
-      "House_Vernius.svg",
-      "House_Wallach.svg",
-      "House_Wayku.svg",
-      "House_Wydras.svg"
+    const resourcePoiIconNames = [
+      'Authorized Base', 'Cave', 'Home Base', 'POI', 'Shipwreck', 'Shipwreck (x2)', 'Spice', 'Stravidium', 'Testing Station', 'Titanium'
+    ];
+    const resourcePoiIcons = [
+      'AuthorizedBase.svg', 'Cave.svg', 'HomeBase.svg', 'Poi.svg', 'Shipwreck.svg', 'ShipwreckX2.svg', 'Spice.svg', 'Stravidium.svg', 'TestingStation.svg', 'Titanium.svg'
     ];
 
-    const iconNames = [
-      "Authorized Base",
-      "Cave",
-      "Home Base",
-      "POI",
-      "Shipwreck",
-      "Shipwreck x2",
-      "Spice",
-      "Stravidium",
-      "Testing Station",
-      "Titanium",
-      // Add readable names for all new SVGs below, in the same order as iconList
-      "House Alexin",
-      "House Argpsaz",
-      "House Dyvetz",
-      "House Ecaz",
-      "House Hagal",
-      "House Hurata",
-      "House Imota",
-      "House Kenola",
-      "House Lindaren",
-      "House Maros",
-      "House Mikarrol",
-      "House Moritani",
-      "House Mutelli",
-      "House Novebruns",
-      "House Richese",
-      "House Sor",
-      "House Spinnette",
-      "House Taligari",
-      "House Thorvald",
-      "House Tseida",
-      "House Varota",
-      "House Vernius",
-      "House Wallach",
-      "House Wayku",
-      "House Wydras"
+    const houseIconNames = [
+      'House Alexin', 'House Argpsaz', 'House Dyvetz', 'House Ecaz', 'House Hagal', 'House Hurata', 'House Imota',
+      'House Kenola', 'House Lindaren', 'House Maros', 'House Mikarrol', 'House Moritani', 'House Mutelli',
+      'House Novebruns', 'House Richese', 'House Sor', 'House Spinnette', 'House Taligari', 'House Thorvald',
+      'House Tseida', 'House Varota', 'House Vernius', 'House Wallach', 'House Wayku', 'House Wydras'
+    ];
+    const houseIcons = [
+      'House_Alexin.svg', 'House_Argpsaz.svg', 'House_Dyvetz.svg', 'House_Ecaz.svg', 'House_Hagal.svg', 'House_Hurata.svg', 'House_Imota.svg',
+      'House_Kenola.svg', 'House_Lindaren.svg', 'House_Maros.svg', 'House_Mikarrol.svg', 'House_Moritani.svg', 'House_Mutelli.svg',
+      'House_Novebruns.svg', 'House_Richese.svg', 'House_Sor.svg', 'House_Spinnette.svg', 'House_Taligari.svg', 'House_Thorvald.svg',
+      'House_Tseida.svg', 'House_Varota.svg', 'House_Vernius.svg', 'House_Wallach.svg', 'House_Wayku.svg', 'House_Wydras.svg'
     ];
 
     const iconPath = "Icons/";
@@ -1096,17 +1174,130 @@
     }
 
     // Improved renderLegend with error handling
-    function renderLegendSafe() {
-      try {
-        renderLegend();
-      } catch (error) {
-        console.error('Failed to render legend:', error);
-        // Show user-friendly error message
-        const legend = document.getElementById('legendIcons');
-        if (legend) {
-          legend.innerHTML = '<p style="color: #ff6666;">Failed to load legend icons. Please refresh the page.</p>';
-        }
-      }
+    function renderLegend() {
+      const legend = document.getElementById('legendPanel');
+      legend.innerHTML = '';
+      legend.className = 'legend legend-split legend-row';
+
+      // Resources & POIs box
+      const resourcesBox = document.createElement('div');
+      resourcesBox.className = 'legend-box legend-box-resources';
+      const resourcesHeader = document.createElement('div');
+      resourcesHeader.className = 'legend-section-header';
+      resourcesHeader.textContent = 'Resources & POIs';
+      resourcesBox.appendChild(resourcesHeader);
+      resourcePoiIcons.forEach((icon, idx) => {
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.setAttribute('draggable', 'true');
+        div.setAttribute('data-icon', icon);
+        div.setAttribute('tabindex', '0');
+        div.setAttribute('aria-label', resourcePoiIconNames[idx] + ' (drag to grid or click to select)');
+        div.title = 'Drag to grid or click to select';
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.alt = resourcePoiIconNames[idx];
+        img.title = resourcePoiIconNames[idx];
+        const span = document.createElement('span');
+        span.textContent = resourcePoiIconNames[idx];
+        div.appendChild(img);
+        div.appendChild(span);
+        resourcesBox.appendChild(div);
+        div.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
+        });
+        div.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
+        });
+      });
+
+      // Houses box with 2 columns
+      const housesBox = document.createElement('div');
+      housesBox.className = 'legend-box legend-box-houses';
+      const housesHeader = document.createElement('div');
+      housesHeader.className = 'legend-section-header';
+      housesHeader.textContent = 'Houses';
+      housesBox.appendChild(housesHeader);
+
+      // Create a container for the two columns
+      const housesGrid = document.createElement('div');
+      housesGrid.className = 'legend-houses-grid';
+      // Split houses into two columns
+      const half = Math.ceil(houseIcons.length / 2);
+      const leftHouses = houseIcons.slice(0, half);
+      const rightHouses = houseIcons.slice(half);
+      const leftNames = houseIconNames.slice(0, half);
+      const rightNames = houseIconNames.slice(half);
+
+      // Create columns
+      const col1 = document.createElement('div');
+      col1.className = 'legend-houses-col';
+      leftHouses.forEach((icon, idx) => {
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.setAttribute('draggable', 'true');
+        div.setAttribute('data-icon', icon);
+        div.setAttribute('tabindex', '0');
+        div.setAttribute('aria-label', leftNames[idx] + ' (drag to grid or click to select)');
+        div.title = 'Drag to grid or click to select';
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.alt = leftNames[idx];
+        img.title = leftNames[idx];
+        const span = document.createElement('span');
+        span.textContent = leftNames[idx];
+        div.appendChild(img);
+        div.appendChild(span);
+        col1.appendChild(div);
+        div.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
+        });
+        div.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
+        });
+      });
+      const col2 = document.createElement('div');
+      col2.className = 'legend-houses-col';
+      rightHouses.forEach((icon, idx) => {
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.setAttribute('draggable', 'true');
+        div.setAttribute('data-icon', icon);
+        div.setAttribute('tabindex', '0');
+        div.setAttribute('aria-label', rightNames[idx] + ' (drag to grid or click to select)');
+        div.title = 'Drag to grid or click to select';
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.alt = rightNames[idx];
+        img.title = rightNames[idx];
+        const span = document.createElement('span');
+        span.textContent = rightNames[idx];
+        div.appendChild(img);
+        div.appendChild(span);
+        col2.appendChild(div);
+        div.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
+        });
+        div.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
+        });
+      });
+      housesGrid.appendChild(col1);
+      housesGrid.appendChild(col2);
+      housesBox.appendChild(housesGrid);
+
+      // Add both boxes to the legend, side by side
+      const legendRow = document.createElement('div');
+      legendRow.className = 'legend-row-inner';
+      legendRow.appendChild(resourcesBox);
+      legendRow.appendChild(housesBox);
+      legend.appendChild(legendRow);
     }
 
     // Debounced auto-save for better performance
@@ -1174,37 +1365,6 @@
 
     function cellKey(row, col) {
       return row + "," + col;
-    }
-
-    function renderLegend() {
-      const legend = document.getElementById('legendIcons');
-      legend.innerHTML = '';
-      iconList.forEach((icon, idx) => {
-        const div = document.createElement('div');
-        div.className = 'legend-item';
-        div.setAttribute('draggable', 'true');
-        div.setAttribute('data-icon', icon);
-        div.setAttribute('tabindex', '0');
-        div.setAttribute('aria-label', iconNames[idx] + ' (drag to grid or click to select)');
-        div.title = 'Drag to grid or click to select';
-        const img = document.createElement('img');
-        img.src = iconPath + icon;
-        img.alt = iconNames[idx];
-        img.title = iconNames[idx];
-        const span = document.createElement('span');
-        span.textContent = iconNames[idx];
-        div.appendChild(img);
-        div.appendChild(span);
-        legend.appendChild(div);
-        div.addEventListener('dragstart', function (e) {
-          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
-        });
-        div.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-          }
-        });
-      });
     }
 
     function initializeGrid() {
@@ -1302,7 +1462,7 @@
         gridData[row][col].forEach(icon => presentIcons.add(icon));
       }
 
-      iconList.forEach(icon => {
+      [...resourcePoiIcons, ...houseIcons].forEach(icon => {
         const img = document.createElement('img');
         img.src = iconPath + icon;
         img.alt = icon;
@@ -1410,9 +1570,9 @@
         if (icons[i]) {
           const img = document.createElement('img');
           img.src = iconPath + icons[i];
-          img.alt = iconNames[iconList.indexOf(icons[i])] || "";
+          img.alt = resourcePoiIconNames[resourcePoiIcons.indexOf(icons[i])] || houseIconNames[houseIcons.indexOf(icons[i])] || "";
           img.draggable = false;
-          img.title = iconNames[iconList.indexOf(icons[i])] || "";
+          img.title = resourcePoiIconNames[resourcePoiIcons.indexOf(icons[i])] || houseIconNames[houseIcons.indexOf(icons[i])] || "";
           iconContainer.appendChild(img);
         }
         iconsGrid.appendChild(iconContainer);
@@ -1450,7 +1610,7 @@
         for (let col = 0; col < 9; col++) {
           if (gridData[row][col].length) {
             const coord = String.fromCharCode(65 + row) + (col + 1);
-            const icons = gridData[row][col].map(i => iconNames[iconList.indexOf(i)]).join(", ");
+            const icons = gridData[row][col].map(i => resourcePoiIconNames[resourcePoiIcons.indexOf(i)] || houseIconNames[houseIcons.indexOf(i)]).join(", ");
             output += coord + "\t" + icons + "\n";
           }
         }
@@ -1530,22 +1690,23 @@
       const legendSpacing = 18;
       const legendTitleSize = 26;
       const legendTitle = "Legend";
-      const legendItems = iconList.map((icon, idx) => ({
-        icon,
-        name: iconNames[idx]
-      }));
 
-      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140;
-      const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing +
-        legendItems.length * (legendIconSize + legendSpacing);
+      // Split legend items for left and right columns
+      const leftLegendItems = resourcePoiIcons.map((icon, idx) => ({ icon, name: resourcePoiIconNames[idx] }));
+      const rightLegendItems = houseIcons.map((icon, idx) => ({ icon, name: houseIconNames[idx] }));
 
+      // Calculate legend heights (use max of both columns)
+      const legendRows = Math.max(leftLegendItems.length, rightLegendItems.length);
+      const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing + legendRows * (legendIconSize + legendSpacing);
       const dateHeight = 60;
       const gridWidth = gridSize * (cellSize + gap);
       const gridHeight = gridSize * (cellSize + gap);
+      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140; // width for one legend column
 
+      // New canvas width: legend left + grid + legend right
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      canvas.width = legendWidth + gridWidth;
+      canvas.width = legendWidth * 2 + gridWidth;
       canvas.height = Math.max(gridHeight + dateHeight, legendHeight + dateHeight);
 
       function loadImage(src) {
@@ -1557,15 +1718,8 @@
         });
       }
 
-      const usedIcons = new Set();
-      for (let row = 0; row < gridSize; row++) {
-        for (let col = 0; col < gridSize; col++) {
-          gridData[row][col].forEach(icon => usedIcons.add(icon));
-        }
-      }
-
       const iconPromises = {};
-      iconList.forEach(icon => {
+      [...resourcePoiIcons, ...houseIcons].forEach(icon => {
         iconPromises[icon] = loadImage(iconPath + icon);
       });
 
@@ -1575,70 +1729,74 @@
       ]).then(([backgroundImage, ...iconImages]) => {
         const iconMap = {};
         let i = 0;
-        for (const icon of iconList) {
+        for (const icon of [...resourcePoiIcons, ...houseIcons]) {
           iconMap[icon] = iconImages[i++];
         }
 
+        // Date/time bar
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, dateHeight);
-
         const now = new Date();
-        const dateStr = useLocalTime
-          ? now.toLocaleString()
-          : now.toUTCString();
+        const dateStr = useLocalTime ? now.toLocaleString() : now.toUTCString();
         ctx.font = "bold 32px Arial";
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "middle";
         ctx.fillText(dateStr, legendWidth + 20, dateHeight / 2);
 
+        // Background
         ctx.globalAlpha = 0.4;
         ctx.drawImage(backgroundImage, legendWidth, dateHeight, gridWidth, gridHeight);
         ctx.globalAlpha = 1.0;
 
+        // Left legend (resources/POIs)
         ctx.fillStyle = "rgba(30,30,30,0.85)";
         ctx.fillRect(0, dateHeight, legendWidth, legendHeight);
-
         ctx.font = `bold ${legendTitleSize}px Arial`;
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "top";
         ctx.fillText(legendTitle, legendPadding, dateHeight + legendPadding);
-
         let legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
         ctx.font = `${legendTextSize}px Arial`;
-        for (const item of legendItems) {
+        leftLegendItems.forEach(item => {
           if (iconMap[item.icon]) {
-            ctx.drawImage(
-              iconMap[item.icon],
-              legendPadding,
-              legendY,
-              legendIconSize,
-              legendIconSize
-            );
+            ctx.drawImage(iconMap[item.icon], legendPadding, legendY, legendIconSize, legendIconSize);
           }
           ctx.fillStyle = "#fff";
-          ctx.fillText(
-            item.name,
-            legendPadding + legendIconSize + 10,
-            legendY + (legendIconSize - legendTextSize) / 2
-          );
+          ctx.fillText(item.name, legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
           legendY += legendIconSize + legendSpacing;
-        }
+        });
 
+        // Right legend (houses)
+        ctx.fillStyle = "rgba(30,30,30,0.85)";
+        ctx.fillRect(canvas.width - legendWidth, dateHeight, legendWidth, legendHeight);
+        ctx.font = `bold ${legendTitleSize}px Arial`;
+        ctx.fillStyle = "#fff";
+        ctx.textBaseline = "top";
+        ctx.fillText(legendTitle, canvas.width - legendWidth + legendPadding, dateHeight + legendPadding);
+        legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
+        ctx.font = `${legendTextSize}px Arial`;
+        rightLegendItems.forEach(item => {
+          if (iconMap[item.icon]) {
+            ctx.drawImage(iconMap[item.icon], canvas.width - legendWidth + legendPadding, legendY, legendIconSize, legendIconSize);
+          }
+          ctx.fillStyle = "#fff";
+          ctx.fillText(item.name, canvas.width - legendWidth + legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
+          legendY += legendIconSize + legendSpacing;
+        });
+
+        // Draw grid
         for (let row = 8; row >= 0; row--) {
           for (let col = 0; col < gridSize; col++) {
             const canvasRow = 8 - row;
             const x = legendWidth + col * (cellSize + gap);
             const y = dateHeight + canvasRow * (cellSize + gap);
-
             ctx.strokeStyle = '#222';
             ctx.lineWidth = 2;
             ctx.strokeRect(x, y, cellSize, cellSize);
-
             ctx.font = "bold 24px Arial";
             ctx.fillStyle = "rgba(255,255,255,0.8)";
             ctx.textBaseline = "top";
             ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
-
             const icons = gridData[row][col];
             const n = icons.length;
             if (n > 0) {
@@ -1694,7 +1852,6 @@
                 }
               }
             }
-
             if (!exploredGrid[row][col]) {
               ctx.fillStyle = "rgba(30,30,30,0.55)";
               ctx.fillRect(x, y, cellSize, cellSize);
@@ -1714,22 +1871,17 @@
           ctx.font = "bold 24px Arial";
           const textWidth = ctx.measureText(sigText).width;
           const sigX = canvas.width - sigMargin - sigHeight - 12 - textWidth;
-
           ctx.save();
           ctx.globalAlpha = 0.85;
           ctx.fillStyle = "#222";
           ctx.fillRect(sigX - 16, sigY - 8, textWidth + sigHeight + 44, sigHeight + 16);
           ctx.globalAlpha = 1.0;
-
           ctx.drawImage(fwbImg, sigX, sigY, sigHeight, sigHeight);
-
           ctx.font = "bold 24px Arial";
           ctx.fillStyle = "#ffe066";
           ctx.textBaseline = "middle";
           ctx.fillText(sigText, sigX + sigHeight + 12, sigY + sigHeight / 2);
-
           ctx.restore();
-
           const link = document.createElement('a');
           link.download = 'grid.png';
           link.href = canvas.toDataURL();
@@ -1790,21 +1942,24 @@
       const now = new Date();
       const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
 
-      // Calculate next Monday 05:00 UTC (EU Buildup)
+      // Storm Buildup: Monday 05:00 UTC (Europe)
       let nextBuildup = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), utcNow.getUTCDate(), 5, 0, 0, 0));
+      // Storm Hits: Wednesday 04:00 UTC (Europe)
       let nextStorm = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), utcNow.getUTCDate(), 4, 0, 0, 0));
       const day = utcNow.getUTCDay();
 
-      // Monday = 1, Tuesday = 2
+      // Monday = 1, Wednesday = 3
+      // Calculate next Monday 05:00 UTC
       if (day > 1 || (day === 1 && utcNow.getUTCHours() >= 5)) {
         nextBuildup.setUTCDate(nextBuildup.getUTCDate() + ((8 - day) % 7));
       } else if (day < 1 || (day === 1 && utcNow.getUTCHours() < 5)) {
         nextBuildup.setUTCDate(nextBuildup.getUTCDate() + ((1 - day + 7) % 7));
       }
-      if (day > 2 || (day === 2 && utcNow.getUTCHours() >= 4)) {
-        nextStorm.setUTCDate(nextStorm.getUTCDate() + ((9 - day) % 7));
-      } else if (day < 2 || (day === 2 && utcNow.getUTCHours() < 4)) {
-        nextStorm.setUTCDate(nextStorm.getUTCDate() + ((2 - day + 7) % 7));
+      // Calculate next Wednesday 04:00 UTC
+      if (day > 3 || (day === 3 && utcNow.getUTCHours() >= 4)) {
+        nextStorm.setUTCDate(nextStorm.getUTCDate() + ((10 - day) % 7));
+      } else if (day < 3 || (day === 3 && utcNow.getUTCHours() < 4)) {
+        nextStorm.setUTCDate(nextStorm.getUTCDate() + ((3 - day + 7) % 7));
       }
 
       // Calculate time differences
@@ -1822,7 +1977,7 @@
         nextBuildup.setUTCDate(nextBuildup.getUTCDate() + 7);
         nextStorm.setUTCDate(nextStorm.getUTCDate() + 7);
         const newBuildupDiff = nextBuildup.getTime() - utcNow.getTime();
-        const newHitDiff = nextStorm.getTime() - utcNow.getTime();
+        const newHitDiff = nextStorm.getUTCDate() - utcNow.getTime();
         updatePhaseDisplay(buildupTimeEl, newBuildupDiff, nextBuildup);
         updatePhaseDisplay(hitTimeEl, newHitDiff, nextStorm);
       } else if (buildupDiff <= 0) {
@@ -1996,7 +2151,7 @@
           
           // Validate icon names
           data[row][col].forEach((icon, idx) => {
-            if (typeof icon !== 'string' || !iconList.includes(icon)) {
+            if (typeof icon !== 'string' || ![...resourcePoiIcons, ...houseIcons].includes(icon)) {
               console.warn(`Invalid icon at [${row}][${col}][${idx}]: ${icon}`);
               // Remove invalid icon
               data[row][col].splice(idx, 1);
@@ -2060,7 +2215,7 @@
     }
 
     function initializeApp() {
-      renderLegendSafe();
+      renderLegend();
       initializeGrid();
       populateIconPicker();
       rerenderAllCells();
@@ -2419,8 +2574,7 @@
         }
       };
       reader.readAsText(file);
-    });
-    document.getElementById('shareLinkButton').onclick = function() {
+    });    document.getElementById('shareLinkButton').onclick = function() {
       try {
         const data = { gridData, exploredGrid };
         const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
@@ -2439,3 +2593,4 @@
   </script>
 </body>
 </html>
+``` 
