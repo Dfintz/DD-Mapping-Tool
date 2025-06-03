@@ -1024,6 +1024,15 @@
   </div>
 
   <script>
+window.addEventListener('error', function(e) {
+  const errBox = document.createElement('div');
+  errBox.style = 'position:fixed;top:0;left:0;z-index:9999;background:#c00;color:#fff;padding:12px;font-size:18px;';
+  errBox.textContent = 'JS ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+  document.body.appendChild(errBox);
+  console.error('JS ERROR:', e);
+});
+console.log('Script loaded: about to initializeApp');
+
     let useLocalTime = true;
     const gridContainer = document.getElementById('gridContainer');
     let gridData = [];
@@ -2125,6 +2134,7 @@
     }
 
     function initializeApp() {
+      console.log('initializeApp called');
       renderLegendSafe();
       initializeGrid();
       populateIconPicker();
