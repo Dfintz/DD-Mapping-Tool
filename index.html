@@ -1212,24 +1212,15 @@
 
       // Create flex container for side-by-side layout
       const flexContainer = document.createElement('div');
-      flexContainer.style.display = 'flex';
-      flexContainer.style.gap = '32px';
-      flexContainer.style.justifyContent = 'center';
-      flexContainer.style.alignItems = 'flex-start';
-      flexContainer.style.width = '100%';
+      flexContainer.className = 'flex-container';
 
       // Resources & POIs section
       const baseSection = document.createElement('div');
-      baseSection.style.display = 'flex';
-      baseSection.style.flexDirection = 'column';
-      baseSection.style.alignItems = 'flex-start';
-      baseSection.style.minWidth = '180px';
+      baseSection.className = 'base-section';
 
       const baseHeader = document.createElement('div');
       baseHeader.textContent = 'Resources & POIs';
-      baseHeader.style.fontWeight = 'bold';
-      baseHeader.style.color = '#ffe066';
-      baseHeader.style.margin = '8px 0 8px 0';
+      baseHeader.className = 'base-header';
       baseSection.appendChild(baseHeader);
       baseIcons.forEach((icon, idx) => {
         const div = document.createElement('div');
