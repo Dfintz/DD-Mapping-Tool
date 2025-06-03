@@ -991,6 +991,8 @@
         <button id="undoButton" class="pretty-btn">Undo</button>
         <button id="redoButton" class="pretty-btn">Redo</button>
         <button id="clearButton" class="pretty-btn">Clear Map</button>
+        <button id="exportPngButton" class="pretty-btn">Export PNG</button>
+        <button id="shareLinkButton" class="pretty-btn">Share Link</button>
       </div>
       <div class="side-controls">
         <div class="time-toggle">
@@ -1957,6 +1959,28 @@
         setTimeout(() => notification.remove(), 300);
       }, duration);
     }
+
+    document.getElementById('exportPngButton').onclick = exportAsPng;
+    document.getElementById('shareLinkButton').onclick = function() {
+      try {
+        const data = { gridData, exploredGrid };
+        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
+        const url = `${location.origin}${location.pathname}?map=${encoded}`;
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(url).then(() => {
+            showNotification('Shareable link copied to clipboard!', 'success');
+          }).catch(() => {
+            prompt('Copy this link to share your map:', url);
+          });
+        } else {
+          prompt('Copy this link to share your map:', url);
+        }
+      } catch (error) {
+        console.error('Failed to generate shareable link:', error);
+        showNotification('Failed to generate shareable link', 'error');
+      }
+    };
   </script>
 </body>
 </html>
+`
