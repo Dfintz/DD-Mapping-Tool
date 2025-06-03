@@ -73,8 +73,7 @@
     .legend-icons {
       display: flex;
       flex-wrap: wrap;
-      gap: 1.2rem 1rem; /* Increased gap for more space between icons */
-      justify-content: flex-start;
+      gap: 0.5rem;
     }
     .legend-icon {
       width: 36px;
@@ -87,10 +86,6 @@
       cursor: pointer;
       border: 2px solid transparent;
       transition: border 0.2s;
-    }
-    .legend-icon span {
-      margin-bottom: 2px;
-      display: block;
     }
     .legend-icon.selected, .legend-icon:focus {
       border: 2px solid #ffe082;
@@ -661,68 +656,214 @@
     });
     // --- PNG Export ---
     function exportPNG() {
+      const cellSize = 150;
+      const gap = 2;
+      const gridSize = 9;
+      const backgroundSrc = 'background.jpg';
+      const legendPadding = 30;
+      const legendIconSize = 40;
+      const legendTextSize = 22;
+      const legendSpacing = 18;
+      const legendTitleSize = 26;
+      const legendTitle = "Legend";
+
+      // Split legend items for left and right columns
+      const leftLegendItems = resourcePoiIcons.map((icon, idx) => ({ icon, name: resourcePoiIconNames[idx] }));
+      const rightLegendItems = houseIcons.map((icon, idx) => ({ icon, name: houseIconNames[idx] }));
+
+      // Calculate legend heights (use max of both columns)
+      const legendRows = Math.max(leftLegendItems.length, rightLegendItems.length);
+      const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing + legendRows * (legendIconSize + legendSpacing);
+      const dateHeight = 60;
+      const gridWidth = gridSize * (cellSize + gap);
+      const gridHeight = gridSize * (cellSize + gap);
+      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140; // width for one legend column
+
+      // New canvas width: legend left + grid + legend right
       const canvas = document.createElement('canvas');
-      const cellSize = 48;
-      const gridPx = cellSize * GRID_SIZE;
-      canvas.width = gridPx + 40;
-      canvas.height = gridPx + 120;
       const ctx = canvas.getContext('2d');
-      // Background
-      ctx.fillStyle = '#1e140a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      // Grid
-      for (let y = 0; y < GRID_SIZE; y++) {
-        for (let x = 0; x < GRID_SIZE; x++) {
-          const idx = y * GRID_SIZE + x;
-          ctx.fillStyle = exploredState[idx] ? '#2d2211' : '#444';
-          ctx.fillRect(20 + x*cellSize, 20 + y*cellSize, cellSize-2, cellSize-2);
-          // Draw icons
-          const icons = mapState[idx] || [];
-          let iconX = 0;
-          for (const icon of icons) {
-            const img = new window.Image();
-            img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
-            img.onload = () => {
-              ctx.drawImage(img, 20 + x*cellSize + iconX*20, 20 + y*cellSize + 4, 20, 20);
-            };
-            if (img.complete) ctx.drawImage(img, 20 + x*cellSize + iconX*20, 20 + y*cellSize + 4, 20, 20);
-            iconX++;
+      canvas.width = legendWidth * 2 + gridWidth;
+      canvas.height = Math.max(gridHeight + dateHeight, legendHeight + dateHeight);
+
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+        });
+      }
+
+      const iconPromises = {};
+      [...resourcePoiIcons, ...houseIcons].forEach(icon => {
+        iconPromises[icon] = loadImage(iconPath + icon);
+      });
+
+      Promise.all([
+        loadImage(backgroundSrc),
+        ...Object.values(iconPromises)
+      ]).then(([backgroundImage, ...iconImages]) => {
+        const iconMap = {};
+        let i = 0;
+        for (const icon of [...resourcePoiIcons, ...houseIcons]) {
+          iconMap[icon] = iconImages[i++];
+        }
+
+        // Date/time bar
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, dateHeight);
+        const now = new Date();
+        const dateStr = useLocalTime ? now.toLocaleString() : now.toUTCString();
+        ctx.font = "bold 32px Arial";
+        ctx.fillStyle = "#fff";
+        ctx.textBaseline = "middle";
+        ctx.fillText(dateStr, legendWidth + 20, dateHeight / 2);
+
+        // Background
+        ctx.globalAlpha = 0.4;
+        ctx.drawImage(backgroundImage, legendWidth, dateHeight, gridWidth, gridHeight);
+        ctx.globalAlpha = 1.0;
+
+        // Left legend (resources/POIs)
+        ctx.fillStyle = "rgba(30,30,30,0.85)";
+        ctx.fillRect(0, dateHeight, legendWidth, legendHeight);
+        ctx.font = `bold ${legendTitleSize}px Arial`;
+        ctx.fillStyle = "#fff";
+        ctx.textBaseline = "top";
+        ctx.fillText(legendTitle, legendPadding, dateHeight + legendPadding);
+        let legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
+        ctx.font = `${legendTextSize}px Arial`;
+        leftLegendItems.forEach(item => {
+          if (iconMap[item.icon]) {
+            ctx.drawImage(iconMap[item.icon], legendPadding, legendY, legendIconSize, legendIconSize);
+          }
+          ctx.fillStyle = "#fff";
+          ctx.fillText(item.name, legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
+          legendY += legendIconSize + legendSpacing;
+        });
+
+        // Right legend (houses)
+        ctx.fillStyle = "rgba(30,30,30,0.85)";
+        ctx.fillRect(canvas.width - legendWidth, dateHeight, legendWidth, legendHeight);
+        ctx.font = `bold ${legendTitleSize}px Arial`;
+        ctx.fillStyle = "#fff";
+        ctx.textBaseline = "top";
+        ctx.fillText(legendTitle, canvas.width - legendWidth + legendPadding, dateHeight + legendPadding);
+        legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
+        ctx.font = `${legendTextSize}px Arial`;
+        rightLegendItems.forEach(item => {
+          if (iconMap[item.icon]) {
+            ctx.drawImage(iconMap[item.icon], canvas.width - legendWidth + legendPadding, legendY, legendIconSize, legendIconSize);
+          }
+          ctx.fillStyle = "#fff";
+          ctx.fillText(item.name, canvas.width - legendWidth + legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
+          legendY += legendIconSize + legendSpacing;
+        });
+
+        // Draw grid
+        for (let row = 8; row >= 0; row--) {
+          for (let col = 0; col < gridSize; col++) {
+            const canvasRow = 8 - row;
+            const x = legendWidth + col * (cellSize + gap);
+            const y = dateHeight + canvasRow * (cellSize + gap);
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, cellSize, cellSize);
+            ctx.font = "bold 24px Arial";
+            ctx.fillStyle = "rgba(255,255,255,0.8)";
+            ctx.textBaseline = "top";
+            ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
+            const icons = gridData[row][col];
+            const n = icons.length;
+            if (n > 0) {
+              let iconSize, positions;
+              if (n === 1) {
+                iconSize = 90;
+                positions = [[cellSize / 2, cellSize / 2 + 10]];
+              } else if (n === 2) {
+                iconSize = 70;
+                positions = [
+                  [cellSize / 2 - 35, cellSize / 2 + 10],
+                  [cellSize / 2 + 35, cellSize / 2 + 10]
+                ];
+              } else if (n === 3) {
+                iconSize = 60;
+                positions = [
+                  [cellSize / 2, cellSize / 2 - 30],
+                  [cellSize / 2 - 38, cellSize / 2 + 32],
+                  [cellSize / 2 + 38, cellSize / 2 + 32]
+                ];
+              } else if (n === 4) {
+                iconSize = 54;
+                positions = [
+                  [cellSize / 2 - 32, cellSize / 2 - 24],
+                  [cellSize / 2 + 32, cellSize / 2 - 24],
+                  [cellSize / 2 - 32, cellSize / 2 + 32],
+                  [cellSize / 2 + 32, cellSize / 2 + 32]
+                ];
+              } else {
+                iconSize = 40;
+                positions = [];
+                const grid = 3;
+                const offset = (cellSize - grid * iconSize) / 2;
+                for (let i = 0; i < Math.min(n, 9); i++) {
+                  const gx = i % 3;
+                  const gy = Math.floor(i / 3);
+                  positions.push([
+                    offset + gx * iconSize + iconSize / 2,
+                    30 + offset + gy * iconSize + iconSize / 2
+                  ]);
+                }
+              }
+              for (let i = 0; i < Math.min(n, 9); i++) {
+                const icon = icons[i];
+                if (icon && iconMap[icon]) {
+                  ctx.drawImage(
+                    iconMap[icon],
+                    x + positions[i][0] - iconSize / 2,
+                    y + positions[i][1] - iconSize / 2,
+                    iconSize,
+                    iconSize
+                  );
+                }
+              }
+            }
+            if (!exploredGrid[row][col]) {
+              ctx.fillStyle = "rgba(30,30,30,0.55)";
+              ctx.fillRect(x, y, cellSize, cellSize);
+            } else {
+              ctx.fillStyle = "rgba(255,255,255,0.13)";
+              ctx.fillRect(x, y, cellSize, cellSize);
+            }
           }
         }
-      }
-      // Legend
-      ctx.fillStyle = '#ffe082';
-      ctx.font = 'bold 16px Segoe UI';
-      ctx.fillText('Legend:', 20, gridPx + 50);
-      let lx = 20, ly = gridPx + 70;
-      for (const icon of resourceIcons.concat(houseIcons.slice(0, 5))) {
-        const img = new window.Image();
-        img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
-        img.onload = () => {
-          ctx.drawImage(img, lx, ly, 20, 20);
-        };
-        if (img.complete) ctx.drawImage(img, lx, ly, 20, 20);
-        ctx.fillStyle = '#ffe082';
-        ctx.font = '12px Segoe UI';
-        ctx.fillText(icon.label, lx + 24, ly + 16);
-        lx += 120;
-        if (lx > canvas.width - 120) { lx = 20; ly += 28; }
-      }
-      // Timestamp
-      ctx.fillStyle = '#ffe082';
-      ctx.font = '12px Segoe UI';
-      ctx.fillText('Exported: ' + new Date().toLocaleString(), 20, canvas.height - 10);
-      // Download
-      setTimeout(() => {
-        canvas.toBlob(blob => {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `dune_map_${new Date().toISOString().replace(/[:.]/g,'-')}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
+
+        // Signature at top right, same line as date
+        loadImage('fwb.png').then(fwbImg => {
+          const sigHeight = 44;
+          const sigMargin = 18;
+          const sigY = (dateHeight - sigHeight) / 2;
+          const sigText = "Provided by Fremen with Benefits";
+          ctx.font = "bold 24px Arial";
+          const textWidth = ctx.measureText(sigText).width;
+          const sigX = canvas.width - sigMargin - sigHeight - 12 - textWidth;
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.fillStyle = "#222";
+          ctx.fillRect(sigX - 16, sigY - 8, textWidth + sigHeight + 44, sigHeight + 16);
+          ctx.globalAlpha = 1.0;
+          ctx.drawImage(fwbImg, sigX, sigY, sigHeight, sigHeight);
+          ctx.font = "bold 24px Arial";
+          ctx.fillStyle = "#ffe066";
+          ctx.textBaseline = "middle";
+          ctx.fillText(sigText, sigX + sigHeight + 12, sigY + sigHeight / 2);
+          ctx.restore();
+          const link = document.createElement('a');
+          link.download = 'grid.png';
+          link.href = canvas.toDataURL();
+          link.click();
         });
-      }, 500);
+      });
     }
     // --- Storm Timer ---
     function getNextStorm(now, server='europe') {
