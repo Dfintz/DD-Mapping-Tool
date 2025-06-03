@@ -2522,17 +2522,6 @@
       };
       reader.readAsText(file);
     });
-    document.getElementById('shareLinkButton').onclick = function() {
-      try {
-        const data = { gridData, exploredGrid };
-        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
-        const url = window.location.origin + window.location.pathname + '?map=' + encoded;
-        navigator.clipboard.writeText(url);
-        showNotification('Shareable link copied to clipboard!', 'success');
-      } catch (e) {
-        showNotification('Failed to generate link', 'error');
-      }
-    };
     // Remove description box toggle JS if present
     try {
       document.getElementById('descriptionToggleBtn').onclick = null;
