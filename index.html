@@ -803,6 +803,31 @@
     .side-controls {
       margin-top: 24px;
     }
+
+    #legendIcons {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    #legendIcons .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0;
+    }
+    
+    #legendIcons img {
+      width: 28px;
+      height: 28px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    
+    #legendIcons span {
+      font-size: 15px;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -1179,23 +1204,57 @@
     function renderLegend() {
       const legend = document.getElementById('legendIcons');
       legend.innerHTML = '';
-      iconList.forEach((icon, idx) => {
+      const baseResourceCount = 10;
+      const baseIcons = iconList.slice(0, baseResourceCount);
+      const baseNames = iconNames.slice(0, baseResourceCount);
+      const houseIcons = iconList.slice(baseResourceCount);
+      const houseNames = iconNames.slice(baseResourceCount);
+
+      // Create flex container for side-by-side layout
+      const flexContainer = document.createElement('div');
+      flexContainer.style.display = 'flex';
+      flexContainer.style.gap = '32px';
+      flexContainer.style.justifyContent = 'center';
+      flexContainer.style.alignItems = 'flex-start';
+      flexContainer.style.width = '100%';
+
+      // Resources & POIs section
+      const baseSection = document.createElement('div');
+      baseSection.style.display = 'flex';
+      baseSection.style.flexDirection = 'column';
+      baseSection.style.alignItems = 'flex-start';
+      baseSection.style.minWidth = '180px';
+
+      const baseHeader = document.createElement('div');
+      baseHeader.textContent = 'Resources & POIs';
+      baseHeader.style.fontWeight = 'bold';
+      baseHeader.style.color = '#ffe066';
+      baseHeader.style.margin = '8px 0 8px 0';
+      baseSection.appendChild(baseHeader);
+      baseIcons.forEach((icon, idx) => {
         const div = document.createElement('div');
         div.className = 'legend-item';
         div.setAttribute('draggable', 'true');
         div.setAttribute('data-icon', icon);
         div.setAttribute('tabindex', '0');
-        div.setAttribute('aria-label', iconNames[idx] + ' (drag to grid or click to select)');
+        div.setAttribute('aria-label', baseNames[idx] + ' (drag to grid or click to select)');
         div.title = 'Drag to grid or click to select';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '8px';
+        div.style.marginBottom = '6px';
         const img = document.createElement('img');
         img.src = iconPath + icon;
-        img.alt = iconNames[idx];
-        img.title = iconNames[idx];
+        img.alt = baseNames[idx];
+        img.title = baseNames[idx];
+        img.style.width = '32px';
+        img.style.height = '32px';
+        img.style.marginRight = '4px';
         const span = document.createElement('span');
-        span.textContent = iconNames[idx];
+        span.textContent = baseNames[idx];
         div.appendChild(img);
         div.appendChild(span);
-        legend.appendChild(div);
+        baseSection.appendChild(div);
         div.addEventListener('dragstart', function (e) {
           e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
         });
@@ -1205,6 +1264,57 @@
           }
         });
       });
+
+      // Houses section
+      const houseSection = document.createElement('div');
+      houseSection.style.display = 'flex';
+      houseSection.style.flexDirection = 'column';
+      houseSection.style.alignItems = 'flex-start';
+      houseSection.style.minWidth = '180px';
+
+      const houseHeader = document.createElement('div');
+      houseHeader.textContent = 'Houses';
+      houseHeader.style.fontWeight = 'bold';
+      houseHeader.style.color = '#ffe066';
+      houseHeader.style.margin = '8px 0 8px 0';
+      houseSection.appendChild(houseHeader);
+      houseIcons.forEach((icon, idx) => {
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.setAttribute('draggable', 'true');
+        div.setAttribute('data-icon', icon);
+        div.setAttribute('tabindex', '0');
+        div.setAttribute('aria-label', houseNames[idx] + ' (drag to grid or click to select)');
+        div.title = 'Drag to grid or click to select';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '8px';
+        div.style.marginBottom = '6px';
+        const img = document.createElement('img');
+        img.src = iconPath + icon;
+        img.alt = houseNames[idx];
+        img.title = houseNames[idx];
+        img.style.width = '32px';
+        img.style.height = '32px';
+        img.style.marginRight = '4px';
+        const span = document.createElement('span');
+        span.textContent = houseNames[idx];
+        div.appendChild(img);
+        div.appendChild(span);
+        houseSection.appendChild(div);
+        div.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
+        });
+        div.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
+        });
+      });
+
+      flexContainer.appendChild(baseSection);
+      flexContainer.appendChild(houseSection);
+      legend.appendChild(flexContainer);
     }
 
     function initializeGrid() {
@@ -1530,23 +1640,22 @@
       const legendSpacing = 18;
       const legendTitleSize = 26;
       const legendTitle = "Legend";
-      const legendItems = iconList.map((icon, idx) => ({
-        icon,
-        name: iconNames[idx]
-      }));
+      // Combine all icons and names for single-column legend
+      const allIcons = iconList;
+      const allNames = iconNames;
 
-      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140;
-      const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing +
-        legendItems.length * (legendIconSize + legendSpacing);
+      // Calculate legend height
+      const legendHeight = allIcons.length * (legendIconSize + legendSpacing) + legendTitleSize + legendPadding * 2 + legendSpacing;
+      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 220;
 
       const dateHeight = 60;
       const gridWidth = gridSize * (cellSize + gap);
       const gridHeight = gridSize * (cellSize + gap);
 
       const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
       canvas.width = legendWidth + gridWidth;
       canvas.height = Math.max(gridHeight + dateHeight, legendHeight + dateHeight);
+      const ctx = canvas.getContext('2d');
 
       function loadImage(src) {
         return new Promise((resolve, reject) => {
@@ -1579,13 +1688,11 @@
           iconMap[icon] = iconImages[i++];
         }
 
+        // Draw date bar
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, dateHeight);
-
         const now = new Date();
-        const dateStr = useLocalTime
-          ? now.toLocaleString()
-          : now.toUTCString();
+        const dateStr = useLocalTime ? now.toLocaleString() : now.toUTCString();
         ctx.font = "bold 32px Arial";
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "middle";
@@ -1595,49 +1702,54 @@
         ctx.drawImage(backgroundImage, legendWidth, dateHeight, gridWidth, gridHeight);
         ctx.globalAlpha = 1.0;
 
+        // Draw legend background
         ctx.fillStyle = "rgba(30,30,30,0.85)";
         ctx.fillRect(0, dateHeight, legendWidth, legendHeight);
 
+        // Draw legend title
         ctx.font = `bold ${legendTitleSize}px Arial`;
-        ctx.fillStyle = "#fff";
+        ctx.fillStyle = "#ffe066";
         ctx.textBaseline = "top";
         ctx.fillText(legendTitle, legendPadding, dateHeight + legendPadding);
 
-        let legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
+        // Draw all icons in a single column
         ctx.font = `${legendTextSize}px Arial`;
-        for (const item of legendItems) {
-          if (iconMap[item.icon]) {
+        ctx.fillStyle = "#fff";
+        let y = dateHeight + legendPadding + legendTitleSize + legendSpacing;
+        for (let i = 0; i < allIcons.length; i++) {
+          const icon = allIcons[i];
+          const name = allNames[i];
+          if (iconMap[icon]) {
             ctx.drawImage(
-              iconMap[item.icon],
+              iconMap[icon],
               legendPadding,
-              legendY,
+              y,
               legendIconSize,
               legendIconSize
             );
           }
-          ctx.fillStyle = "#fff";
           ctx.fillText(
-            item.name,
+            name,
             legendPadding + legendIconSize + 10,
-            legendY + (legendIconSize - legendTextSize) / 2
+            y + (legendIconSize - legendTextSize) / 2
           );
-          legendY += legendIconSize + legendSpacing;
+          y += legendIconSize + legendSpacing;
         }
 
         for (let row = 8; row >= 0; row--) {
           for (let col = 0; col < gridSize; col++) {
             const canvasRow = 8 - row;
             const x = legendWidth + col * (cellSize + gap);
-            const y = dateHeight + canvasRow * (cellSize + gap);
+            const yCell = dateHeight + canvasRow * (cellSize + gap);
 
             ctx.strokeStyle = '#222';
             ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, cellSize, cellSize);
+            ctx.strokeRect(x, yCell, cellSize, cellSize);
 
             ctx.font = "bold 24px Arial";
             ctx.fillStyle = "rgba(255,255,255,0.8)";
             ctx.textBaseline = "top";
-            ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
+            ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, yCell + 8);
 
             const icons = gridData[row][col];
             const n = icons.length;
@@ -1687,7 +1799,7 @@
                   ctx.drawImage(
                     iconMap[icon],
                     x + positions[i][0] - iconSize / 2,
-                    y + positions[i][1] - iconSize / 2,
+                    yCell + positions[i][1] - iconSize / 2,
                     iconSize,
                     iconSize
                   );
@@ -1697,10 +1809,10 @@
 
             if (!exploredGrid[row][col]) {
               ctx.fillStyle = "rgba(30,30,30,0.55)";
-              ctx.fillRect(x, y, cellSize, cellSize);
+              ctx.fillRect(x, yCell, cellSize, cellSize);
             } else {
               ctx.fillStyle = "rgba(255,255,255,0.13)";
-              ctx.fillRect(x, y, cellSize, cellSize);
+              ctx.fillRect(x, yCell, cellSize, cellSize);
             }
           }
         }
@@ -1731,7 +1843,7 @@
           ctx.restore();
 
           const link = document.createElement('a');
-          link.download = 'grid.png';
+          link.download = 'dune_deep_desert_map.png';
           link.href = canvas.toDataURL();
           link.click();
         });
@@ -1810,6 +1922,7 @@
       // Calculate time differences
       const buildupDiff = nextBuildup.getTime() - utcNow.getTime();
       const hitDiff = nextStorm.getTime() - utcNow.getTime();
+
 
       // Reset all phase states
       [buildupPhase, hitPhase].forEach(phase => {
@@ -2122,7 +2235,8 @@
     // --- Import from JSON (file input) ---
     document.getElementById('importJsonButton').onclick = function() {
       document.getElementById('importJsonInput').click();
-    };    document.getElementById('importJsonInput').addEventListener('change', function(e) {
+    };
+    document.getElementById('importJsonInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
       
@@ -2395,39 +2509,6 @@
     document.querySelector('.help-close').onclick = function() {
       document.getElementById('helpModal').style.display = 'none';
     };
-    document.getElementById('saveVersionButton').onclick = saveVersion;
-    document.getElementById('loadVersionButton').onclick = loadVersion;
-    document.getElementById('exportJsonButton').onclick = exportMapDataAsJson;
-    document.getElementById('importJsonButton').onclick = function() {
-      document.getElementById('importJsonInput').click();
-    };
-    document.getElementById('importJsonInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const data = JSON.parse(evt.target.result);
-          const result = importMapDataSafe(data);
-          if (result.success) {
-            showNotification('Map imported successfully!', 'success');
-          } else {
-            showNotification(result.message, 'error');
-          }
-        } catch (err) {
-          showNotification('Invalid JSON file', 'error');
-        }
-      };
-      reader.readAsText(file);
-    });
-    document.getElementById('shareLinkButton').onclick = function() {
-      try {
-        const data = { gridData, exploredGrid };
-        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
-        const url = window.location.origin + window.location.pathname + '?map=' + encoded;
-        navigator.clipboard.writeText(url);
-        showNotification('Shareable link copied to clipboard!', 'success');
-      } catch (e) {
         showNotification('Failed to generate link', 'error');
       }
     };
