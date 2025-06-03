@@ -803,80 +803,6 @@
     .side-controls {
       margin-top: 24px;
     }
-
-    .legend-columns {
-      display: flex;
-      flex-direction: row;
-      gap: 32px;
-      justify-content: space-between;
-      align-items: flex-start;
-      width: 100%;
-    }
-    .legend-col {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 160px;
-      max-width: 220px;
-    }
-    .legend-title {
-      font-weight: bold;
-      color: #ffe066;
-      font-size: 1.1em;
-      margin-bottom: 6px;
-      text-shadow: 0 1px 4px #222;
-      letter-spacing: 0.5px;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 2px;
-      background: rgba(40,30,60,0.13);
-      border-radius: 5px;
-      padding: 2px 6px 2px 2px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .legend-item:hover, .legend-item:focus {
-      background: rgba(162,89,230,0.18);
-      outline: 2px solid #a259e6;
-    }
-    .legend-item img {
-      width: 32px;
-      height: 32px;
-      border-radius: 4px;
-      background: #222;
-      box-shadow: 0 1px 4px #2228;
-    }
-    .legend-item span {
-      color: #fff;
-      font-size: 1em;
-      text-shadow: 0 1px 2px #222;
-    }
-    .legend.two-column {
-      display: flex;
-      flex-direction: row;
-      gap: 32px;
-      justify-content: center;
-      align-items: flex-start;
-    }
-    .legend-col {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-    .legend-item img {
-      width: 32px;
-      height: 32px;
-      margin-right: 4px;
-    }
   </style>
 </head>
 <body>
@@ -1268,34 +1194,27 @@ console.log('Script loaded: about to initializeApp');
     function renderLegend() {
       const legend = document.getElementById('legendPanel');
       legend.innerHTML = '';
-      legend.className = 'legend two-column';
-
-      // Create containers for two columns
-      const leftCol = document.createElement('div');
-      leftCol.className = 'legend-col legend-col-left';
-      leftCol.setAttribute('id', 'legendIconsLeft');
-      const rightCol = document.createElement('div');
-      rightCol.className = 'legend-col legend-col-right';
-      rightCol.setAttribute('id', 'legendIconsRight');
-
-      // Populate left column (base/resources)
-      baseResourceIcons.forEach((icon, idx) => {
+      iconList.forEach((icon, idx) => {
         const div = document.createElement('div');
         div.className = 'legend-item';
         div.setAttribute('draggable', 'true');
         div.setAttribute('data-icon', icon);
         div.setAttribute('tabindex', '0');
-        div.setAttribute('aria-label', baseResourceNames[idx] + ' (drag to grid or click to select)');
+        div.setAttribute('aria-label', iconNames[idx] + ' (drag to grid or click to select)');
         div.title = 'Drag to grid or click to select';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '8px';
+        div.style.marginBottom = '6px';
         const img = document.createElement('img');
         img.src = iconPath + icon;
-        img.alt = baseResourceNames[idx];
-        img.title = baseResourceNames[idx];
+        img.alt = iconNames[idx];
+        img.title = iconNames[idx];
         const span = document.createElement('span');
-        span.textContent = baseResourceNames[idx];
+        span.textContent = iconNames[idx];
         div.appendChild(img);
         div.appendChild(span);
-        leftCol.appendChild(div);
+        legend.appendChild(div);
         div.addEventListener('dragstart', function (e) {
           e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
         });
@@ -1307,39 +1226,6 @@ console.log('Script loaded: about to initializeApp');
           }
         });
       });
-
-      // Populate right column (houses)
-      houseIcons.forEach((icon, idx) => {
-        const div = document.createElement('div');
-        div.className = 'legend-item';
-        div.setAttribute('draggable', 'true');
-        div.setAttribute('data-icon', icon);
-        div.setAttribute('tabindex', '0');
-        div.setAttribute('aria-label', houseNames[idx] + ' (drag to grid or click to select)');
-        div.title = 'Drag to grid or click to select';
-        const img = document.createElement('img');
-        img.src = iconPath + icon;
-        img.alt = houseNames[idx];
-        img.title = houseNames[idx];
-        const span = document.createElement('span');
-        span.textContent = houseNames[idx];
-        div.appendChild(img);
-        div.appendChild(span);
-        rightCol.appendChild(div);
-        div.addEventListener('dragstart', function (e) {
-          e.dataTransfer.setData('text/plain', this.getAttribute('data-icon'));
-        });
-        div.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            selectIcon(icon);
-            closeIconPicker();
-          }
-        });
-      });
-
-      legend.appendChild(leftCol);
-      legend.appendChild(rightCol);
     }
 
     function initializeGrid() {
@@ -1665,13 +1551,15 @@ console.log('Script loaded: about to initializeApp');
       const legendSpacing = 18;
       const legendTitleSize = 26;
       const legendTitle = "Legend";
-      // Split legend items for left and right columns
-      const leftLegendItems = baseResourceIcons.map((icon, idx) => ({ icon, name: baseResourceNames[idx] }));
-      const rightLegendItems = houseIcons.map((icon, idx) => ({ icon, name: houseNames[idx] }));
+      const legendItems = iconList.map((icon, idx) => ({
+        icon,
+        name: iconNames[idx]
+      }));
 
-      // Calculate legend heights (use max of both columns)
-      const legendRows = Math.max(leftLegendItems.length, rightLegendItems.length);
-      const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing + legendRows * (legendIconSize + legendSpacing);
+      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140;
+      const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing +
+        legendItems.length * (legendIconSize + legendSpacing);
+
       const dateHeight = 60;
       const gridWidth = gridSize * (cellSize + gap);
       const gridHeight = gridSize * (cellSize + gap);
@@ -1680,8 +1568,9 @@ console.log('Script loaded: about to initializeApp');
       // New canvas width: legend left + grid + legend right
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      canvas.width = legendWidth * 2 + gridWidth;
+      canvas.width = legendWidth + gridWidth;
       canvas.height = Math.max(gridHeight + dateHeight, legendHeight + dateHeight);
+      const ctx = canvas.getContext('2d');
 
       function loadImage(src) {
         return new Promise((resolve, reject) => {
@@ -1707,7 +1596,6 @@ console.log('Script loaded: about to initializeApp');
           iconMap[icon] = iconImages[i++];
         }
 
-        // Date/time bar
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, dateHeight);
         const now = new Date();
@@ -1722,64 +1610,112 @@ console.log('Script loaded: about to initializeApp');
         ctx.drawImage(backgroundImage, legendWidth, dateHeight, gridWidth, gridHeight);
         ctx.globalAlpha = 1.0;
 
-        // Left legend (base/resources)
         ctx.fillStyle = "rgba(30,30,30,0.85)";
         ctx.fillRect(0, dateHeight, legendWidth, legendHeight);
+
         ctx.font = `bold ${legendTitleSize}px Arial`;
-        ctx.fillStyle = "#fff";
+        ctx.fillStyle = "#ffe066";
         ctx.textBaseline = "top";
         ctx.fillText(legendTitle, legendPadding, dateHeight + legendPadding);
+
         let legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
         ctx.font = `${legendTextSize}px Arial`;
-        leftLegendItems.forEach(item => {
+        for (const item of legendItems) {
           if (iconMap[item.icon]) {
-            ctx.drawImage(iconMap[item.icon], legendPadding, legendY, legendIconSize, legendIconSize);
+            ctx.drawImage(
+              iconMap[item.icon],
+              legendPadding,
+              legendY,
+              legendIconSize,
+              legendIconSize
+            );
           }
           ctx.fillStyle = "#fff";
-          ctx.fillText(item.name, legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
+          ctx.fillText(
+            item.name,
+            legendPadding + legendIconSize + 10,
+            legendY + (legendIconSize - legendTextSize) / 2
+          );
           legendY += legendIconSize + legendSpacing;
-        });
+        }
 
-        // Right legend (houses)
-        ctx.fillStyle = "rgba(30,30,30,0.85)";
-        ctx.fillRect(canvas.width - legendWidth, dateHeight, legendWidth, legendHeight);
-        ctx.font = `bold ${legendTitleSize}px Arial`;
-        ctx.fillStyle = "#fff";
-        ctx.textBaseline = "top";
-        ctx.fillText(legendTitle, canvas.width - legendWidth + legendPadding, dateHeight + legendPadding);
-        legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
-        ctx.font = `${legendTextSize}px Arial`;
-        rightLegendItems.forEach(item => {
-          if (iconMap[item.icon]) {
-            ctx.drawImage(iconMap[item.icon], canvas.width - legendWidth + legendPadding, legendY, legendIconSize, legendIconSize);
-          }
-          ctx.fillStyle = "#fff";
-          ctx.fillText(item.name, canvas.width - legendWidth + legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
-          legendY += legendIconSize + legendSpacing;
-        });
-
-        // Draw grid
         for (let row = 8; row >= 0; row--) {
           for (let col = 0; col < gridSize; col++) {
             const canvasRow = 8 - row;
             const x = legendWidth + col * (cellSize + gap);
             const y = dateHeight + canvasRow * (cellSize + gap);
+
             ctx.strokeStyle = '#222';
             ctx.lineWidth = 2;
             ctx.strokeRect(x, y, cellSize, cellSize);
+
             ctx.font = "bold 24px Arial";
             ctx.fillStyle = "rgba(255,255,255,0.8)";
             ctx.textBaseline = "top";
             ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
+
             const icons = gridData[row][col];
             const n = icons.length;
             if (n > 0) {
-              // ...existing code for drawing icons in grid cells...
+              let iconSize, positions;
+              if (n === 1) {
+                iconSize = 90;
+                positions = [[cellSize / 2, cellSize / 2 + 10]];
+              } else if (n === 2) {
+                iconSize = 70;
+                positions = [
+                  [cellSize / 2 - 35, cellSize / 2 + 10],
+                  [cellSize / 2 + 35, cellSize / 2 + 10]
+                ];
+              } else if (n === 3) {
+                iconSize = 60;
+                positions = [
+                  [cellSize / 2, cellSize / 2 - 30],
+                  [cellSize / 2 - 38, cellSize / 2 + 32],
+                  [cellSize / 2 + 38, cellSize / 2 + 32]
+                ];
+              } else if (n === 4) {
+                iconSize = 54;
+                positions = [
+                  [cellSize / 2 - 32, cellSize / 2 - 24],
+                  [cellSize / 2 + 32, cellSize / 2 - 24],
+                  [cellSize / 2 - 32, cellSize / 2 + 32],
+                  [cellSize / 2 + 32, cellSize / 2 + 32]
+                ];
+              } else {
+                iconSize = 40;
+                positions = [];
+                const grid = 3;
+                const offset = (cellSize - grid * iconSize) / 2;
+                for (let i = 0; i < Math.min(n, 9); i++) {
+                  const gx = i % 3;
+                  const gy = Math.floor(i / 3);
+                  positions.push([
+                    offset + gx * iconSize + iconSize / 2,
+                    30 + offset + gy * iconSize + iconSize / 2
+                  ]);
+                }
+              }
+              for (let i = 0; i < Math.min(n, 9); i++) {
+                const icon = icons[i];
+                if (icon && iconMap[icon]) {
+                  ctx.drawImage(
+                    iconMap[icon],
+                    x + positions[i][0] - iconSize / 2,
+                    y + positions[i][1] - iconSize / 2,
+                    iconSize,
+                    iconSize
+                  );
+                }
+              }
             }
+
             if (!exploredGrid[row][col]) {
+              ctx.fillStyle = "rgba(30,30,30,0.55)";
               ctx.fillRect(x, y, cellSize, cellSize);
             } else {
-              // ...existing code for explored cells...
+              ctx.fillStyle = "rgba(255,255,255,0.13)";
+              ctx.fillRect(x, y, cellSize, cellSize);
             }
           }
         }
@@ -1805,7 +1741,7 @@ console.log('Script loaded: about to initializeApp');
           ctx.fillText(sigText, sigX + sigHeight + 12, sigY + sigHeight / 2);
           ctx.restore();
           const link = document.createElement('a');
-          link.download = 'grid.png';
+          link.download = 'dune_deep_desert_map.png';
           link.href = canvas.toDataURL();
           link.click();
         });
@@ -1884,6 +1820,7 @@ console.log('Script loaded: about to initializeApp');
       // Calculate time differences
       const buildupDiff = nextBuildup.getTime() - utcNow.getTime();
       const hitDiff = nextStorm.getTime() - utcNow.getTime();
+
 
       // Reset all phase states
       [buildupPhase, hitPhase].forEach(phase => {
@@ -2197,7 +2134,8 @@ console.log('Script loaded: about to initializeApp');
     // --- Import from JSON (file input) ---
     document.getElementById('importJsonButton').onclick = function() {
       document.getElementById('importJsonInput').click();
-    };    document.getElementById('importJsonInput').addEventListener('change', function(e) {
+    };
+    document.getElementById('importJsonInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
       
@@ -2470,39 +2408,6 @@ console.log('Script loaded: about to initializeApp');
     document.querySelector('.help-close').onclick = function() {
       document.getElementById('helpModal').style.display = 'none';
     };
-    document.getElementById('saveVersionButton').onclick = saveVersion;
-    document.getElementById('loadVersionButton').onclick = loadVersion;
-    document.getElementById('exportJsonButton').onclick = exportMapDataAsJson;
-    document.getElementById('importJsonButton').onclick = function() {
-      document.getElementById('importJsonInput').click();
-    };
-    document.getElementById('importJsonInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const data = JSON.parse(evt.target.result);
-          const result = importMapDataSafe(data);
-          if (result.success) {
-            showNotification('Map imported successfully!', 'success');
-          } else {
-            showNotification(result.message, 'error');
-          }
-        } catch (err) {
-          showNotification('Invalid JSON file', 'error');
-        }
-      };
-      reader.readAsText(file);
-    });
-    document.getElementById('shareLinkButton').onclick = function() {
-      try {
-        const data = { gridData, exploredGrid };
-        const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
-        const url = window.location.origin + window.location.pathname + '?map=' + encoded;
-        navigator.clipboard.writeText(url);
-        showNotification('Shareable link copied to clipboard!', 'success');
-      } catch (e) {
         showNotification('Failed to generate link', 'error');
       }
     };
