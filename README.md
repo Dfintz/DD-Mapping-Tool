@@ -21,7 +21,6 @@ This project is a web-based interactive mapping tool designed for the game **Dun
 ### Legend Panel
 - Compact, categorized legend for quick icon access.
 - Houses and resources/POIs are separated for clarity.
-- Responsive design for desktop and mobile.
 
 ### Map Exploration & State
 - Mark cells as explored/unexplored with a single click.
@@ -42,26 +41,24 @@ This project is a web-based interactive mapping tool designed for the game **Dun
 - Displays the next storm buildup and hit times for Europe (Monday 05:00 UTC and Wednesday 04:00 UTC).
 - Real-time countdowns with phase highlighting (active, warning, critical).
 - Toggle between UTC and local time display.
-- Server location selector for future expansion.
+- Server location selector.
 
 ### Accessibility & Usability
-- Keyboard navigation for both the grid and legend.
 - ARIA roles and labels for screen reader support.
 - Tooltips and clear button labels for all controls.
 - Responsive layout for various screen sizes.
 
 ### Additional Features
-- Shareable map links (for future implementation).
+- Shareable map links.
 - Notification system for user feedback.
 - Data validation for safe imports and exports.
 - Customizable icon set (SVG-based for clarity and scalability).
 
 ## Getting Started
 
-1. Open `index.html` in your web browser.
-2. Use the legend to drag or click icons onto the grid.
-3. Use the control buttons to explore, undo/redo, save/load, or export your map.
-4. Monitor storm phases with the built-in timer.
+1. Use the legend to drag or click icons onto the grid.
+2. Use the control buttons to explore, undo/redo, save/load, or export your map.
+3. Monitor storm phases with the built-in timer.
 
 ## File Structure
 - `index.html` – Main application file (HTML, CSS, JavaScript).
