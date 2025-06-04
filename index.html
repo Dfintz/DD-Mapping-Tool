@@ -525,6 +525,12 @@
             img.style.opacity = '1';
             iconDiv.appendChild(img);
           }
+
+          // --- AUTO-EXPLORE: If a cell has icons, set it as explored ---
+          if (icons.length > 0 && !exploredState[idx]) {
+            exploredState[idx] = true;
+          }
+
           cell.appendChild(iconDiv);
           // Add coordinate label in corner
           const coordLabel = document.createElement('div');
@@ -588,6 +594,8 @@
             mapState[idx] = mapState[idx] || [];
             if (!mapState[idx].some(ic => ic.name === icon.name)) {
               mapState[idx].push(icon);
+              // --- Set cell as explored when icon is dropped ---
+              exploredState[idx] = true;
               renderGrid();
               saveToLocalStorage();
             }
@@ -922,33 +930,9 @@
             const idx = row * gridSize + col;
             const icons = mapState[idx] || [];
             const n = icons.length;
-            const isUnexplored = !exploredState[idx];
-            const hasIcons = n > 0;
 
-            // Set cell opacity for unexplored with icons
-            if (isUnexplored && hasIcons) {
-              ctx.save();
-              ctx.globalAlpha = 0.25;
-              ctx.strokeStyle = '#222';
-              ctx.lineWidth = 2;
-              ctx.strokeRect(x, y, cellSize, cellSize);
-              ctx.fillStyle = "rgba(255,255,255,0.8)";
-              ctx.font = "bold 24px Arial";
-              ctx.textBaseline = "top";
-              ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
-              ctx.restore();
-            } else {
-              ctx.save();
-              ctx.globalAlpha = 1.0;
-              ctx.strokeStyle = '#222';
-              ctx.lineWidth = 2;
-              ctx.strokeRect(x, y, cellSize, cellSize);
-              ctx.fillStyle = "rgba(255,255,255,0.8)";
-              ctx.font = "bold 24px Arial";
-              ctx.textBaseline = "top";
-              ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
-              ctx.restore();
-            }
+            // --- ENSURE: If a cell has icons, treat as explored for export ---
+            const isUnexplored = !exploredState[idx] && (!mapState[idx] || mapState[idx].length === 0);
 
             // Draw icons only if not unexplored
             let iconSize, positions;
@@ -1005,13 +989,9 @@
             }
 
             // Cell overlay for explored/unexplored
-            const idx2 = row * gridSize + col;
-            if (!exploredState[idx2]) {
+            if (isUnexplored) {
               ctx.fillStyle = "rgba(30,30,30,0.55)";
               ctx.fillRect(x, y, cellSize, cellSize);
-            }else if (!exploredState[idx2]&&hasIcons) {
-              ctx.fillStyle = "rgba(255,255,255,0.34)";
-              ctx.fillRect(x, y, cellSize, cellSize);  
             } else {
               ctx.fillStyle = "rgba(255,255,255,0.13)";
               ctx.fillRect(x, y, cellSize, cellSize);
@@ -1172,6 +1152,8 @@
             mapState[iconPickerCellIdx] = mapState[iconPickerCellIdx] || [];
             if (!mapState[iconPickerCellIdx].some(ic => ic.name === icon.name)) {
               mapState[iconPickerCellIdx].push(icon);
+              // --- Set cell as explored when icon is applied ---
+              exploredState[iconPickerCellIdx] = true;
               renderGrid();
               saveToLocalStorage();
               showIconPickerFeedback('Icon placed!');
@@ -1227,3 +1209,4 @@
   </script>
 </body>
 </html>
+`
