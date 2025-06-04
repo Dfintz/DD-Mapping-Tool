@@ -329,7 +329,13 @@
       <div class="timer-label">Next Storm</div>
       <div class="timer-countdown timer-phase-normal" id="storm-countdown">--:--:--</div>
       <button class="control-btn" id="toggle-timezone" aria-label="Toggle UTC/Local Time">UTC</button>
-      <div style="font-size:0.9em; color:#ffe082;">Europe Server</div>
+      <select id="server-select" style="font-size:0.9em; color:#2d2211; background:#ffe082; border-radius:6px; border:none; padding:2px 8px; margin-top:6px;">
+        <option value="europe">Europe</option>
+        <option value="na">North America</option>
+        <option value="sa">South America</option>
+        <option value="asia">Asia</option>
+        <option value="oceania">Oceania</option>
+      </select>
     </div>
   </header>
   <main>
@@ -427,6 +433,7 @@
     let redoStack = [];
     let autosaveTimer = null;
     let timezoneUTC = true;
+    let selectedServer = 'europe';
 
     // --- Utility Functions ---
     function showNotification(msg, timeout=2500) {
@@ -793,6 +800,13 @@
       window.onclick = (e) => {
         if (e.target === helpModal) helpModal.style.display = 'none';
       };
+
+      const serverSelect = document.getElementById('server-select');
+      serverSelect.value = selectedServer;
+      serverSelect.onchange = function() {
+        selectedServer = serverSelect.value;
+        updateStormTimer();
+      };
     });
     // --- PNG Export ---
     function exportPNG() {
@@ -1032,22 +1046,31 @@
       });
     }
     // --- Storm Timer ---
-    function getNextStorm(now, server='europe') {
+    function getNextStorm(now, server = selectedServer) {
       // Europe: Monday 05:00 UTC, Wednesday 04:00 UTC
-      const days = [1, 3];
-      const hours = [5, 4];
+      // North America: Monday 05:00 UTC, Thursday 04:00 UTC
+      // South America: Monday 07:00 UTC, Thursday 06:00 UTC
+      // Asia: Monday 00:00 UTC, Thursday 00:00 UTC
+      // Oceania: Monday 00:00 UTC, Thursday 00:00 UTC
+      const configs = {
+        europe:   { days: [1, 3], hours: [5, 4] },
+        na:       { days: [1, 4], hours: [5, 4] },
+        sa:       { days: [1, 4], hours: [7, 6] },
+        asia:     { days: [1, 4], hours: [0, 0] },
+        oceania:  { days: [1, 4], hours: [0, 0] }
+      };
+      const cfg = configs[server] || configs.europe;
       let next = null;
       for (let i = 0; i < 2; i++) {
         const d = new Date(now);
-        d.setUTCHours(hours[i], 0, 0, 0);
-        d.setUTCDate(d.getUTCDate() + ((days[i] - d.getUTCDay() + 7) % 7));
+        d.setUTCHours(cfg.hours[i], 0, 0, 0);
+        d.setUTCDate(d.getUTCDate() + ((cfg.days[i] - d.getUTCDay() + 7) % 7));
         if (d > now && (!next || d < next)) next = d;
       }
       if (!next) {
-        // Next week
         const d = new Date(now);
-        d.setUTCHours(hours[0], 0, 0, 0);
-        d.setUTCDate(d.getUTCDate() + ((days[0] - d.getUTCDay() + 7) % 7) + 7);
+        d.setUTCHours(cfg.hours[0], 0, 0, 0);
+        d.setUTCDate(d.getUTCDate() + ((cfg.days[0] - d.getUTCDay() + 7) % 7) + 7);
         next = d;
       }
       return next;
@@ -1056,14 +1079,53 @@
       const now = new Date();
       const nextStorm = getNextStorm(now);
       let diff = (nextStorm - now) / 1000;
+
+      // --- Custom phase logic for Europe server ---
+      // Between Wednesday 08:00 UTC to Monday 05:00 UTC: timer-phase-normal
+      // From Monday 05:00 UTC to Wednesday 04:00 UTC:   timer-phase-warning
+      // From Wednesday 04:00 UTC to Wednesday 08:00 UTC: timer-phase-active
+
       let phase = 'normal';
-      if (diff < 3600) phase = 'active';
-      else if (diff < 3*3600) phase = 'warning';
-      const hours = Math.floor(diff / 3600);
+
+      // Only apply this logic for Europe server
+      if (selectedServer === 'europe') {
+        // Get current UTC day and hour
+        const utcDay = now.getUTCDay(); // 0=Sun, 1=Mon, ..., 3=Wed, ...
+        const utcHour = now.getUTCHours();
+
+        // Helper to check if now is between two UTC times (day/hour)
+        function isBetween(startDay, startHour, endDay, endHour) {
+          const nowMinutes = utcDay * 24 * 60 + utcHour * 60 + now.getUTCMinutes();
+          const startMinutes = startDay * 24 * 60 + startHour * 60;
+          const endMinutes = endDay * 24 * 60 + endHour * 60;
+          if (startMinutes <= endMinutes) {
+            return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+          } else {
+            // Wraps around week
+            return nowMinutes >= startMinutes || nowMinutes < endMinutes;
+          }
+        }
+
+        if (isBetween(3, 8, 1, 5)) { // Wed 08:00 to Mon 05:00
+          phase = 'normal';
+        } else if (isBetween(1, 5, 3, 4)) { // Mon 05:00 to Wed 04:00
+          phase = 'warning';
+        } else if (isBetween(3, 4, 3, 8)) { // Wed 04:00 to Wed 08:00
+          phase = 'active';
+        }
+      } else {
+        // Fallback: original logic for other servers
+        if (diff < 3600 * 1) phase = 'active';
+        else if (diff < 3600 * 3) phase = 'warning';
+        else phase = 'normal';
+      }
+
+      const days = Math.floor(diff / 86400);
+      const hours = Math.floor((diff % 86400) / 3600);
       const mins = Math.floor((diff % 3600) / 60);
       const secs = Math.floor(diff % 60);
       const el = document.getElementById('storm-countdown');
-      el.textContent = `${hours.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+      el.textContent = `${days}:${hours.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
       el.className = 'timer-countdown timer-phase-' + phase;
       // Timezone toggle
       document.getElementById('toggle-timezone').textContent = timezoneUTC ? 'UTC' : 'Local';
@@ -1164,4 +1226,3 @@
   </script>
 </body>
 </html>
-`
