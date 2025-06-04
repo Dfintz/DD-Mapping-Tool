@@ -321,6 +321,17 @@
     }
   </style>
 </head>
+<div id="iconPickerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:2000;">
+  <div class="icon-picker-content" style="background:rgba(40,40,40,0.95);border:2px solid #ffe066;padding:24px;border-radius:12px;max-width:600px;width:90vw;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.6);position:relative;">
+    <h3 style="margin-top:0;">Select an Icon</h3>
+    <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
+    <div class="icon-picker-buttons" style="margin-top:10px;">
+      <button id="toggleExploredButton" class="icon-picker-btn" type="button">Toggle Explored</button>
+      <button class="icon-picker-btn cancel" type="button" id="closeIconPickerBtn">Escape</button>
+    </div>
+    <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;"></div>
+  </div>
+</div>
 <body>
   <header>
     <img src="arrakis.png" alt="Arrakis Logo" />
@@ -359,6 +370,7 @@
         <button class="control-btn" id="undo" aria-label="Undo">Undo</button>
         <button class="control-btn" id="redo" aria-label="Redo">Redo</button>
         <button class="control-btn" id="clear-map" aria-label="Clear Map">Clear Map</button>
+        <button class="control-btn" id="open-poi-notes-btn" aria-label="POI Notes">POI Notes</button>
       </div>
       <div id="map-grid" tabindex="0" aria-label="Deep Desert Map Grid" role="grid">
         <!-- 9x9 grid cells will be injected here -->
@@ -371,20 +383,26 @@
       </div>
       <input type="file" id="import-file" accept="application/json" style="display:none" />
     </section>
-  </main>
-  <div id="notification" aria-live="polite" style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#2d2211;color:#ffe082;padding:0.75rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px #000a;display:none;z-index:1000;font-size:1.1rem;"></div>
-  <!-- Icon Picker Modal -->
-  <div id="iconPickerModal" style="display:none;">
-    <div class="icon-picker-content">
-      <h3>Select an Icon</h3>
-      <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
-      <div class="icon-picker-buttons">
-        <button id="toggleExploredButton" class="icon-picker-btn" type="button">Toggle Explored</button>
-        <button class="icon-picker-btn cancel" type="button" id="closeIconPickerBtn">Escape</button>
+    <aside id="poi-notes-docket"
+      style="width:370px;min-width:220px;max-width:100vw;
+             background:rgba(40,30,15,0.98);border-radius:12px;
+             padding:1rem;box-shadow:0 2px 8px #000a;
+             display:none;flex-direction:column;gap:1.2rem;
+             height:fit-content;position:fixed;top:90px;right:40px;
+             z-index:3000;">
+      <div id="poi-notes-drag-handle"
+        style="cursor:move;height:28px;margin:-1rem -1rem 0 -1rem;background:rgba(60,50,30,0.18);border-top-left-radius:12px;border-top-right-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#ffe082;user-select:none;z-index:1;">
+        ⇕ Drag POI Tracker
       </div>
-      <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;"></div>
+      <button id="close-poi-notes-btn" class="control-btn"
+        style="position:absolute;top:12px;right:12px;padding:2px 12px;font-size:1.2em;">✕</button>
+      <div style="font-size:1.2rem;font-weight:700;color:#ffe082;margin-bottom:0.5rem;">POI Schematic Tracker</div>
+      <div id="poi-notes-list" style="font-size:1em;max-height:540px;overflow-y:auto;"></div>
+    </aside>
+    <div id="poi-drops-summary" style="width:370px;min-width:220px;max-width:100vw;background:rgba(40,30,15,0.98);border-radius:12px;padding:1rem;box-shadow:0 2px 8px #000a;flex-direction:column;gap:1.2rem;height:fit-content;position:relative;margin-left:1.5rem;margin-bottom:1.5rem;">
+      <div style="font-size:1.1rem;font-weight:700;color:#ffe082;margin-bottom:0.5rem;">POI Drop Summary</div>
+      <div id="poi-drops-summary-list" style="font-size:1em;max-height:340px;overflow-y:auto;"></div>
     </div>
-  </div>
   <!-- Help Button -->
   <button id="help-btn" class="control-btn" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:3000;" aria-label="Help">?</button>
 
@@ -816,6 +834,20 @@
         updateStormTimer();
       };
     });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('open-poi-notes-btn').onclick = function() {
+        document.getElementById('poi-notes-docket').style.display = 'flex';
+        renderPoiNotesPanel();
+      };
+      document.getElementById('close-poi-notes-btn').onclick = function() {
+        document.getElementById('poi-notes-docket').style.display = 'none';
+        const notesDiv = document.getElementById('poi-notes-list');
+        notesDiv.innerHTML = '';
+        // ...rest of your close logic...
+      };
+    });
+
     // --- PNG Export ---
     function exportPNG() {
       const cellSize = 150;
@@ -1206,6 +1238,586 @@
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') document.getElementById('help-modal').style.display = 'none';
     });
+
+    // --- POI Notes Data ---
+    const testingStationNotes = {
+      "A2": [
+        "Arhun K-28 Lasgun",
+        "Compact Compactor Mk5",
+        "Collapsible Dew Reaper Mk5",
+        "Mendek's Rattle (Rifle)",
+        "Night Rider Sandbike Boost Mk5",
+        "Station Gauntlets",
+        "Steady Assault Boost Module Mk5",
+        "Double-Sealed Stilltent"
+      ],
+      "A3": [
+        "Arhun K-28 Lasgun",
+        "Compact Compactor Mk5",
+        "Collapsible Dew Reaper Mk5",
+        "Mendek's Rattle (Rifle)",
+        "Night Rider Sandbike Boost Mk5",
+        "Station Gauntlets",
+        "Steady Assault Boost Module Mk5",
+        "Double-Sealed Stilltent"
+      ],
+      "A4": [
+        "Maas Kharet Bloodbag",
+        "Cope (Heavy Pistol)",
+        "Extravagant Message (Vulcan)",
+        "Filter Extractor Mk5",
+        "Hummingbird Wing Module Mk5 (Assault)",
+        "Saturnine Stillsuit Boots",
+        "Saturnine Stillsuit Garment",
+        "Saturnine Stillsuit Gloves",
+        "Saturnine Stillsuit Mask",
+        "Wayfinder Helm"
+      ],
+      "A5": [
+        "Maas Kharet Bloodbag",
+        "Cope (Heavy Pistol)",
+        "Extravagant Message (Vulcan)",
+        "Filter Extractor Mk5",
+        "Saturnine Stillsuit Boots",
+        "Saturnine Stillsuit Garment",
+        "Saturnine Stillsuit Gloves",
+        "Saturnine Stillsuit Mask",
+        "Hummingbird Wing Module Mk5 (Assault)",
+        "Wayfinder Helm"
+      ],
+      "A8": [
+        "Albatross Wing Module Mk5 (Scout)",
+        "The Emperor's Wings Mk5",
+        "Jolt-Sword",
+        "Long Range Scanner",
+        "Scrubber (Explosive Rifle)",
+        "Focused Reaper Mk5 (Scythe)",
+        "Station Garb (Chest)",
+        "Taqwa's Double (Maula Pistol)"
+      ],
+      "A9": [
+        "Albatross Wing Module Mk5 (Scout)",
+        "The Emperor's Wings Mk5",
+        "Jolt-Sword",
+        "Long Range Scanner",
+        "Scrubber (Explosive Rifle)",
+        "Focused Reaper Mk5 (Scythe)",
+        "Station Garb (Chest)",
+        "Taqwa's Double (Maula Pistol)"
+      ]
+    };
+
+    const shipwreckNotes = {
+      "A1 - Hicetas": [
+        "Batigh Stillsuit Chest",
+        "Batigh Stillsuit Mask",
+        "Batigh Stillsuit Gloves",
+        "Batigh Stillsuit Boots",
+        "Syndicate Impaler (Scattergun)",
+        "Stormrider Boost Module Mk5"
+      ],
+      "A1 - Eumenes": [
+        "Mendek's Boots",
+        "Mendek's Chestplate",
+        "Mendek's Gauntlets",
+        "Mendek's Helmet",
+        "Mendek's Pants",
+        "Tarl Softstep Boots"
+      ],
+      "A2 - Hyperbatas": [
+        "Tarl Softstep Boots",
+        "Mendek's Gauntlets",
+        "Mendek's Pants",
+        "Mendek's Boots",
+        "Advanced Suspensor Jacket"
+      ],
+      "A3 - Archidamas III": [
+        "Adept Disruptor Pistol",
+        "Advanced Reaper Gloves",
+        "Focused Buggy Cutteray Mk5",
+        "Shaded Hood",
+        "Impure Extractor Mk5",
+        "Piter's Disruptor",
+        "Shaitan's Tongue (Flamethrower)"
+      ],
+      "A3 - Cycliadas": [
+        "Advanced Suspensor Jacket",
+        "Mendek's Helmet",
+        "Mendek's Gauntlets",
+        "Mendek's Pants",
+        "Mendek's Boots"
+      ],
+      "A4 - Dioedas": [
+        "Advanced Suspensor Jacket",
+        "Mendek's Gauntlets",
+        "Mendek's Helmet",
+        "Mendek's Chestplate",
+        "Mendek's Boots",
+        "Mendek's Pants",
+        "Tarl Softstep Boots"
+      ],
+      "A5 - Xenophon": [
+        "Batigh Stillsuit Boots",
+        "Batigh Stillsuit Gloves",
+        "Batigh Stillsuit Mask",
+        "Kharet Viper (Rapier)",
+        "Syndicate Impaler (Scattergun)"
+      ],
+      "A7 - Proxenus": [
+        "Advanced Reaper Gloves",
+        "Piter's Disruptor",
+        "Focused Buggy Cutteray Mk5",
+        "Shaitan's Tongue (Flamethrower)"
+      ],
+      "A9 - Orsippus": [
+        "Advanced Suspensor Jacket",
+        "Mendek's Chestplate",
+        "Mendek's Gauntlets",
+        "Mendek's Boots",
+        "Mendek's Helmet"
+      ],
+      "A9 - Stasanor": [
+        "Focused Buggy Cutteray Mk5",
+        "Piter's Disruptor",
+        "Adept Disruptor Pistol",
+        "Shaitan's Tongue (Flamethrower)"
+      ]
+    };
+
+    // User selections (persisted)
+    let userStationDrops = JSON.parse(localStorage.getItem('userStationDrops') || '{}');
+    let userShipwreckDrops = JSON.parse(localStorage.getItem('userShipwreckDrops') || '{}');
+
+    // Helper: get cell label from idx
+    function getCellLabel(idx) {
+      const y = Math.floor(idx / GRID_SIZE);
+      const x = idx % GRID_SIZE;
+      return String.fromCharCode(65 + y) + (x + 1);
+    }
+    // Helper: get idx from cell label
+    function getIdxFromLabel(label) {
+      const y = label.charCodeAt(0) - 65;
+      const x = parseInt(label.slice(1), 10) - 1;
+      return y * GRID_SIZE + x;
+    }
+
+    // --- Render POI Notes Panel ---
+    function renderPoiNotesPanel() {
+      const notesDiv = document.getElementById('poi-notes-list');
+      notesDiv.innerHTML = '';
+
+      // Collect all POIs present on the map
+      const poiEntries = [];
+
+      // Testing Stations
+      for (const coord in testingStationNotes) {
+        const idx = getIdxFromLabel(coord);
+        const icons = mapState[idx] || [];
+        const hasTestingStation = icons.some(ic => ic.name === 'TestingStation');
+        if (!hasTestingStation) continue;
+        for (const item of testingStationNotes[coord]) {
+          // Use a number instead of boolean for count
+          let count = 0;
+          if (userStationDrops[coord] && typeof userStationDrops[coord][item] === 'number') {
+            count = userStationDrops[coord][item];
+          }
+          poiEntries.push({
+            coord,
+            poi: 'Testing Station',
+            item,
+            count,
+            key: `station|${coord}|${item}`
+          });
+        }
+      }
+      // Shipwrecks
+      for (const label in shipwreckNotes) {
+        const [coord, wreckName] = label.split(' - ');
+        const idx = getIdxFromLabel(coord);
+        const icons = mapState[idx] || [];
+        const hasShipwreck = icons.some(ic => ic.name === 'Shipwreck' || ic.name === 'ShipwreckX2');
+        if (!hasShipwreck) continue;
+        for (const item of shipwreckNotes[label]) {
+          let count = 0;
+          if (userShipwreckDrops[label] && typeof userShipwreckDrops[label][item] === 'number') {
+            count = userShipwreckDrops[label][item];
+          }
+          poiEntries.push({
+            coord,
+            poi: `Shipwreck (${wreckName})`,
+            item,
+            count,
+            key: `shipwreck|${label}|${item}`
+          });
+        }
+      }
+
+      // Sort: by coord, then POI, then item
+      poiEntries.sort((a, b) => {
+        if (a.coord !== b.coord) return a.coord.localeCompare(b.coord);
+        if (a.poi !== b.poi) return a.poi.localeCompare(b.poi);
+        return a.item.localeCompare(b.item);
+      });
+
+      // Render as table
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Coordinates</th>
+            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">POI</th>
+            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Item</th>
+            <th style="text-align:center;color:#ffe082;font-size:1em;padding-bottom:4px;">Number</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+      const tbody = table.querySelector('tbody');
+
+      for (const entry of poiEntries) {
+        const tr = document.createElement('tr');
+        tr.style.background = selectedCells.has(getIdxFromLabel(entry.coord)) ? 'rgba(255,224,130,0.13)' : '';
+        // Coordinates
+        const tdCoord = document.createElement('td');
+        tdCoord.textContent = entry.coord;
+        tdCoord.style.cursor = 'pointer';
+        tdCoord.style.fontWeight = 'bold';
+        tdCoord.onclick = () => {
+          selectedCells.clear();
+          selectedCells.add(getIdxFromLabel(entry.coord));
+          renderGrid();
+          tr.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        };
+        // POI
+        const tdPoi = document.createElement('td');
+        tdPoi.textContent = entry.poi;
+        // Item
+        const tdItem = document.createElement('td');
+        tdItem.textContent = entry.item;
+        // Number input
+        const tdNumber = document.createElement('td');
+        tdNumber.style.textAlign = 'center';
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.value = entry.count || '';
+        input.style.width = '60px';
+        input.onchange = (e) => {
+          let val = parseInt(input.value, 10);
+          if (isNaN(val) || val < 0) val = 0;
+          input.value = val;
+          if (entry.key.startsWith('station|')) {
+            const coord = entry.coord;
+            userStationDrops[coord] = userStationDrops[coord] || {};
+            userStationDrops[coord][entry.item] = val;
+            localStorage.setItem('userStationDrops', JSON.stringify(userStationDrops));
+          } else if (entry.key.startsWith('shipwreck|')) {
+            const label = entry.key.split('|')[1];
+            userShipwreckDrops[label] = userShipwreckDrops[label] || {};
+            userShipwreckDrops[label][entry.item] = val;
+            localStorage.setItem('userShipwreckDrops', JSON.stringify(userShipwreckDrops));
+          }
+          updatePoiDropsSummaryAndPanel();
+        };
+        tdNumber.appendChild(input);
+
+        tr.appendChild(tdCoord);
+        tr.appendChild(tdPoi);
+        tr.appendChild(tdItem);
+        tr.appendChild(tdNumber);
+        tbody.appendChild(tr);
+      }
+
+      notesDiv.appendChild(table);
+    }
+
+    function renderPoiDropsSummary() {
+      const summaryDiv = document.getElementById('poi-drops-summary-list');
+      if (!summaryDiv) return;
+      summaryDiv.innerHTML = '';
+
+      // Collect all items with number > 0
+      const droppedEntries = [];
+
+      // Testing Stations
+      for (const coord in testingStationNotes) {
+        const idx = getIdxFromLabel(coord);
+        const icons = mapState[idx] || [];
+        const hasTestingStation = icons.some(ic => ic.name === 'TestingStation');
+        if (!hasTestingStation) continue;
+        for (const item of testingStationNotes[coord]) {
+          if (userStationDrops[coord] && userStationDrops[coord][item] > 0) {
+            droppedEntries.push({
+              coord,
+              poi: 'Testing Station',
+              item,
+              count: userStationDrops[coord][item]
+            });
+          }
+        }
+      }
+      // Shipwrecks
+      for (const label in shipwreckNotes) {
+        const [coord, wreckName] = label.split(' - ');
+        const idx = getIdxFromLabel(coord);
+        const icons = mapState[idx] || [];
+        const hasShipwreck = icons.some(ic => ic.name === 'Shipwreck' || ic.name === 'ShipwreckX2');
+        if (!hasShipwreck) continue;
+        for (const item of shipwreckNotes[label]) {
+          if (userShipwreckDrops[label] && userShipwreckDrops[label][item] > 0) {
+            droppedEntries.push({
+              coord,
+              poi: `Shipwreck (${wreckName})`,
+              item,
+              count: userShipwreckDrops[label][item]
+            });
+          }
+        }
+      }
+
+      // Sort and render
+      droppedEntries.sort((a, b) => {
+        if (a.coord !== b.coord) return a.coord.localeCompare(b.coord);
+        if (a.poi !== b.poi) return a.poi.localeCompare(b.poi);
+        return a.item.localeCompare(b.item);
+      });
+
+      if (droppedEntries.length === 0) {
+        summaryDiv.innerHTML = `<div style="color:#ffe082;text-align:center;padding:1em 0;">No drops recorded yet.</div>`;
+        return;
+      }
+
+      // Render as table
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Coordinates</th>
+            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">POI</th>
+            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Item</th>
+            <th style="text-align:center;color:#ffe082;font-size:1em;padding-bottom:4px;">Number</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+      const tbody = table.querySelector('tbody');
+
+      for (const entry of droppedEntries) {
+        const tr = document.createElement('tr');
+        // Coordinates
+        const tdCoord = document.createElement('td');
+        tdCoord.textContent = entry.coord;
+        tdCoord.style.fontWeight = 'bold';
+        // POI
+        const tdPoi = document.createElement('td');
+        tdPoi.textContent = entry.poi;
+        // Item
+        const tdItem = document.createElement('td');
+        tdItem.textContent = entry.item;
+        // Number
+        const tdNumber = document.createElement('td');
+        tdNumber.textContent = entry.count;
+        tdNumber.style.textAlign = 'center';
+
+        tr.appendChild(tdCoord);
+        tr.appendChild(tdPoi);
+        tr.appendChild(tdItem);
+        tr.appendChild(tdNumber);
+        tbody.appendChild(tr);
+      }
+
+      summaryDiv.appendChild(table);
+    }
+
+    document.addEventListener('DOMContentLoaded', renderPoiDropsSummary);
+
+    function updatePoiDropsSummaryAndPanel() {
+      renderPoiNotesPanel();
+      renderPoiDropsSummary();
+    }
+
+    // Update close handler for POI Notes
+    document.getElementById('close-poi-notes-btn').onclick = function() {
+      document.getElementById('poi-notes-docket').style.display = 'none';
+      const notesDiv = document.getElementById('poi-notes-list');
+      notesDiv.innerHTML = '';
+
+      // Collect all items with number > 0
+      const droppedEntries = [];
+
+      // Testing Stations
+      for (const coord in testingStationNotes) {
+        const idx = getIdxFromLabel(coord);
+        const icons = mapState[idx] || [];
+        const hasTestingStation = icons.some(ic => ic.name === 'TestingStation');
+        if (!hasTestingStation) continue;
+        for (const item of testingStationNotes[coord]) {
+          if (userStationDrops[coord] && userStationDrops[coord][item] > 0) {
+            droppedEntries.push({
+              coord,
+              poi: 'Testing Station',
+              item,
+              count: userStationDrops[coord][item]
+            });
+          }
+        }
+      }
+      // Shipwrecks
+      for (const label in shipwreckNotes) {
+        const [coord, wreckName] = label.split(' - ');
+        const idx = getIdxFromLabel(coord);
+        const icons = mapState[idx] || [];
+        const hasShipwreck = icons.some(ic => ic.name === 'Shipwreck' || ic.name === 'ShipwreckX2');
+        if (!hasShipwreck) continue;
+        for (const item of shipwreckNotes[label]) {
+          if (userShipwreckDrops[label] && userShipwreckDrops[label][item] > 0) {
+            droppedEntries.push({
+              coord,
+              poi: `Shipwreck (${wreckName})`,
+              item,
+              count: userShipwreckDrops[label][item]
+            });
+          }
+        }
+      }
+
+      // Sort and render
+      droppedEntries.sort((a, b) => {
+        if (a.coord !== b.coord) return a.coord.localeCompare(b.coord);
+        if (a.poi !== b.poi) return a.poi.localeCompare(b.poi);
+        return a.item.localeCompare(b.item);
+      });
+
+      if (droppedEntries.length === 0) {
+        notesDiv.innerHTML = `<div style="color:#ffe082;text-align:center;padding:1em 0;">No drops recorded yet.</div>`;
+        return;
+      }
+
+      // Render as table
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Coordinates</th>
+            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">POI</th>
+            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Item</th>
+            <th style="text-align:center;color:#ffe082;font-size:1em;padding-bottom:4px;">Number</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+      const tbody = table.querySelector('tbody');
+
+      for (const entry of droppedEntries) {
+        const tr = document.createElement('tr');
+        // Coordinates
+        const tdCoord = document.createElement('td');
+        tdCoord.textContent = entry.coord;
+        tdCoord.style.fontWeight = 'bold';
+        // POI
+        const tdPoi = document.createElement('td');
+        tdPoi.textContent = entry.poi;
+        // Item
+        const tdItem = document.createElement('td');
+        tdItem.textContent = entry.item;
+        // Number
+        const tdNumber = document.createElement('td');
+        tdNumber.textContent = entry.count;
+        tdNumber.style.textAlign = 'center';
+
+        tr.appendChild(tdCoord);
+        tr.appendChild(tdPoi);
+        tr.appendChild(tdItem);
+        tr.appendChild(tdNumber);
+        tbody.appendChild(tr);
+      }
+
+      notesDiv.appendChild(table);
+      renderPoiDropsSummary();
+    };
+
+    // --- Show/hide POI Notes Panel ---
+    document.getElementById('open-poi-notes-btn').onclick = function() {
+      document.getElementById('poi-notes-docket').style.display = 'flex';
+      renderPoiNotesPanel();
+    };
+
+    // --- Keep panel in sync with map ---
+    const origRenderGridPoi = renderGrid;
+    renderGrid = function() {
+      origRenderGridPoi.apply(this, arguments);
+      if (document.getElementById('poi-notes-docket').style.display !== 'none') {
+        renderPoiNotesPanel();
+      }
+    };
+
+    // --- Optional: open panel if cell selected from elsewhere ---
+    document.addEventListener('DOMContentLoaded', () => {
+      // Remove old dockets if present
+      const old1 = document.getElementById('station-notes-docket');
+      const old2 = document.getElementById('shipwreck-notes-docket');
+      if (old1) old1.remove();
+      if (old2) old2.remove();
+    });
+
+    // Update the draggable logic to use the new drag handle and fixed positioning on the right
+
+    (function makePoiNotesDraggable() {
+      const panel = document.getElementById('poi-notes-docket');
+      const dragHandle = document.getElementById('poi-notes-drag-handle');
+      let isDragging = false, startX = 0, startY = 0, origX = 0, origY = 0;
+
+      // Use fixed positioning for right side
+      panel.style.position = 'fixed';
+      panel.style.right = '40px';
+      panel.style.top = '90px';
+      panel.style.left = '';
+      panel.style.transform = '';
+      panel.style.zIndex = 3000;
+
+      dragHandle.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        // Get current position
+        const rect = panel.getBoundingClientRect();
+        origX = rect.right;
+        origY = rect.top;
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        let dx = e.clientX - startX;
+        let dy = e.clientY - startY;
+        // Move relative to right/top
+        panel.style.right = (window.innerWidth - origX - dx) + 'px';
+        panel.style.top = (origY + dy) + 'px';
+        panel.style.left = '';
+        panel.style.transform = '';
+      });
+
+      document.addEventListener('mouseup', function() {
+        if (isDragging) {
+          isDragging = false;
+          document.body.style.userSelect = '';
+        }
+      });
+
+      // Optional: Reset position when opening
+      document.getElementById('open-poi-notes-btn').addEventListener('click', function() {
+        panel.style.right = '40px';
+        panel.style.top = '90px';
+        panel.style.left = '';
+        panel.style.transform = '';
+      });
+    })();
   </script>
 </body>
 </html>
