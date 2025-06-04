@@ -319,6 +319,21 @@
       line-height: 48px;
       box-shadow: 0 2px 8px #0006;
     }
+    .poi-table-header {
+      text-align: left;
+      color: #ffe082;
+      font-size: 1em;
+      padding-bottom: 4px;
+    }
+    .poi-table-header.number {
+      text-align: center;
+    }
+    .poi-table-cell-coord {
+      font-weight: bold;
+    }
+    .poi-table-cell-number {
+      text-align: center;
+    }
   </style>
 </head>
 <div id="iconPickerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:2000;">
@@ -1505,10 +1520,10 @@
       table.innerHTML = `
         <thead>
           <tr>
-            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Coordinates</th>
-            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">POI</th>
-            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Item</th>
-            <th style="text-align:center;color:#ffe082;font-size:1em;padding-bottom:4px;">Number</th>
+            <th class="poi-table-header">Coordinates</th>
+            <th class="poi-table-header">POI</th>
+            <th class="poi-table-header">Item</th>
+            <th class="poi-table-header number">Number</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -1521,8 +1536,8 @@
         // Coordinates
         const tdCoord = document.createElement('td');
         tdCoord.textContent = entry.coord;
+        tdCoord.className = 'poi-table-cell-coord';
         tdCoord.style.cursor = 'pointer';
-        tdCoord.style.fontWeight = 'bold';
         tdCoord.onclick = () => {
           selectedCells.clear();
           selectedCells.add(getIdxFromLabel(entry.coord));
@@ -1537,6 +1552,7 @@
         tdItem.textContent = entry.item;
         // Number input
         const tdNumber = document.createElement('td');
+        tdNumber.className = 'poi-table-cell-number';
         tdNumber.style.textAlign = 'center';
         const input = document.createElement('input');
         input.type = 'number';
@@ -1572,60 +1588,47 @@
       notesDiv.appendChild(table);
     }
 
+    let lastPoiDropsSummaryHTML = '';
+
     function renderPoiDropsSummary() {
       const summaryDiv = document.getElementById('poi-drops-summary-list');
       if (!summaryDiv) return;
-      summaryDiv.innerHTML = '';
 
       const droppedEntries = collectDroppedEntries();
 
+      let html = '';
       if (droppedEntries.length === 0) {
-        summaryDiv.innerHTML = `<div style="color:#ffe082;text-align:center;padding:1em 0;">No drops recorded yet.</div>`;
-        return;
+        html = `<div style="color:#ffe082;text-align:center;padding:1em 0;">No drops recorded yet.</div>`;
+      } else {
+        html = `
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th class="poi-table-header">Coordinates</th>
+                <th class="poi-table-header">POI</th>
+                <th class="poi-table-header">Item</th>
+                <th class="poi-table-header number">Number</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${droppedEntries.map(entry => `
+                <tr>
+                  <td class="poi-table-cell-coord">${entry.coord}</td>
+                  <td>${entry.poi}</td>
+                  <td>${entry.item}</td>
+                  <td class="poi-table-cell-number">${entry.count}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
       }
 
-      // Render as table
-      const table = document.createElement('table');
-      table.style.width = '100%';
-      table.style.borderCollapse = 'collapse';
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Coordinates</th>
-            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">POI</th>
-            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Item</th>
-            <th style="text-align:center;color:#ffe082;font-size:1em;padding-bottom:4px;">Number</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      `;
-      const tbody = table.querySelector('tbody');
-
-      for (const entry of droppedEntries) {
-        const tr = document.createElement('tr');
-        // Coordinates
-        const tdCoord = document.createElement('td');
-        tdCoord.textContent = entry.coord;
-        tdCoord.style.fontWeight = 'bold';
-        // POI
-        const tdPoi = document.createElement('td');
-        tdPoi.textContent = entry.poi;
-        // Item
-        const tdItem = document.createElement('td');
-        tdItem.textContent = entry.item;
-        // Number
-        const tdNumber = document.createElement('td');
-        tdNumber.textContent = entry.count;
-        tdNumber.style.textAlign = 'center';
-
-        tr.appendChild(tdCoord);
-        tr.appendChild(tdPoi);
-        tr.appendChild(tdItem);
-        tr.appendChild(tdNumber);
-        tbody.appendChild(tr);
+      // Only update DOM if HTML changed
+      if (summaryDiv.innerHTML !== html) {
+        summaryDiv.innerHTML = html;
+        lastPoiDropsSummaryHTML = html;
       }
-
-      summaryDiv.appendChild(table);
     }
 
     document.addEventListener('DOMContentLoaded', renderPoiDropsSummary);
@@ -1846,3 +1849,4 @@
   </script>
 </body>
 </html>
+`
