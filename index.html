@@ -309,6 +309,16 @@
         height: 28px;
       }
     }
+    #help-btn {
+      font-size: 1.5rem;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      padding: 0;
+      text-align: center;
+      line-height: 48px;
+      box-shadow: 0 2px 8px #0006;
+    }
   </style>
 </head>
 <body>
@@ -367,6 +377,26 @@
         <button class="icon-picker-btn cancel" type="button" id="closeIconPickerBtn">Escape</button>
       </div>
       <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;"></div>
+    </div>
+  </div>
+  <!-- Help Button -->
+  <button id="help-btn" class="control-btn" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:3000;" aria-label="Help">?</button>
+
+  <!-- Help Modal -->
+  <div id="help-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:4000;">
+    <div style="background:#2d2211;color:#ffe082;padding:2rem 2.5rem;border-radius:14px;max-width:480px;width:90vw;box-shadow:0 8px 32px #000a;position:relative;">
+      <h2 style="margin-top:0;">How to Use the Deep Desert Mapping Tool</h2>
+      <ul style="line-height:1.7;">
+        <li><b>Left-click</b> a grid cell to open the icon picker and add an icon.</li>
+        <li><b>Right-click</b> a grid cell to toggle explored/unexplored.</li>
+        <li><b>Drag</b> icons from the legend to the grid to place them.</li>
+        <li><b>Export</b> your map as PNG or JSON using the buttons below the grid.</li>
+        <li><b>Import</b> a saved map with the Import JSON button.</li>
+        <li><b>Undo/Redo</b> your last actions with the respective buttons.</li>
+        <li><b>Share Link</b> to copy a shareable map link.</li>
+        <li>Unexplored cells appear faded (50% opacity).</li>
+      </ul>
+      <button id="close-help-btn" class="control-btn" style="margin-top:1rem;">Close</button>
     </div>
   </div>
   <script>
@@ -463,9 +493,19 @@
           if (selectedCells.has(idx)) cell.classList.add('selected');
           cell.dataset.idx = idx;
           // Icons
-          const icons = mapState[idx] || [];
           const iconDiv = document.createElement('div');
           iconDiv.className = 'cell-icons';
+          const icons = mapState[idx] || [];
+          const isUnexplored = !exploredState[idx];
+          const hasIcons = icons.length > 0;
+
+          // Set cell opacity if unexplored and has icons
+          if (isUnexplored && hasIcons) {
+            cell.style.opacity = '0.5';
+          } else {
+            cell.style.opacity = '1';
+          }
+
           for (const icon of icons) {
             const img = document.createElement('img');
             img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
@@ -474,6 +514,8 @@
             img.width = 36;
             img.height = 36;
             img.style.margin = '2px';
+            // Set icon opacity to 0 if unexplored and has icons
+            img.style.opacity = '1';
             iconDiv.appendChild(img);
           }
           cell.appendChild(iconDiv);
@@ -742,6 +784,15 @@
           }
         } catch {}
       }
+      // Help Modal Logic
+      const helpBtn = document.getElementById('help-btn');
+      const helpModal = document.getElementById('help-modal');
+      const closeHelpBtn = document.getElementById('close-help-btn');
+      helpBtn.onclick = () => helpModal.style.display = 'flex';
+      closeHelpBtn.onclick = () => helpModal.style.display = 'none';
+      window.onclick = (e) => {
+        if (e.target === helpModal) helpModal.style.display = 'none';
+      };
     });
     // --- PNG Export ---
     function exportPNG() {
@@ -854,19 +905,39 @@
             const canvasRow = 8 - row;
             const x = legendWidth + col * (cellSize + gap);
             const y = dateHeight + canvasRow * (cellSize + gap);
-            ctx.strokeStyle = '#222';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, cellSize, cellSize);
-            ctx.font = "bold 24px Arial";
-            ctx.fillStyle = "rgba(255,255,255,0.8)";
-            ctx.textBaseline = "top";
-            ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
-
-            // Get icons for this cell
             const idx = row * gridSize + col;
             const icons = mapState[idx] || [];
             const n = icons.length;
-            if (n > 0) {
+            const isUnexplored = !exploredState[idx];
+            const hasIcons = n > 0;
+
+            // Set cell opacity for unexplored with icons
+            if (isUnexplored && hasIcons) {
+              ctx.save();
+              ctx.globalAlpha = 0.25;
+              ctx.strokeStyle = '#222';
+              ctx.lineWidth = 2;
+              ctx.strokeRect(x, y, cellSize, cellSize);
+              ctx.fillStyle = "rgba(255,255,255,0.8)";
+              ctx.font = "bold 24px Arial";
+              ctx.textBaseline = "top";
+              ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
+              ctx.restore();
+            } else {
+              ctx.save();
+              ctx.globalAlpha = 1.0;
+              ctx.strokeStyle = '#222';
+              ctx.lineWidth = 2;
+              ctx.strokeRect(x, y, cellSize, cellSize);
+              ctx.fillStyle = "rgba(255,255,255,0.8)";
+              ctx.font = "bold 24px Arial";
+              ctx.textBaseline = "top";
+              ctx.fillText(String.fromCharCode(65 + row) + (col + 1), x + 8, y + 8);
+              ctx.restore();
+            }
+
+            // Draw icons only if not unexplored
+            if (!isUnexplored) {
               let iconSize, positions;
               if (n === 1) {
                 iconSize = 90;
@@ -909,6 +980,7 @@
               for (let i = 0; i < Math.min(n, 9); i++) {
                 const icon = icons[i];
                 if (icon && iconMap[icon.name]) {
+                  ctx.globalAlpha = 1.0;
                   ctx.drawImage(
                     iconMap[icon.name],
                     x + positions[i][0] - iconSize / 2,
@@ -919,6 +991,7 @@
                 }
               }
             }
+
             // Cell overlay for explored/unexplored
             const idx2 = row * gridSize + col;
             if (!exploredState[idx2]) {
@@ -1076,6 +1149,18 @@
     function closeIconPicker() {
       document.getElementById('iconPickerModal').style.display = 'none';
     }
+
+    // --- Help Modal Logic ---
+    document.getElementById('help-btn').onclick = function() {
+      document.getElementById('help-modal').style.display = 'flex';
+    };
+    document.getElementById('close-help-btn').onclick = function() {
+      document.getElementById('help-modal').style.display = 'none';
+    };
+    // Optional: Close help modal with Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') document.getElementById('help-modal').style.display = 'none';
+    });
   </script>
 </body>
 </html>
