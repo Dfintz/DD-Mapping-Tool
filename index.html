@@ -1227,6 +1227,14 @@
       document.getElementById('iconPickerModal').style.display = 'none';
     }
 
+    // Allow closing icon picker with Escape key
+    document.addEventListener('keydown', function(e) {
+      const modal = document.getElementById('iconPickerModal');
+      if (modal.style.display === 'flex' && e.key === 'Escape') {
+        closeIconPicker();
+      }
+    });
+
     // --- Help Modal Logic ---
     document.getElementById('help-btn').onclick = function() {
       document.getElementById('help-modal').style.display = 'flex';
@@ -1821,4 +1829,3 @@
   </script>
 </body>
 </html>
-`
