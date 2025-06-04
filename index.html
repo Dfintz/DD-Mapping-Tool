@@ -1577,51 +1577,7 @@
       if (!summaryDiv) return;
       summaryDiv.innerHTML = '';
 
-      // Collect all items with number > 0
-      const droppedEntries = [];
-
-      // Testing Stations
-      for (const coord in testingStationNotes) {
-        const idx = getIdxFromLabel(coord);
-        const icons = mapState[idx] || [];
-        const hasTestingStation = icons.some(ic => ic.name === 'TestingStation');
-        if (!hasTestingStation) continue;
-        for (const item of testingStationNotes[coord]) {
-          if (userStationDrops[coord] && userStationDrops[coord][item] > 0) {
-            droppedEntries.push({
-              coord,
-              poi: 'Testing Station',
-              item,
-              count: userStationDrops[coord][item]
-            });
-          }
-        }
-      }
-      // Shipwrecks
-      for (const label in shipwreckNotes) {
-        const [coord, wreckName] = label.split(' - ');
-        const idx = getIdxFromLabel(coord);
-        const icons = mapState[idx] || [];
-        const hasShipwreck = icons.some(ic => ic.name === 'Shipwreck' || ic.name === 'ShipwreckX2');
-        if (!hasShipwreck) continue;
-        for (const item of shipwreckNotes[label]) {
-          if (userShipwreckDrops[label] && userShipwreckDrops[label][item] > 0) {
-            droppedEntries.push({
-              coord,
-              poi: `Shipwreck (${wreckName})`,
-              item,
-              count: userShipwreckDrops[label][item]
-            });
-          }
-        }
-      }
-
-      // Sort and render
-      droppedEntries.sort((a, b) => {
-        if (a.coord !== b.coord) return a.coord.localeCompare(b.coord);
-        if (a.poi !== b.poi) return a.poi.localeCompare(b.poi);
-        return a.item.localeCompare(b.item);
-      });
+      const droppedEntries = collectDroppedEntries();
 
       if (droppedEntries.length === 0) {
         summaryDiv.innerHTML = `<div style="color:#ffe082;text-align:center;padding:1em 0;">No drops recorded yet.</div>`;
@@ -1685,51 +1641,7 @@
       const notesDiv = document.getElementById('poi-notes-list');
       notesDiv.innerHTML = '';
 
-      // Collect all items with number > 0
-      const droppedEntries = [];
-
-      // Testing Stations
-      for (const coord in testingStationNotes) {
-        const idx = getIdxFromLabel(coord);
-        const icons = mapState[idx] || [];
-        const hasTestingStation = icons.some(ic => ic.name === 'TestingStation');
-        if (!hasTestingStation) continue;
-        for (const item of testingStationNotes[coord]) {
-          if (userStationDrops[coord] && userStationDrops[coord][item] > 0) {
-            droppedEntries.push({
-              coord,
-              poi: 'Testing Station',
-              item,
-              count: userStationDrops[coord][item]
-            });
-          }
-        }
-      }
-      // Shipwrecks
-      for (const label in shipwreckNotes) {
-        const [coord, wreckName] = label.split(' - ');
-        const idx = getIdxFromLabel(coord);
-        const icons = mapState[idx] || [];
-        const hasShipwreck = icons.some(ic => ic.name === 'Shipwreck' || ic.name === 'ShipwreckX2');
-        if (!hasShipwreck) continue;
-        for (const item of shipwreckNotes[label]) {
-          if (userShipwreckDrops[label] && userShipwreckDrops[label][item] > 0) {
-            droppedEntries.push({
-              coord,
-              poi: `Shipwreck (${wreckName})`,
-              item,
-              count: userShipwreckDrops[label][item]
-            });
-          }
-        }
-      }
-
-      // Sort and render
-      droppedEntries.sort((a, b) => {
-        if (a.coord !== b.coord) return a.coord.localeCompare(b.coord);
-        if (a.poi !== b.poi) return a.poi.localeCompare(b.poi);
-        return a.item.localeCompare(b.item);
-      });
+      const droppedEntries = collectDroppedEntries();
 
       if (droppedEntries.length === 0) {
         notesDiv.innerHTML = `<div style="color:#ffe082;text-align:center;padding:1em 0;">No drops recorded yet.</div>`;
@@ -1859,9 +1771,35 @@
     })();
 
     document.getElementById('export-poi-drops-csv').onclick = function() {
-      // Gather drop summary data
-      const droppedEntries = [];
+      const droppedEntries = collectDroppedEntries();
 
+      // CSV header
+      let csv = 'Coordinates,POI,Item,Number\n';
+      for (const entry of droppedEntries) {
+        // Escape commas and quotes
+        const row = [
+          entry.coord,
+          entry.poi.replace(/"/g, '""'),
+          entry.item.replace(/"/g, '""'),
+          entry.count
+        ].map(val => `"${val}"`).join(',');
+        csv += row + '\n';
+      }
+
+      // Download as CSV
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `poi_drop_summary_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    function collectDroppedEntries() {
+      const droppedEntries = [];
       // Testing Stations
       for (const coord in testingStationNotes) {
         const idx = getIdxFromLabel(coord);
@@ -1897,39 +1835,14 @@
           }
         }
       }
-
-      // Sort entries
+      // Sort
       droppedEntries.sort((a, b) => {
         if (a.coord !== b.coord) return a.coord.localeCompare(b.coord);
         if (a.poi !== b.poi) return a.poi.localeCompare(b.poi);
         return a.item.localeCompare(b.item);
       });
-
-      // CSV header
-      let csv = 'Coordinates,POI,Item,Number\n';
-      for (const entry of droppedEntries) {
-        // Escape commas and quotes
-        const row = [
-          entry.coord,
-          entry.poi.replace(/"/g, '""'),
-          entry.item.replace(/"/g, '""'),
-          entry.count
-        ].map(val => `"${val}"`).join(',');
-        csv += row + '\n';
-      }
-
-      // Download as CSV
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `poi_drop_summary_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    };
+      return droppedEntries;
+    }
   </script>
 </body>
 </html>
-`
