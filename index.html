@@ -475,6 +475,24 @@
     let timezoneUTC = true;
     let selectedServer = 'europe';
 
+    // Debounce timers
+    let stationDropsSaveTimer = null;
+    let shipwreckDropsSaveTimer = null;
+
+    function saveUserStationDropsDebounced() {
+      clearTimeout(stationDropsSaveTimer);
+      stationDropsSaveTimer = setTimeout(() => {
+        localStorage.setItem('userStationDrops', JSON.stringify(userStationDrops));
+      }, 400); // adjust delay as needed
+    }
+
+    function saveUserShipwreckDropsDebounced() {
+      clearTimeout(shipwreckDropsSaveTimer);
+      shipwreckDropsSaveTimer = setTimeout(() => {
+        localStorage.setItem('userShipwreckDrops', JSON.stringify(userShipwreckDrops));
+      }, 400);
+    }
+
     // --- Utility Functions ---
     function showNotification(msg, timeout=2500) {
       const notif = document.getElementById('notification');
@@ -1567,12 +1585,12 @@
             const coord = entry.coord;
             userStationDrops[coord] = userStationDrops[coord] || {};
             userStationDrops[coord][entry.item] = val;
-            localStorage.setItem('userStationDrops', JSON.stringify(userStationDrops));
+            saveUserStationDropsDebounced();
           } else if (entry.key.startsWith('shipwreck|')) {
             const label = entry.key.split('|')[1];
             userShipwreckDrops[label] = userShipwreckDrops[label] || {};
             userShipwreckDrops[label][entry.item] = val;
-            localStorage.setItem('userShipwreckDrops', JSON.stringify(userShipwreckDrops));
+            saveUserShipwreckDropsDebounced();
           }
           updatePoiDropsSummaryAndPanel();
         };
@@ -1849,4 +1867,3 @@
   </script>
 </body>
 </html>
-`
