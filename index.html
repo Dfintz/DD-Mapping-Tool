@@ -218,6 +218,63 @@
     .timer-phase-normal {
       color: #80cbc4;
     }
+    /* Icon Picker Modal */
+    #iconPickerModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .icon-picker-content {
+      background: rgba(40, 40, 40, 0.95);
+      border: 2px solid #ffe066;
+      padding: 24px;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+    .icon-picker-btn {
+      background: linear-gradient(90deg, #ffe066 0%, #ffd700 100%);
+      color: #222;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 100px;
+      margin-right: 8px;
+    }
+    .icon-picker-btn.cancel {
+      background: linear-gradient(90deg, #666 0%, #888 100%);
+      color: #fff;
+    }
+    .icon-picker-btn:hover {
+      filter: brightness(1.1);
+    }
+    #iconPickerGrid img {
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      background: rgba(34, 34, 34, 0.8);
+      padding: 2px;
+      transition: all 0.2s;
+    }
+    #iconPickerGrid img.selected {
+      border-color: #ffe066;
+      background: rgba(255, 224, 102, 0.2);
+    }
     /* Responsive */
     @media (max-width: 900px) {
       main {
@@ -300,6 +357,18 @@
     </section>
   </main>
   <div id="notification" aria-live="polite" style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#2d2211;color:#ffe082;padding:0.75rem 1.5rem;border-radius:8px;box-shadow:0 2px 8px #000a;display:none;z-index:1000;font-size:1.1rem;"></div>
+  <!-- Icon Picker Modal -->
+  <div id="iconPickerModal" style="display:none;">
+    <div class="icon-picker-content">
+      <h3>Select an Icon</h3>
+      <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
+      <div class="icon-picker-buttons">
+        <button id="toggleExploredButton" class="icon-picker-btn" type="button">Toggle Explored</button>
+        <button class="icon-picker-btn cancel" type="button" id="closeIconPickerBtn">Escape</button>
+      </div>
+      <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;"></div>
+    </div>
+  </div>
   <script>
     // --- Icon Definitions ---
     const resourceIcons = [
@@ -473,6 +542,13 @@
               renderGrid();
               saveToLocalStorage();
             }
+          });
+          cell.addEventListener('contextmenu', e => {
+            e.preventDefault(); // Prevent the browser context menu
+            pushUndo();
+            exploredState[idx] = !exploredState[idx];
+            renderGrid();
+            saveToLocalStorage();
           });
           grid.appendChild(cell);
         }
@@ -925,7 +1001,82 @@
     }
     setInterval(updateStormTimer, 1000);
     updateStormTimer();
+
+    // --- Icon Picker Modal Logic ---
+    let iconPickerCellIdx = null;
+    let iconPickerSelectedIcon = null;
+
+    // Open modal on left click
+    document.getElementById('map-grid').addEventListener('click', function(e) {
+      const cell = e.target.closest('.map-cell');
+      if (!cell) return;
+      iconPickerCellIdx = parseInt(cell.dataset.idx, 10);
+      openIconPicker();
+    });
+
+    function openIconPicker() {
+      iconPickerSelectedIcon = null;
+      const modal = document.getElementById('iconPickerModal');
+      const grid = document.getElementById('iconPickerGrid');
+      grid.innerHTML = '';
+      // Show all icons
+      [...resourceIcons, ...houseIcons].forEach(icon => {
+        const img = document.createElement('img');
+        img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+        img.alt = icon.label;
+        img.title = icon.label;
+        img.tabIndex = 0;
+        img.onclick = () => {
+          grid.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
+          img.classList.add('selected');
+          iconPickerSelectedIcon = icon;
+          // Place icon immediately on click
+          if (iconPickerCellIdx != null) {
+            pushUndo();
+            mapState[iconPickerCellIdx] = mapState[iconPickerCellIdx] || [];
+            if (!mapState[iconPickerCellIdx].some(ic => ic.name === icon.name)) {
+              mapState[iconPickerCellIdx].push(icon);
+              renderGrid();
+              saveToLocalStorage();
+              showIconPickerFeedback('Icon placed!');
+            } else {
+              showIconPickerFeedback('Icon already in cell!');
+            }
+          }
+        };
+        grid.appendChild(img);
+      });
+      modal.style.display = 'flex';
+    }
+
+    function showIconPickerFeedback(msg) {
+      const feedback = document.getElementById('iconPickerFeedback');
+      feedback.textContent = msg;
+      feedback.style.display = 'block';
+      setTimeout(() => {
+        feedback.style.display = 'none';
+      }, 1200);
+    }
+
+    // Toggle explored/unexplored
+    document.getElementById('toggleExploredButton').onclick = function() {
+      if (iconPickerCellIdx == null) return;
+      pushUndo();
+      exploredState[iconPickerCellIdx] = !exploredState[iconPickerCellIdx];
+      renderGrid();
+      saveToLocalStorage();
+      showIconPickerFeedback(
+        exploredState[iconPickerCellIdx] ? 'Cell set as explored!' : 'Cell set as unexplored!'
+      );
+    };
+
+    // Escape button
+    document.getElementById('closeIconPickerBtn').onclick = closeIconPicker;
+
+    function closeIconPicker() {
+      document.getElementById('iconPickerModal').style.display = 'none';
+    }
   </script>
 </body>
 </html>
-``` 
+`
