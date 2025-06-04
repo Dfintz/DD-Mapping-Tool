@@ -401,6 +401,7 @@
     </aside>
     <div id="poi-drops-summary" style="width:370px;min-width:220px;max-width:100vw;background:rgba(40,30,15,0.98);border-radius:12px;padding:1rem;box-shadow:0 2px 8px #000a;flex-direction:column;gap:1.2rem;height:fit-content;position:relative;margin-left:1.5rem;margin-bottom:1.5rem;">
       <div style="font-size:1.1rem;font-weight:700;color:#ffe082;margin-bottom:0.5rem;">POI Drop Summary</div>
+      <button class="control-btn" id="export-poi-drops-csv" style="margin-bottom:0.7em;">Export Drop Summary (CSV)</button>
       <div id="poi-drops-summary-list" style="font-size:1em;max-height:340px;overflow-y:auto;"></div>
     </div>
   <!-- Help Button -->
@@ -1840,6 +1841,79 @@
         panel.style.transform = '';
       });
     })();
+
+    document.getElementById('export-poi-drops-csv').onclick = function() {
+      // Gather drop summary data
+      const droppedEntries = [];
+
+      // Testing Stations
+      for (const coord in testingStationNotes) {
+        const idx = getIdxFromLabel(coord);
+        const icons = mapState[idx] || [];
+        const hasTestingStation = icons.some(ic => ic.name === 'TestingStation');
+        if (!hasTestingStation) continue;
+        for (const item of testingStationNotes[coord]) {
+          if (userStationDrops[coord] && userStationDrops[coord][item] > 0) {
+            droppedEntries.push({
+              coord,
+              poi: 'Testing Station',
+              item,
+              count: userStationDrops[coord][item]
+            });
+          }
+        }
+      }
+      // Shipwrecks
+      for (const label in shipwreckNotes) {
+        const [coord, wreckName] = label.split(' - ');
+        const idx = getIdxFromLabel(coord);
+        const icons = mapState[idx] || [];
+        const hasShipwreck = icons.some(ic => ic.name === 'Shipwreck' || ic.name === 'ShipwreckX2');
+        if (!hasShipwreck) continue;
+        for (const item of shipwreckNotes[label]) {
+          if (userShipwreckDrops[label] && userShipwreckDrops[label][item] > 0) {
+            droppedEntries.push({
+              coord,
+              poi: `Shipwreck (${wreckName})`,
+              item,
+              count: userShipwreckDrops[label][item]
+            });
+          }
+        }
+      }
+
+      // Sort entries
+      droppedEntries.sort((a, b) => {
+        if (a.coord !== b.coord) return a.coord.localeCompare(b.coord);
+        if (a.poi !== b.poi) return a.poi.localeCompare(b.poi);
+        return a.item.localeCompare(b.item);
+      });
+
+      // CSV header
+      let csv = 'Coordinates,POI,Item,Number\n';
+      for (const entry of droppedEntries) {
+        // Escape commas and quotes
+        const row = [
+          entry.coord,
+          entry.poi.replace(/"/g, '""'),
+          entry.item.replace(/"/g, '""'),
+          entry.count
+        ].map(val => `"${val}"`).join(',');
+        csv += row + '\n';
+      }
+
+      // Download as CSV
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `poi_drop_summary_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
   </script>
 </body>
 </html>
+`
