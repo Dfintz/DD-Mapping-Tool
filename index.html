@@ -736,11 +736,21 @@
           pushUndo();
           mapState = Array(GRID_SIZE * GRID_SIZE).fill().map(() => []);
           exploredState = Array(GRID_SIZE * GRID_SIZE).fill(false);
+          // Clear POI tracker numbers
+          userStationDrops = {};
+          userShipwreckDrops = {};
+          localStorage.setItem('userStationDrops', '{}');
+          localStorage.setItem('userShipwreckDrops', '{}');
           renderGrid();
           saveToLocalStorage();
           showNotification('Map cleared!');
-          // Clear POI Tracker list and summary
+          // Open POI Tracker panel to ensure DOM is available for cleaning
+          document.getElementById('poi-notes-docket').style.display = 'flex';
+          // Clear POI Tracker list and summary DOM
           document.getElementById('poi-notes-list').innerHTML = '';
+          document.getElementById('poi-drops-summary-list').innerHTML = '';
+          // Re-render panels with cleared data
+          renderPoiNotesPanel();
           renderPoiDropsSummary();
         }
       };
