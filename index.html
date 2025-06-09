@@ -1216,6 +1216,17 @@
       const el = document.getElementById('storm-countdown');
       el.textContent = `${days}:${hours.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
       el.className = 'timer-countdown timer-phase-' + phase;
+
+      // Change the label to reflect the storm state
+      const label = document.querySelector('.timer-label');
+      if (phase === 'active') {
+        label.textContent = 'Storm Active';
+      } else if (phase === 'warning') {
+        label.textContent = 'Storm Brewing';
+      } else {
+        label.textContent = 'Next Storm';
+      }
+
       // Timezone toggle
       document.getElementById('toggle-timezone').textContent = timezoneUTC ? 'UTC' : 'Local';
       document.getElementById('toggle-timezone').onclick = () => {
