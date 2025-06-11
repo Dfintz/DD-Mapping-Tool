@@ -923,14 +923,38 @@
       if (params.has('map')) {
         try {
           const json = LZString.decompressFromEncodedURIComponent(params.get('map'));
-          const { mapState: ms, exploredState: es } = JSON.parse(json);
-          if (Array.isArray(ms) && Array.isArray(es) && ms.length === GRID_SIZE*GRID_SIZE && es.length === GRID_SIZE*GRID_SIZE) {
+          const data = JSON.parse(json);
+
+          let ms, es;
+          if (Array.isArray(data.map) && Array.isArray(data.explored)) {
+            // New format with coord labels
+            ms = Array(GRID_SIZE * GRID_SIZE);
+            es = Array(GRID_SIZE * GRID_SIZE);
+            data.map.forEach((cell, idx) => {
+              ms[idx] = cell.icons || [];
+            });
+            data.explored.forEach((cell, idx) => {
+              es[idx] = !!cell.explored;
+            });
+          } else if (Array.isArray(data.mapState) && Array.isArray(data.exploredState)) {
+            // Old format
+            ms = data.mapState;
+            es = data.exploredState;
+          }
+
+          if (
+            Array.isArray(ms) && Array.isArray(es) &&
+            ms.length === GRID_SIZE * GRID_SIZE &&
+            es.length === GRID_SIZE * GRID_SIZE
+          ) {
             mapState = ms;
             exploredState = es;
             renderGrid();
             showNotification('Loaded map from link!');
           }
-        } catch {}
+        } catch {
+          showNotification('Failed to load map from link.', 3000);
+        }
       }
       // Help Modal Logic
       const helpBtn = document.getElementById('help-btn');
