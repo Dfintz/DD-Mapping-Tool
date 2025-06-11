@@ -872,12 +872,27 @@
       };
       document.getElementById('export-png').onclick = () => exportPNG();
       document.getElementById('share-link').onclick = () => {
-        // Encode map state in URL
-        const data = { mapState, exploredState };
+        // Build export data with coordinate labels (same as JSON export)
+        const exportMap = mapState.map((icons, idx) => ({
+          coord: getCellLabel(idx),
+          icons
+        }));
+        const exportExplored = exploredState.map((val, idx) => ({
+          coord: getCellLabel(idx),
+          explored: val
+        }));
+
+        const data = {
+          map: exportMap,
+          explored: exportExplored,
+          date: new Date().toISOString()
+        };
+
         const json = JSON.stringify(data);
         const compressed = LZString.compressToEncodedURIComponent(json);
         const url = `${location.origin}${location.pathname}?map=${compressed}`;
-        const longUrl = url; // your generated share link
+        const longUrl = url;
+
         fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`)
           .then(res => res.text())
           .then(shortUrl => {
