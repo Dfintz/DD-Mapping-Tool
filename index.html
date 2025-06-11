@@ -455,13 +455,13 @@
       { name: 'ShipwreckX2', file: 'ShipwreckX2.svg', label: 'Shipwreck (x2)' },
       { name: 'Cave', file: 'Cave.svg', label: 'Cave' },
       { name: 'TestingStation', file: 'TestingStation.svg', label: 'Testing Station' },
-      { name: 'Poi', file: 'Poi.svg', label: 'Point of Interest' },
-      { name: 'AuthorizedBase', file: 'AuthorizedBase.svg', label: 'Authorized Base' },
-      { name: 'HomeBase', file: 'HomeBase.svg', label: 'Home Base' }
+      { name: 'Poi', file: 'Poi.svg', label: 'POI' },
+      { name: 'AuthorizedBase', file: 'AuthorizedBase.svg', label: 'Authorized' },
+      { name: 'HomeBase', file: 'HomeBase.svg', label: 'Home' }
     ];
     const houseIcons = [
       'House_Alexin','House_Argpsaz','House_Dyvetz','House_Ecaz','House_Hagal','House_Hurata','House_Imota','House_Kenola','House_Lindaren','House_Maros','House_Mikarrol','House_Moritani','House_Mutelli','House_Novebruns','House_Richese','House_Sor','House_Spinnette','House_Taligari','House_Thorvald','House_Tseida','House_Varota','House_Vernius','House_Wallach','House_Wayku','House_Wydras'
-    ].map(house => ({ name: house, file: house + '.svg', label: house.replace('House_', 'House ') }));
+    ].map(house => ({ name: house, file: house + '.svg', label: house.replace('House_', '') }));
 
     // --- State ---
     const GRID_SIZE = 9;
@@ -794,7 +794,25 @@
         }
       };
       document.getElementById('export-json').onclick = () => {
-        const data = JSON.stringify({ mapState, exploredState, date: new Date().toISOString() }, null, 2);
+        // Build export data with coordinate labels
+        const exportMap = mapState.map((icons, idx) => ({
+          coord: getCellLabel(idx),
+          icons
+        }));
+        const exportExplored = exploredState.map((val, idx) => ({
+          coord: getCellLabel(idx),
+          explored: val
+        }));
+
+        const data = JSON.stringify(
+          {
+            map: exportMap,
+            explored: exportExplored,
+            date: new Date().toISOString()
+          },
+          null,
+          2
+        );
         const blob = new Blob([data], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1254,6 +1272,7 @@
       const modal = document.getElementById('iconPickerModal');
       const grid = document.getElementById('iconPickerGrid');
       grid.innerHTML = '';
+      
       // Show all icons
       [...resourceIcons, ...houseIcons].forEach(icon => {
         const img = document.createElement('img');
