@@ -896,11 +896,11 @@
         fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`)
           .then(res => res.text())
           .then(shortUrl => {
-            navigator.clipboard.writeText(shortUrl);
+            copyToClipboardOrPrompt(shortUrl);
             showNotification('Short shareable link copied to clipboard!');
           })
           .catch(() => {
-            navigator.clipboard.writeText(longUrl);
+            copyToClipboardOrPrompt(longUrl);
             showNotification('Could not shorten link, copied full link instead.');
           });
       };
@@ -1967,6 +1967,16 @@
         return a.item.localeCompare(b.item);
       });
       return droppedEntries;
+    }
+
+    function copyToClipboardOrPrompt(link) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(link).catch(() => {
+          window.prompt('Copy this link:', link);
+        });
+      } else {
+        window.prompt('Copy this link:', link);
+      }
     }
   </script>
 </body>
