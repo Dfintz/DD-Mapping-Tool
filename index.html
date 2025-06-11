@@ -1018,7 +1018,7 @@
       const legendPadding = 30;
       const legendIconSize = 40;
       const legendTextSize = 22;
-      const legendSpacing = 28; // Increased spacing for no overlap
+      const legendSpacing = 28;
       const legendTitleSize = 26;
       const legendTitle = "Legend";
 
@@ -1033,10 +1033,15 @@
       const gridHeight = gridSize * (cellSize + gap);
       const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140;
 
+      // Align legends vertically with the map grid
+      // Calculate vertical offset so legends are centered with the grid
+      const totalHeight = Math.max(gridHeight + dateHeight, legendHeight + dateHeight);
+      const legendTop = dateHeight + ((gridHeight - legendHeight) / 2 > 0 ? (gridHeight - legendHeight) / 2 : 0);
+
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       canvas.width = legendWidth * 2 + gridWidth;
-      canvas.height = Math.max(gridHeight + dateHeight, legendHeight + dateHeight);
+      canvas.height = totalHeight;
 
       function loadImage(src) {
         return new Promise((resolve, reject) => {
@@ -1078,14 +1083,14 @@
         ctx.drawImage(backgroundImage, legendWidth, dateHeight, gridWidth, gridHeight);
         ctx.globalAlpha = 1.0;
 
-        // Left legend (resources/POIs)
+        // Left legend (resources/POIs) - vertically centered with grid
         ctx.fillStyle = "rgba(30,30,30,0.85)";
-        ctx.fillRect(0, dateHeight, legendWidth, legendHeight);
+        ctx.fillRect(0, legendTop, legendWidth, legendHeight);
         ctx.font = `bold ${legendTitleSize}px Arial`;
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "top";
-        ctx.fillText(legendTitle, legendPadding, dateHeight + legendPadding);
-        let legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
+        ctx.fillText(legendTitle, legendPadding, legendTop + legendPadding);
+        let legendY = legendTop + legendPadding + legendTitleSize + legendSpacing;
         ctx.font = `${legendTextSize}px Arial`;
         leftLegendItems.forEach(item => {
           if (iconMap[item.icon.name]) {
@@ -1096,14 +1101,14 @@
           legendY += legendIconSize + legendSpacing;
         });
 
-        // Right legend (houses)
+        // Right legend (houses) - vertically centered with grid
         ctx.fillStyle = "rgba(30,30,30,0.85)";
-        ctx.fillRect(canvas.width - legendWidth, dateHeight, legendWidth, legendHeight);
+        ctx.fillRect(canvas.width - legendWidth, legendTop, legendWidth, legendHeight);
         ctx.font = `bold ${legendTitleSize}px Arial`;
         ctx.fillStyle = "#fff";
         ctx.textBaseline = "top";
-        ctx.fillText(legendTitle, canvas.width - legendWidth + legendPadding, dateHeight + legendPadding);
-        legendY = dateHeight + legendPadding + legendTitleSize + legendSpacing;
+        ctx.fillText(legendTitle, canvas.width - legendWidth + legendPadding, legendTop + legendPadding);
+        legendY = legendTop + legendPadding + legendTitleSize + legendSpacing;
         ctx.font = `${legendTextSize}px Arial`;
         rightLegendItems.forEach(item => {
           if (iconMap[item.icon.name]) {
@@ -1190,7 +1195,7 @@
               ctx.fillRect(x, y, cellSize, cellSize);
             }
 
-             // --- Draw coordinates in the bottom right of each cell ---
+            // --- Draw coordinates in the bottom right of each cell ---
             ctx.save();
             ctx.font = "bold 28px Arial";
             ctx.fillStyle = "#ffe082";
@@ -1231,6 +1236,7 @@
         });
       });
     }
+
     // --- Storm Timer ---
     function getNextStorm(now, server = selectedServer) {
       // Europe: Monday 05:00 UTC, Wednesday 04:00 UTC
