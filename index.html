@@ -897,11 +897,21 @@
         fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`)
           .then(res => res.text())
           .then(shortUrl => {
-            copyToClipboardOrPrompt(shortUrl);
-            showNotification('Short shareable link copied to clipboard!');
+            // Only copy the TinyURL link to clipboard
+            if (navigator.clipboard && window.isSecureContext) {
+              navigator.clipboard.writeText(shortUrl)
+                .then(() => showNotification('Short shareable link copied to clipboard!'))
+                .catch(() => {
+                  window.prompt('Copy this link:', shortUrl);
+                  showNotification('Copy this link manually.');
+                });
+            } else {
+              window.prompt('Copy this link:', shortUrl);
+              showNotification('Copy this link manually.');
+            }
           })
           .catch(() => {
-            copyToClipboardOrPrompt(longUrl);
+            window.prompt('Copy this link:', longUrl);
             showNotification('Could not shorten link, copied full link instead.');
           });
       };
