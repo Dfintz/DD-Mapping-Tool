@@ -830,8 +830,31 @@
         const reader = new FileReader();
         reader.onload = evt => {
           try {
-            const { mapState: ms, exploredState: es } = JSON.parse(evt.target.result);
-            if (Array.isArray(ms) && Array.isArray(es) && ms.length === GRID_SIZE*GRID_SIZE && es.length === GRID_SIZE*GRID_SIZE) {
+            const data = JSON.parse(evt.target.result);
+
+            // Support both old and new formats
+            let ms, es;
+            if (Array.isArray(data.map) && Array.isArray(data.explored)) {
+              // New format with coord labels
+              ms = Array(GRID_SIZE * GRID_SIZE);
+              es = Array(GRID_SIZE * GRID_SIZE);
+              data.map.forEach((cell, idx) => {
+                ms[idx] = cell.icons || [];
+              });
+              data.explored.forEach((cell, idx) => {
+                es[idx] = !!cell.explored;
+              });
+            } else if (Array.isArray(data.mapState) && Array.isArray(data.exploredState)) {
+              // Old format
+              ms = data.mapState;
+              es = data.exploredState;
+            }
+
+            if (
+              Array.isArray(ms) && Array.isArray(es) &&
+              ms.length === GRID_SIZE * GRID_SIZE &&
+              es.length === GRID_SIZE * GRID_SIZE
+            ) {
               pushUndo();
               mapState = ms;
               exploredState = es;
@@ -852,13 +875,19 @@
         // Encode map state in URL
         const data = { mapState, exploredState };
         const json = JSON.stringify(data);
-        const base64 = btoa(unescape(encodeURIComponent(json)));
-        const url = `${location.origin}${location.pathname}?map=${base64}`;
-        navigator.clipboard.writeText(url).then(() => {
-          showNotification('Shareable link copied to clipboard!');
-        }, () => {
-          showNotification('Failed to copy link.', 3000);
-        });
+        const compressed = LZString.compressToEncodedURIComponent(json);
+        const url = `${location.origin}${location.pathname}?map=${compressed}`;
+        const longUrl = url; // your generated share link
+        fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`)
+          .then(res => res.text())
+          .then(shortUrl => {
+            navigator.clipboard.writeText(shortUrl);
+            showNotification('Short shareable link copied to clipboard!');
+          })
+          .catch(() => {
+            navigator.clipboard.writeText(longUrl);
+            showNotification('Could not shorten link, copied full link instead.');
+          });
       };
       // Keyboard navigation
       document.getElementById('map-grid').addEventListener('keydown', e => {
@@ -878,7 +907,7 @@
       const params = new URLSearchParams(window.location.search);
       if (params.has('map')) {
         try {
-          const json = decodeURIComponent(escape(atob(params.get('map'))));
+          const json = LZString.decompressFromEncodedURIComponent(params.get('map'));
           const { mapState: ms, exploredState: es } = JSON.parse(json);
           if (Array.isArray(ms) && Array.isArray(es) && ms.length === GRID_SIZE*GRID_SIZE && es.length === GRID_SIZE*GRID_SIZE) {
             mapState = ms;
