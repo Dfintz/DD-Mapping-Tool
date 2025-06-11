@@ -1261,23 +1261,41 @@
         img.alt = icon.label;
         img.title = icon.label;
         img.tabIndex = 0;
-        img.onclick = () => {
-          grid.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
+
+        // Highlight if already in cell
+        if (
+          iconPickerCellIdx != null &&
+          mapState[iconPickerCellIdx] &&
+          mapState[iconPickerCellIdx].some(ic => ic.name === icon.name)
+        ) {
           img.classList.add('selected');
-          iconPickerSelectedIcon = icon;
-          // Place icon immediately on click
+        }
+
+        img.onclick = () => {
           if (iconPickerCellIdx != null) {
-            pushUndo();
-            mapState[iconPickerCellIdx] = mapState[iconPickerCellIdx] || [];
-            if (!mapState[iconPickerCellIdx].some(ic => ic.name === icon.name)) {
+            const cellIcons = mapState[iconPickerCellIdx] || [];
+            const iconIdx = cellIcons.findIndex(ic => ic.name === icon.name);
+            if (iconIdx !== -1) {
+              // Icon is already in cell: remove it
+              pushUndo();
+              cellIcons.splice(iconIdx, 1);
+              mapState[iconPickerCellIdx] = cellIcons;
+              renderGrid();
+              saveToLocalStorage();
+              showIconPickerFeedback('Icon removed!');
+              img.classList.remove('selected');
+            } else {
+              // Icon not in cell: add it
+              pushUndo();
+              mapState[iconPickerCellIdx] = mapState[iconPickerCellIdx] || [];
               mapState[iconPickerCellIdx].push(icon);
-              // --- Set cell as explored when icon is applied ---
               exploredState[iconPickerCellIdx] = true;
               renderGrid();
               saveToLocalStorage();
               showIconPickerFeedback('Icon placed!');
-            } else {
-              showIconPickerFeedback('Icon already in cell!');
+              // Highlight the newly placed icon
+              grid.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
+              img.classList.add('selected');
             }
           }
         };
