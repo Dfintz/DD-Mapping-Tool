@@ -1996,11 +1996,17 @@
 
     function copyToClipboardOrPrompt(link) {
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(link).catch(() => {
-          window.prompt('Copy this link:', link);
-        });
+        navigator.clipboard.writeText(link)
+          .then(() => {
+            showNotification('Link copied to clipboard!');
+          })
+          .catch(() => {
+            window.prompt('Copy this link:', link);
+            showNotification('Copy this link manually.');
+          });
       } else {
         window.prompt('Copy this link:', link);
+        showNotification('Copy this link manually.');
       }
     }
   </script>
