@@ -931,15 +931,23 @@
       };
       document.getElementById('export-json').onclick = () => {
         // Build export data with coordinate labels and subcells
-        const exportMap = mapState.map((cell, idx) => ({
-          coord: getCellLabel(idx),
-          icons: Array.isArray(cell) ? cell : [],
-          subcells: cell && cell.subcells ? cell.subcells : [
+        const exportMap = mapState.map((cell, idx) => {
+          let icons = Array.isArray(cell) ? cell.filter(ic => !ic.subcells) : [];
+          let subcells = (cell && cell.subcells) ? cell.subcells : [
             [[], [], []],
             [[], [], []],
             [[], [], []]
-          ]
-        }));
+          ];
+          // If cell is an array and has .subcells, remove subcells from icons
+          if (Array.isArray(cell) && cell.subcells) {
+            icons = cell.filter(ic => typeof ic === 'object' && ic.name);
+          }
+          return {
+            coord: getCellLabel(idx),
+            icons,
+            subcells
+          };
+        });
         const exportExplored = exploredState.map((val, idx) => ({
           coord: getCellLabel(idx),
           explored: val
@@ -980,18 +988,29 @@
               ms = Array(GRID_SIZE * GRID_SIZE);
               es = Array(GRID_SIZE * GRID_SIZE);
               data.map.forEach((cell, idx) => {
-                ms[idx] = cell.icons || [];
-                // Restore subcells if present
-                if (cell.subcells) {
-                  ms[idx].subcells = cell.subcells;
-                }
+                // Always use object structure for each cell
+                ms[idx] = {
+                  icons: Array.isArray(cell.icons) ? cell.icons : [],
+                  subcells: cell.subcells ? cell.subcells : [
+                    [[], [], []],
+                    [[], [], []],
+                    [[], [], []]
+                  ]
+                };
               });
               data.explored.forEach((cell, idx) => {
                 es[idx] = !!cell.explored;
               });
             } else if (Array.isArray(data.mapState) && Array.isArray(data.exploredState)) {
               // Old format
-              ms = data.mapState;
+              ms = data.mapState.map(cell => ({
+                icons: Array.isArray(cell) ? cell : [],
+                subcells: [
+                  [[], [], []],
+                  [[], [], []],
+                  [[], [], []]
+                ]
+              }));
               es = data.exploredState;
             }
 
@@ -1018,15 +1037,22 @@
       document.getElementById('export-png').onclick = () => exportPNG();
       document.getElementById('share-link').onclick = () => {
         // Build export data with coordinate labels and subcells (same as JSON export)
-        const exportMap = mapState.map((cell, idx) => ({
-          coord: getCellLabel(idx),
-          icons: Array.isArray(cell) ? cell : [],
-          subcells: cell && cell.subcells ? cell.subcells : [
+        const exportMap = mapState.map((cell, idx) => {
+          let icons = Array.isArray(cell) ? cell.filter(ic => !ic.subcells) : [];
+          let subcells = (cell && cell.subcells) ? cell.subcells : [
             [[], [], []],
             [[], [], []],
             [[], [], []]
-          ]
-        }));
+          ];
+          if (Array.isArray(cell) && cell.subcells) {
+            icons = cell.filter(ic => typeof ic === 'object' && ic.name);
+          }
+          return {
+            coord: getCellLabel(idx),
+            icons,
+            subcells
+          };
+        });
         const exportExplored = exploredState.map((val, idx) => ({
           coord: getCellLabel(idx),
           explored: val
@@ -1506,6 +1532,108 @@
         }
       }
       return false;
+    }
+
+    // --- PNG Export ---
+    function exportPNG() {
+      const gridElem = document.getElementById('map-grid');
+      const cellSize = 94; // px (default, matches CSS for desktop)
+      const gridSize = GRID_SIZE;
+      const canvas = document.createElement('canvas');
+      const scale = window.devicePixelRatio || 1;
+      canvas.width = cellSize * gridSize * scale;
+      canvas.height = cellSize * gridSize * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+
+      // Background
+      ctx.fillStyle = '#c2b280';
+      ctx.fillRect(0, 0, cellSize * gridSize, cellSize * gridSize);
+
+      // Draw each cell
+      for (let y = gridSize - 1; y >= 0; y--) {
+        for (let x = 0; x < gridSize; x++) {
+          const idx = y * gridSize + x;
+          const cellX = x * cellSize;
+          const cellY = (gridSize - 1 - y) * cellSize;
+          // Cell background
+          ctx.save();
+          ctx.beginPath();
+          ctx.fillStyle = exploredState[idx] ? 'rgba(30,20,10,0.95)' : 'rgba(60,60,60,0.7)';
+          ctx.strokeStyle = '#ffe082';
+          ctx.lineWidth = 2;
+          ctx.roundRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4, 8);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+          // Draw subcells (3x3 grid)
+          const cell = mapState[idx];
+          const subcells = (cell && cell.subcells) ? cell.subcells : [
+            [[], [], []],
+            [[], [], []],
+            [[], [], []]
+          ];
+          for (let gy = 0; gy < 3; gy++) {
+            for (let gx = 0; gx < 3; gx++) {
+              const iconsArr = subcells[gy][gx];
+              const iconCount = iconsArr.length;
+              // Calculate subcell center
+              const subcellX = cellX + gx * (cellSize / 3) + (cellSize / 6);
+              const subcellY = cellY + gy * (cellSize / 3) + (cellSize / 6);
+              if (iconCount === 1) {
+                // Draw single icon centered
+                drawIconOnCanvas(ctx, iconsArr[0], subcellX, subcellY, 18);
+              } else if (iconCount === 2) {
+                // Two icons side by side
+                drawIconOnCanvas(ctx, iconsArr[0], subcellX - 7, subcellY, 14);
+                drawIconOnCanvas(ctx, iconsArr[1], subcellX + 7, subcellY, 14);
+              } else if (iconCount === 3 || iconCount === 4) {
+                // 2x2 grid
+                const positions = [
+                  [-7, -7], [7, -7], [-7, 7], [7, 7]
+                ];
+                for (let i = 0; i < iconCount; i++) {
+                  drawIconOnCanvas(ctx, iconsArr[i], subcellX + positions[i][0], subcellY + positions[i][1], 12);
+                }
+              }
+            }
+          }
+          // Draw coordinate label
+          ctx.save();
+          ctx.font = 'bold 16px sans-serif';
+          ctx.fillStyle = '#ffe082cc';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'bottom';
+          const rowLabel = String.fromCharCode(65 + y);
+          const colLabel = (x + 1).toString();
+          ctx.fillText(`${rowLabel}${colLabel}`, cellX + cellSize - 8, cellY + cellSize - 8);
+          ctx.restore();
+        }
+      }
+      // Download PNG
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `dune_map_${new Date().toISOString().replace(/[:.]/g,'-')}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    }
+
+    // Helper to draw an icon on canvas at (cx, cy) with given size
+    function drawIconOnCanvas(ctx, icon, cx, cy, size) {
+      if (!icon || !icon.file) return;
+      const img = new window.Image();
+      img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+      // Draw synchronously if cached, else async
+      if (img.complete) {
+        ctx.drawImage(img, cx - size/2, cy - size/2, size, size);
+      } else {
+        img.onload = () => {
+          ctx.drawImage(img, cx - size/2, cy - size/2, size, size);
+        };
+      }
     }
   </script>
 </body>
