@@ -933,17 +933,12 @@
         // Build export data with coordinate labels and subcells
         const exportMap = mapState.map((cell, idx) => {
           // Always use object structure for each cell
-          let icons = [];
-          let subcells = [
+          let icons = (cell && cell.icons) ? cell.icons : [];
+          let subcells = (cell && cell.subcells) ? cell.subcells : [
             [[], [], []],
             [[], [], []],
             [[], [], []]
           ];
-          if (cell && typeof cell === 'object') {
-            if (Array.isArray(cell.icons)) icons = cell.icons;
-            else if (Array.isArray(cell)) icons = cell.filter(ic => ic && ic.name);
-            if (cell.subcells) subcells = cell.subcells;
-          }
           return {
             coord: getCellLabel(idx),
             icons,
@@ -1652,7 +1647,6 @@
             ctx.strokeStyle = '#ffe082';
             ctx.lineWidth = 2;
             ctx.roundRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4, 8);
-           
             ctx.fill();
             ctx.stroke();
             ctx.restore();
