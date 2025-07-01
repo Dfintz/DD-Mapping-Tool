@@ -1562,6 +1562,7 @@ function rebuildHouseCache() {
       const canvasWidth = cellSize * gridSize + legendWidth * 2 + legendPadding * 2;
       const canvasHeight = topBarHeight + cellSize * gridSize + bottomBarHeight;
       const scale = window.devicePixelRatio || 1;
+      
       const canvas = document.createElement('canvas');
       canvas.width = canvasWidth * scale;
       canvas.height = canvasHeight * scale;
@@ -1585,270 +1586,361 @@ function rebuildHouseCache() {
         }
       }
 
-      function drawOverlay() {
-        // Count images that need loading
-        imagesToLoad = resourceIcons.length + houseIcons.length + 2; // +2 for bg and fwb
-        
-        // Use cached images or load with proper tracking
-        for (const icon of resourceIcons) {
-          const img = getCachedImage(icon.file) || new window.Image();
-          if (img.complete) {
-            ctx.drawImage(img, /* coordinates */);
-            imagesLoaded++;
-          } else {
-            img.onload = () => {
-              ctx.drawImage(img, /* coordinates */);
-              imagesLoaded++;
-              checkAllImagesLoaded();
-            };
+      function imageLoadHandler() {
+        imagesLoaded++;
+        checkAllImagesLoaded();
+      }
+
+      // Start drawing
+      drawBackground();
+
+      function drawBackground() {
+        // Fill entire canvas with white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // Load and draw background image only behind the grid
+        const bgImg = getCachedImage('background.jpg') || new Image();
+        if (bgImg.complete && bgImg.naturalWidth > 0) {
+          drawBackgroundImage(bgImg);
+        } else {
+          imagesToLoad++;
+          bgImg.onload = () => {
+            drawBackgroundImage(bgImg);
+            imageLoadHandler();
+          };
+          bgImg.onerror = () => {
+            console.warn('Failed to load background image');
+            imageLoadHandler();
+          };
+          if (!bgImg.src) {
+            bgImg.src = 'background.jpg';
           }
         }
         
+        drawTopBar();
+        drawGrid();
+        drawLegends();
+        drawBottomBar();
+      }
+
+      function drawBackgroundImage(bgImg) {
+        // Save current context
+        ctx.save();
+        
+        // Create clipping region for grid area only
+        const gridX = legendWidth + legendPadding;
+        const gridY = topBarHeight;
+        const gridWidth = cellSize * gridSize;
+        const gridHeight = cellSize * gridSize;
+        
+        ctx.beginPath();
+        ctx.rect(gridX, gridY, gridWidth, gridHeight);
+        ctx.clip();
+        
+        // Draw background image to cover the grid area
+        ctx.drawImage(bgImg, gridX, gridY, gridWidth, gridHeight);
+        
+        // Restore context (removes clipping)
+        ctx.restore();
+      }
+
+      function drawTopBar() {
+        // Draw solid background for top bar
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(0, 0, canvasWidth, topBarHeight);
+
+        // Draw logo
+        const fwbImg = getCachedImage('fwb.png') || new Image();
+        if (fwbImg.complete && fwbImg.naturalWidth > 0) {
+          const logoSize = 40;
+          ctx.drawImage(fwbImg, 20, 10, logoSize, logoSize);
+        } else {
+          imagesToLoad++;
+          fwbImg.onload = () => {
+            const logoSize = 40;
+            ctx.drawImage(fwbImg, 20, 10, logoSize, logoSize);
+            imageLoadHandler();
+          };
+          fwbImg.onerror = () => {
+            console.warn('Failed to load logo image');
+            imageLoadHandler();
+          };
+          if (!fwbImg.src) {
+            fwbImg.src = 'fwb.png';
+          }
+        }
+
+        // Draw title
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Dune Awakening Deep Desert Map', canvasWidth / 2, 35);
+      }
+
+      function drawGrid() {
+        const gridX = legendWidth + legendPadding;
+        const gridY = topBarHeight;
+
+        // Draw grid lines
+        ctx.strokeStyle = '#34495e';
+        ctx.lineWidth = 1;
+
+        // Vertical lines
+        for (let i = 0; i <= gridSize; i++) {
+          ctx.beginPath();
+          ctx.moveTo(gridX + i * cellSize, gridY);
+          ctx.lineTo(gridX + i * cellSize, gridY + gridSize * cellSize);
+          ctx.stroke();
+        }
+
+        // Horizontal lines
+        for (let i = 0; i <= gridSize; i++) {
+          ctx.beginPath();
+          ctx.moveTo(gridX, gridY + i * cellSize);
+          ctx.lineTo(gridX + gridSize * cellSize, gridY + i * cellSize);
+          ctx.stroke();
+        }
+
+        // Draw coordinate labels
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+
+        // Column labels (A, B, C, etc.)
+        for (let col = 0; col < gridSize; col++) {
+          const label = String.fromCharCode(65 + col);
+          ctx.fillText(label, gridX + col * cellSize + cellSize / 2, gridY - 5);
+        }
+
+        // Row labels (1, 2, 3, etc.)
+        ctx.textAlign = 'right';
+        for (let row = 0; row < gridSize; row++) {
+          ctx.fillText((row + 1).toString(), gridX - 5, gridY + row * cellSize + cellSize / 2 + 4);
+        }
+
+        // Draw cell contents
+        drawCellContents(gridX, gridY);
+      }
+
+      function drawCellContents(gridX, gridY) {
+        for (let idx = 0; idx < mapState.length; idx++) {
+          const row = Math.floor(idx / gridSize);
+          const col = idx % gridSize;
+          const cellX = gridX + col * cellSize;
+          const cellY = gridY + row * cellSize;
+
+          // Draw explored indicator
+          if (exploredState[idx]) {
+            ctx.fillStyle = 'rgba(76, 175, 80, 0.3)';
+            ctx.fillRect(cellX + 1, cellY + 1, cellSize - 2, cellSize - 2);
+          }
+
+          // Draw cell icons
+          const cell = mapState[idx];
+          if (cell && cell.icons && cell.icons.length > 0) {
+            cell.icons.forEach((iconName, iconIdx) => {
+              const icon = [...resourceIcons, ...houseIcons].find(i => i.name === iconName);
+              if (icon) {
+                drawIconOnCanvas(ctx, icon, cellX, cellY, iconIdx);
+              }
+            });
+          }
+
+          // Draw subcell icons
+          if (cell && cell.subcells) {
+            drawSubcellIcons(ctx, cell.subcells, cellX, cellY);
+          }
+        }
+      }
+
+      function drawIconOnCanvas(ctx, icon, cellX, cellY, iconIdx) {
+        if (!icon || !icon.file) return;
+        
+        const iconSize = 30;
+        const positions = [
+          { x: cellX + 15, y: cellY + 15 },
+          { x: cellX + cellSize - 15, y: cellY + 15 },
+          { x: cellX + 15, y: cellY + cellSize - 15 },
+          { x: cellX + cellSize - 15, y: cellY + cellSize - 15 }
+        ];
+        
+        const pos = positions[iconIdx % positions.length];
+        
+        const img = getCachedImage(icon.file) || new Image();
+        if (img.complete && img.naturalWidth > 0) {
+          ctx.drawImage(img, pos.x - iconSize/2, pos.y - iconSize/2, iconSize, iconSize);
+        } else {
+          imagesToLoad++;
+          img.onload = () => {
+            ctx.drawImage(img, pos.x - iconSize/2, pos.y - iconSize/2, iconSize, iconSize);
+            imageLoadHandler();
+          };
+          img.onerror = () => {
+            console.warn('Failed to load icon:', icon.file);
+            imageLoadHandler();
+          };
+          if (!img.src) {
+            img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+          }
+        }
+      }
+
+      function drawSubcellIcons(ctx, subcells, cellX, cellY) {
+        const subcellSize = cellSize / 3;
+        
+        for (let subRow = 0; subRow < 3; subRow++) {
+          for (let subCol = 0; subCol < 3; subCol++) {
+            const subcellIcons = subcells[subRow][subCol];
+            if (subcellIcons && subcellIcons.length > 0) {
+              const subX = cellX + subCol * subcellSize;
+              const subY = cellY + subRow * subcellSize;
+              
+              subcellIcons.forEach((iconName, iconIdx) => {
+                const icon = [...resourceIcons, ...houseIcons].find(i => i.name === iconName);
+                if (icon) {
+                  const iconSize = 15;
+                  const centerX = subX + subcellSize / 2;
+                  const centerY = subY + subcellSize / 2;
+                  
+                  const img = getCachedImage(icon.file) || new Image();
+                  if (img.complete && img.naturalWidth > 0) {
+                    ctx.drawImage(img, centerX - iconSize/2, centerY - iconSize/2, iconSize, iconSize);
+                  } else {
+                    imagesToLoad++;
+                    img.onload = () => {
+                      ctx.drawImage(img, centerX - iconSize/2, centerY - iconSize/2, iconSize, iconSize);
+                      imageLoadHandler();
+                    };
+                    img.onerror = () => {
+                      console.warn('Failed to load subcell icon:', icon.file);
+                      imageLoadHandler();
+                    };
+                    if (!img.src) {
+                      img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                    }
+                  }
+                }
+              });
+            }
+          }
+        }
+      }
+
+      function drawLegends() {
+        // Left legend (Resources)
+        drawLegend('Resources', resourceIcons, legendPadding, topBarHeight + 20);
+        
+        // Right legend (Houses)
+        drawLegend('Houses', houseIcons, canvasWidth - legendWidth - legendPadding, topBarHeight + 20);
+      }
+
+      function drawLegend(title, icons, x, y) {
+        // Draw solid background for legend
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.fillRect(x - 10, y - 30, legendWidth + 20, icons.length * (legendIconSize + legendGap) + 60);
+        
+        // Draw border
+        ctx.strokeStyle = '#bdc3c7';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - 10, y - 30, legendWidth + 20, icons.length * (legendIconSize + legendGap) + 60);
+
+        // Draw title
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = legendFont;
+        ctx.textAlign = 'left';
+        ctx.fillText(title, x, y - 5);
+
+        // Draw legend items
+        ctx.font = legendLabelFont;
+        icons.forEach((icon, idx) => {
+          const itemY = y + 20 + idx * (legendIconSize + legendGap);
+          
+          // Draw icon
+          const img = getCachedImage(icon.file) || new Image();
+          if (img.complete && img.naturalWidth > 0) {
+            ctx.drawImage(img, x, itemY, legendIconSize, legendIconSize);
+          } else {
+            imagesToLoad++;
+            img.onload = () => {
+              ctx.drawImage(img, x, itemY, legendIconSize, legendIconSize);
+              imageLoadHandler();
+            };
+            img.onerror = () => {
+              console.warn('Failed to load legend icon:', icon.file);
+              imageLoadHandler();
+            };
+            if (!img.src) {
+              img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+            }
+          }
+
+          // Draw label
+          ctx.fillText(icon.name, x + legendIconSize + 10, itemY + legendIconSize / 2 + 5);
+        });
+      }
+
+      function drawBottomBar() {
+        const bottomY = canvasHeight - bottomBarHeight;
+        
+        // Draw solid background for bottom bar
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.fillRect(0, bottomY, canvasWidth, bottomBarHeight);
+        
+        // Draw border
+        ctx.strokeStyle = '#bdc3c7';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0, bottomY, canvasWidth, bottomBarHeight);
+
+        // Draw storm timer
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.textAlign = 'center';
+        
+        const nextStorm = getNextStormTime();
+        const now = new Date();
+        const timeDiff = nextStorm.getTime() - now.getTime();
+        
+        let timeText = 'Storm Timer: ';
+        if (timeDiff > 0) {
+          const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+          timeText += `${days}d ${hours}h ${minutes}m`;
+        } else {
+          timeText += 'Active Now!';
+        }
+        
+        ctx.fillText(timeText, canvasWidth / 2, bottomY + 30);
+        
+        // Draw export info
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Exported on ${new Date().toLocaleString()}`, canvasWidth / 2, bottomY + 55);
+      }
+
+      // If no images need loading, trigger download immediately
+      if (imagesToLoad === 0) {
         checkAllImagesLoaded();
       }
     }
-    // --- Helper to draw an icon on canvas at (cx, cy) with given size ---
-    function drawIconOnCanvas(ctx, icon, cx, cy, size) {
-      if (!icon || !icon.file) return;
-      const img = new window.Image();
-      img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
-      // Draw synchronously if cached, else async
-      if (img.complete) {
-        ctx.drawImage(img, cx - size/2, cy - size/2, size, size);
-      } else {
-        img.onload = () => {
-          ctx.drawImage(img, cx - size/2, cy - size/2, size, size);
-        };
+    // Helper function to get next storm time (if not already defined)
+    function getNextStormTime() {
+      const now = new Date();
+      const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
+      
+      // Storms occur every Tuesday at 17:00 UTC
+      let nextWeek = new Date(utcNow);
+      nextWeek.setUTCDate(utcNow.getUTCDate() + ((2 + 7 - utcNow.getUTCDay()) % 7));
+      nextWeek.setUTCHours(17, 0, 0, 0);
+      
+      // If it's Tuesday and past 17:00 UTC, move to next week
+      if (utcNow.getUTCDay() === 2 && utcNow.getUTCHours() >= 17) {
+        nextWeek.setUTCDate(nextWeek.getUTCDate() + 7);
+        nextWeek.setUTCHours(17, 0, 0, 0);
       }
+      
+      return nextWeek;
     }
-
-    // Add debounced rendering and selective updates
-    let renderGridPending = false;
-
-    function requestGridRender() {
-      if (renderGridPending) return;
-      renderGridPending = true;
-      requestAnimationFrame(() => {
-        renderGrid();
-        renderGridPending = false;
-      });
-    }
-
-    // Replace individual cell updates instead of full grid rebuilds
-    function updateCell(idx) {
-      const cellElement = document.querySelector(`[data-idx="${idx}"]`);
-      if (cellElement) {
-        // Update only this specific cell instead of rebuilding entire grid
-        updateSingleCell(cellElement, idx);
-      }
-    }
-
-    function updateSingleCell(cellElement, idx) {
-      ensureCell(idx);
-      // Update cell content without rebuilding
-      const iconDiv = cellElement.querySelector('.cell-icons');
-      // Update only the icon content, preserve event listeners
-      updateCellIcons(iconDiv, idx);
-    }
-
-    // Add image preloading and caching
-const imageCache = new Map();
-
-function preloadImages() {
-  const allIcons = [...resourceIcons, ...houseIcons];
-  allIcons.forEach(icon => {
-    const img = new Image();
-    img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
-    imageCache.set(icon.file, img);
-  });
-  
-  // Preload background and logo
-  const bgImg = new Image();
-  bgImg.src = 'background.jpg';
-  imageCache.set('background.jpg', bgImg);
-  
-  const fwbImg = new Image();
-  fwbImg.src = 'fwb.png';
-  imageCache.set('fwb.png', fwbImg);
-}
-
-function getCachedImage(filename) {
-  return imageCache.get(filename) || null;
-}
-
-// Call preloadImages() in DOMContentLoaded
-
-// Reuse objects instead of creating new ones
-const tempIconPositions = [
-  { left: '2px', top: '2px' },
-  { right: '2px', top: '2px' },
-  { left: '2px', bottom: '2px' },
-  { right: '2px', bottom: '2px' }
-];
-
-// Reuse DOM elements where possible
-const cellElementPool = [];
-
-function createOrReuseCellElement() {
-  return cellElementPool.pop() || document.createElement('div');
-}
-
-function recycleCellElement(element) {
-  // Clean element and add to pool
-  element.innerHTML = '';
-  element.className = 'map-cell';
-  cellElementPool.push(element);
-}
-
-// Use event delegation instead of individual listeners
-document.getElementById('map-grid').addEventListener('click', (e) => {
-  const cell = e.target.closest('.map-cell');
-  if (cell) {
-    const idx = parseInt(cell.dataset.idx);
-    handleCellClick(e, idx);
-  }
-});
-
-// Similar for other events (dragover, drop, contextmenu)
-
-// Add the missing getCellLabel function
-function getCellLabel(idx) {
-  const x = idx % GRID_SIZE;
-  const y = Math.floor(idx / GRID_SIZE);
-  const rowLabel = String.fromCharCode(65 + y);
-  const colLabel = (x + 1).toString();
-  return `${rowLabel}${colLabel}`;
-}
-
-// Fix the share link function - replace the existing share-link onclick handler
-document.getElementById('share-link').onclick = () => {
-  // Build export data with coordinate labels and subcells (same as JSON export)
-  const exportMap = mapState.map((cell, idx) => {
-    // Always use object structure for each cell
-    let icons = (cell && cell.icons) ? cell.icons : [];
-    let subcells = (cell && cell.subcells) ? cell.subcells : [
-      [[], [], []],
-      [[], [], []],
-      [[], [], []]
-    ];
-    return {
-      coord: getCellLabel(idx),
-      icons,
-      subcells
-    };
-  });
-  const exportExplored = exploredState.map((val, idx) => ({
-    coord: getCellLabel(idx),
-    explored: val
-  }));
-
-  const data = {
-    map: exportMap,
-    explored: exportExplored,
-    date: new Date().toISOString()
-  };
-
-  const json = JSON.stringify(data);
-  const compressed = LZString.compressToEncodedURIComponent(json);
-  const url = `${location.origin}${location.pathname}?map=${compressed}`;
-  const longUrl = url;
-
-  fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`)
-    .then(res => res.text())
-    .then(shortUrl => {
-      // Only copy the TinyURL link to clipboard
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(shortUrl)
-          .then(() => showNotification('Short shareable link copied to clipboard!'))
-          .catch(() => {
-            window.prompt('Copy this link:', shortUrl);
-            showNotification('Copy this link manually.');
-          });
-      } else {
-        window.prompt('Copy this link:', shortUrl);
-        showNotification('Copy this link manually.');
-      }
-    })
-    .catch(() => {
-      window.prompt('Copy this link:', longUrl);
-      showNotification('Could not shorten link, copied full link instead.');
-    });
-};
-
-// Also add missing functions for other features to work properly
-function getNextStorm(now, server) {
-  // This function is called in the storm timer but not defined
-  // Add basic implementation for now
-  const nextWeek = new Date(now);
-  nextWeek.setDate(nextWeek.getDate() + 7);
-  
-  if (server === 'na') {
-    nextWeek.setUTCDay(2); // Tuesday
-    nextWeek.setUTCHours(0, 0, 0, 0);
-  } else if (server === 'sa') {
-    nextWeek.setUTCDay(1); // Monday
-    nextWeek.setUTCHours(22, 0, 0, 0);
-  } else if (server === 'asia') {
-    nextWeek.setUTCDay(1); // Monday
-    nextWeek.setUTCHours(11, 0, 0, 0);
-  } else if (server === 'oceania') {
-    nextWeek.setUTCDay(1); // Monday
-    nextWeek.setUTCHours(9, 0, 0, 0);
-  } else {
-    // Europe default
-    nextWeek.setUTCDay(1); // Monday
-    nextWeek.setUTCHours(17, 0, 0, 0);
-  }
-  
-  return nextWeek;
-}
-
-// Fix the URL loading section as well - replace the existing URL loading code
-const params = new URLSearchParams(window.location.search);
-if (params.has('map')) {
-  try {
-    const json = LZString.decompressFromEncodedURIComponent(params.get('map'));
-    const data = JSON.parse(json);
-
-    let ms, es;
-    if (Array.isArray(data.map) && Array.isArray(data.explored)) {
-      // New format with coord labels
-      ms = Array(GRID_SIZE * GRID_SIZE);
-      es = Array(GRID_SIZE * GRID_SIZE);
-      data.map.forEach((cell, idx) => {
-        // Always use object structure for each cell
-        ms[idx] = {
-          icons: Array.isArray(cell.icons) ? cell.icons : [],
-          subcells: cell.subcells ? cell.subcells : [
-            [[], [], []],
-            [[], [], []],
-            [[], [], []]
-          ]
-        };
-      });
-      data.explored.forEach((cell, idx) => {
-        es[idx] = !!cell.explored;
-      });
-    } else if (Array.isArray(data.mapState) && Array.isArray(data.exploredState)) {
-      // Old format
-      ms = data.mapState;
-      es = data.exploredState;
-    }
-
-    if (
-      Array.isArray(ms) && Array.isArray(es) &&
-      ms.length === GRID_SIZE * GRID_SIZE &&
-      es.length === GRID_SIZE * GRID_SIZE
-    ) {
-      mapState = ms;
-      exploredState = es;
-      renderGrid();
-      showNotification('Loaded map from link!');
-    }
-  } catch {
-    showNotification('Failed to load map from link.', 3000);
-  }
-}
   </script>
 </body>
 </html>
