@@ -122,6 +122,7 @@
       align-items: center;
       justify-content: center;
       transition: box-shadow 0.2s;
+      overflow: visible;
     }
     .map-cell.selected {
       box-shadow: 0 0 0 3px #ffe082;
@@ -137,22 +138,13 @@
       z-index: 1;
     }
     .cell-icons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2px;
-      z-index: 2;
+      width: 100%;
+      height: 100%;
       position: relative;
-      max-width: 100%;
-      max-height: 100%;
-      justify-content: center;
+      display: flex;
       align-items: center;
-      overflow: hidden; /* Prevent icons from overflowing the cell */
-    }
-    .cell-icons img {
-      max-width: 90%;
-      max-height: 90%;
-      object-fit: contain;
-      display: block;
+      justify-content: center;
+      pointer-events: none;
     }
     /* Controls */
     #controls {
@@ -275,6 +267,61 @@
       border-color: #ffe066;
       background: rgba(255, 224, 102, 0.2);
     }
+    /* 3x3 Grid Overlay Styles */
+    .cell-3x3-grid {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      pointer-events: auto;
+      z-index: 2;
+    }
+    .cell-3x3-row {
+      display: flex;
+      width: 100%;
+      height: 33.33%;
+    }
+    .cell-3x3-cell {
+      flex: 1 1 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7em;
+      color: #ffe082;
+      opacity: 0.7;
+      border: 1px solid rgba(255,224,130,0.15);
+      background: none;
+      min-width: 0;
+      min-height: 0;
+      pointer-events: auto;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .cell-3x3-cell.active {
+      background: rgba(255,224,130,0.18);
+      opacity: 1;
+      color: #2d2211;
+      font-weight: bold;
+    }
+    .cell-3x3-center {
+      font-weight: bold;
+      color: #fffbe6;
+      opacity: 0.9;
+    }
+    .cell-3x3-north, .cell-3x3-south, .cell-3x3-east, .cell-3x3-west {
+      font-weight: bold;
+    }
+    .cell-3x3-cell img {
+      width: 18px;
+      height: 18px;
+      margin: 1px;
+      pointer-events: none;
+    }
     /* Responsive */
     @media (max-width: 900px) {
       main {
@@ -337,12 +384,12 @@
   </style>
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
 </head>
+<!-- Icon Picker Modal -->
 <div id="iconPickerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:2000;">
   <div class="icon-picker-content" style="background:rgba(40,40,40,0.95);border:2px solid #ffe066;padding:24px;border-radius:12px;max-width:600px;width:90vw;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.6);position:relative;">
     <h3 style="margin-top:0;">Select an Icon</h3>
     <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
     <div class="icon-picker-buttons" style="margin-top:10px;">
-      <button id="toggleExploredButton" class="icon-picker-btn" type="button">Toggle Explored</button>
       <button class="icon-picker-btn cancel" type="button" id="closeIconPickerBtn">Escape</button>
     </div>
     <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;"></div>
@@ -386,7 +433,6 @@
         <button class="control-btn" id="undo" aria-label="Undo">Undo</button>
         <button class="control-btn" id="redo" aria-label="Redo">Redo</button>
         <button class="control-btn" id="clear-map" aria-label="Clear Map">Clear Map</button>
-        <button class="control-btn" id="open-poi-notes-btn" aria-label="POI Notes">POI Notes</button>
       </div>
       <div id="map-grid" tabindex="0" aria-label="Deep Desert Map Grid" role="grid">
         <!-- 9x9 grid cells will be injected here -->
@@ -396,30 +442,10 @@
         <button class="control-btn" id="import-json" aria-label="Import from JSON">Import JSON</button>
         <button class="control-btn" id="export-png" aria-label="Export as PNG">Export PNG</button>
         <button class="control-btn" id="share-link" aria-label="Get Shareable Link">Share Link</button>
+        <a class="control-btn" id="combine-maps-btn" href="https://petrosoratiou.github.io/Combine-Maps/" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;">Combine Maps</a>
       </div>
       <input type="file" id="import-file" accept="application/json" style="display:none" />
     </section>
-    <aside id="poi-notes-docket"
-      style="width:370px;min-width:220px;max-width:100vw;
-             background:rgba(40,30,15,0.98);border-radius:12px;
-             padding:1rem;box-shadow:0 2px 8px #000a;
-             display:none;flex-direction:column;gap:1.2rem;
-             height:fit-content;position:fixed;top:90px;right:40px;
-             z-index:3000;">
-      <div id="poi-notes-drag-handle"
-        style="cursor:move;height:28px;margin:-1rem -1rem 0 -1rem;background:rgba(60,50,30,0.18);border-top-left-radius:12px;border-top-right-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#ffe082;user-select:none;z-index:1;">
-        ⇕ Drag POI Tracker
-      </div>
-      <button id="close-poi-notes-btn" class="control-btn"
-        style="position:absolute;top:12px;right:12px;padding:2px 12px;font-size:1.2em;">✕</button>
-      <div style="font-size:1.2rem;font-weight:700;color:#ffe082;margin-bottom:0.5rem;">POI Schematic Tracker</div>
-      <div id="poi-notes-list" style="font-size:1em;max-height:540px;overflow-y:auto;"></div>
-    </aside>
-    <div id="poi-drops-summary" style="width:370px;min-width:220px;max-width:100vw;background:rgba(40,30,15,0.98);border-radius:12px;padding:1rem;box-shadow:0 2px 8px #000a;flex-direction:column;gap:1.2rem;height:fit-content;position:relative;margin-left:1.5rem;margin-bottom:1.5rem;">
-      <div style="font-size:1.1rem;font-weight:700;color:#ffe082;margin-bottom:0.5rem;">POI Drop Summary</div>
-      <button class="control-btn" id="export-poi-drops-csv" style="margin-bottom:0.7em;">Export Drop Summary (CSV)</button>
-      <div id="poi-drops-summary-list" style="font-size:1em;max-height:340px;overflow-y:auto;"></div>
-    </div>
   <!-- Help Button -->
   <button id="help-btn" class="control-btn" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:3000;" aria-label="Help">?</button>
 
@@ -435,30 +461,30 @@
         <li><b>Import</b> a saved map with the Import JSON button.</li>
         <li><b>Undo/Redo</b> your last actions with the respective buttons.</li>
         <li><b>Share Link</b> to copy a shareable map link.</li>
-        <li><b>POI Schematic Tracker</b> (POI Notes): Track and edit loot drops for Testing Stations and Shipwrecks. Open with the POI Notes button.</li>
-        <li><b>POI Drop Summary</b>: View and export all recorded drops as CSV.</li>
         <li><b>Clear Map</b> resets the map and all POI/loot data.</li>
         <li><b>Storm Timer</b> shows the next storm for your selected server and time zone.</li>
         <li>Unexplored cells appear faded (50% opacity).</li>
         <li>POI panel can be dragged and closed with <b>Esc</b> or the close button.</li>
-
       </ul>
       <button id="close-help-btn" class="control-btn" style="margin-top:1rem;">Close</button>
     </div>
   </div>
+  <div id="notification" style="display:none;position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#ffe082;color:#2d2211;font-weight:bold;padding:10px 32px;border-radius:8px;box-shadow:0 2px 8px #0006;z-index:5000;font-size:1.1em;pointer-events:none;min-width:180px;text-align:center;"></div>
   <script>
     // --- Icon Definitions ---
     const resourceIcons = [
       { name: 'Spice', file: 'Spice.svg', label: 'Spice' },
-      { name: 'Titanium', file: 'Titanium.svg', label: 'Titanium' },
-      { name: 'Stravidium', file: 'Stravidium.svg', label: 'Stravidium' },
+      { name: 'Titanium', file: 'Titanium.svg', label: 'Titanium Island' },
+      { name: 'Stravidium', file: 'Stravidium.svg', label: 'Stravidium Island' },
       { name: 'Shipwreck', file: 'Shipwreck.svg', label: 'Shipwreck' },
       { name: 'ShipwreckX2', file: 'ShipwreckX2.svg', label: 'Shipwreck (x2)' },
       { name: 'Cave', file: 'Cave.svg', label: 'Cave' },
       { name: 'TestingStation', file: 'TestingStation.svg', label: 'Testing Station' },
       { name: 'Poi', file: 'Poi.svg', label: 'POI' },
       { name: 'AuthorizedBase', file: 'AuthorizedBase.svg', label: 'Authorized' },
-      { name: 'HomeBase', file: 'HomeBase.svg', label: 'Home' }
+      { name: 'HomeBase', file: 'HomeBase.svg', label: 'Home' },
+      { name: 'StravidiumNode', file: 'StravidiumNode.svg', label: 'Stravidium Node' },
+      { name: 'TitaniumNode', file: 'TitaniumNode.svg', label: 'Titanium Node' }
     ];
     const houseIcons = [
       'House_Alexin','House_Argpsaz','House_Dyvetz','House_Ecaz','House_Hagal','House_Hurata','House_Imota','House_Kenola','House_Lindaren','House_Maros','House_Mikarrol','House_Moritani','House_Mutelli','House_Novebruns','House_Richese','House_Sor','House_Spinnette','House_Taligari','House_Thorvald','House_Tseida','House_Varota','House_Vernius','House_Wallach','House_Wayku','House_Wydras'
@@ -476,23 +502,6 @@
     let timezoneUTC = true;
     let selectedServer = 'europe';
 
-    // Debounce timers
-    let stationDropsSaveTimer = null;
-    let shipwreckDropsSaveTimer = null;
-
-    function saveUserStationDropsDebounced() {
-      clearTimeout(stationDropsSaveTimer);
-      stationDropsSaveTimer = setTimeout(() => {
-        localStorage.setItem('userStationDrops', JSON.stringify(userStationDrops));
-      }, 400); // adjust delay as needed
-    }
-
-    function saveUserShipwreckDropsDebounced() {
-      clearTimeout(shipwreckDropsSaveTimer);
-      shipwreckDropsSaveTimer = setTimeout(() => {
-        localStorage.setItem('userShipwreckDrops', JSON.stringify(userShipwreckDrops));
-      }, 400);
-    }
 
     // --- Utility Functions ---
     function showNotification(msg, timeout=2500) {
@@ -561,6 +570,126 @@
           // Icons
           const iconDiv = document.createElement('div');
           iconDiv.className = 'cell-icons';
+          // --- 3x3 Grid Overlay ---
+          const gridOverlay = document.createElement('div');
+          gridOverlay.className = 'cell-3x3-grid';
+          // 3x3 grid positions: [ [0,0],[0,1],[0,2] ... [2,2] ]
+          const gridLabels = [
+            ['',    'N',    ''],
+            ['W',   'C',    'E'],
+            ['',    'S',    '']
+          ];
+          // Store POIs for each subcell in mapState[idx].subcells
+          if (!mapState[idx]) mapState[idx] = [];
+          if (!mapState[idx].subcells) mapState[idx].subcells = [
+            [[], [], []],
+            [[], [], []],
+            [[], [], []]
+          ];
+          for (let gy = 0; gy < 3; gy++) {
+            const row = document.createElement('div');
+            row.className = 'cell-3x3-row';
+            for (let gx = 0; gx < 3; gx++) {
+              const cell3 = document.createElement('div');
+              cell3.className = 'cell-3x3-cell';
+              if (gridLabels[gy][gx]) {
+                cell3.textContent = gridLabels[gy][gx];
+                cell3.classList.add('cell-3x3-' + gridLabels[gy][gx].toLowerCase());
+              }
+              // Drag & drop support for POI placement
+              cell3.addEventListener('dragover', e => {
+                e.preventDefault();
+                cell3.classList.add('active');
+              });
+              cell3.addEventListener('dragleave', e => {
+                cell3.classList.remove('active');
+              });
+              cell3.addEventListener('drop', e => {
+                e.preventDefault();
+                cell3.classList.remove('active');
+                let icon;
+                try {
+                  icon = JSON.parse(e.dataTransfer.getData('application/json'));
+                } catch { return; }
+                if (!icon) return;
+                pushUndo();
+                // Only add if not already present in this subcell
+                if (!mapState[idx].subcells[gy][gx].some(ic => ic.name === icon.name)) {
+                  mapState[idx].subcells[gy][gx].push(icon);
+                  exploredState[idx] = true;
+                  renderGrid();
+                  renderLegend(); // Update legend after drop
+                  saveToLocalStorage();
+                }
+              });
+              // Icon picker on click
+              cell3.addEventListener('click', e => {
+                e.stopPropagation();
+                // Open icon picker for this subcell
+                openIconPicker(idx, gy, gx);
+              });
+              // Render icons in subcell
+              const iconsArr = mapState[idx].subcells[gy][gx];
+              const iconCount = iconsArr.length;
+              if (iconCount === 1) {
+                // Center single icon
+                const icon = iconsArr[0];
+                const img = document.createElement('img');
+                img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                img.alt = icon.label;
+                img.title = icon.label;
+                img.width = 18;
+                img.height = 18;
+                img.style.margin = '1px';
+                cell3.appendChild(img);
+              } else if (iconCount === 2) {
+                // Two icons side by side
+                iconsArr.forEach((icon, i) => {
+                  const img = document.createElement('img');
+                  img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                  img.alt = icon.label;
+                  img.title = icon.label;
+                  img.width = 14;
+                  img.height = 14;
+                  img.style.margin = '1px';
+                  img.style.position = 'absolute';
+                  img.style.left = i === 0 ? '2px' : 'auto';
+                  img.style.right = i === 1 ? '2px' : 'auto';
+                  img.style.top = '50%';
+                  img.style.transform = 'translateY(-50%)';
+                  cell3.style.position = 'relative';
+                  cell3.appendChild(img);
+                });
+              } else if (iconCount === 3 || iconCount === 4) {
+                // Arrange in 2x2 grid
+                iconsArr.forEach((icon, i) => {
+                  const img = document.createElement('img');
+                  img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                  img.alt = icon.label;
+                  img.title = icon.label;
+                  img.width = 12;
+                  img.height = 12;
+                  img.style.margin = '0px';
+                  img.style.position = 'absolute';
+                  // 2x2 grid positions
+                  const positions = [
+                    { left: '2px', top: '2px' },
+                    { right: '2px', top: '2px' },
+                    { left: '2px', bottom: '2px' },
+                    { right: '2px', bottom: '2px' }
+                  ];
+                  const pos = positions[i];
+                  for (const key in pos) img.style[key] = pos[key];
+                  cell3.style.position = 'relative';
+                  cell3.appendChild(img);
+                });
+              }
+              row.appendChild(cell3);
+            }
+            gridOverlay.appendChild(row);
+          }
+          iconDiv.appendChild(gridOverlay);
+
           const icons = mapState[idx] || [];
           const isUnexplored = !exploredState[idx];
           const hasIcons = icons.length > 0;
@@ -572,18 +701,7 @@
             cell.style.opacity = '1';
           }
 
-          for (const icon of icons) {
-            const img = document.createElement('img');
-            img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
-            img.alt = icon.label;
-            img.title = icon.label;
-            img.width = 36;
-            img.height = 36;
-            img.style.margin = '2px';
-            // Set icon opacity to 0 if unexplored and has icons
-            img.style.opacity = '1';
-            iconDiv.appendChild(img);
-          }
+          // Remove old icon rendering in main cell (handled by subcells now)
 
           // --- AUTO-EXPLORE: If a cell has icons, set it as explored ---
           if (icons.length > 0 && !exploredState[idx]) {
@@ -620,6 +738,7 @@
             exploredState[idx] = !exploredState[idx];
             renderGrid();
             saveToLocalStorage();
+            showNotification('Cell ' + (exploredState[idx] ? 'set as explored!' : 'set as unexplored!'));
           });
           cell.addEventListener('keydown', e => {
             if (e.key === 'Enter' && selectedIcon) {
@@ -649,6 +768,11 @@
               icon = JSON.parse(e.dataTransfer.getData('application/json'));
             } catch { return; }
             if (!icon) return;
+            // Prevent house drop if already placed
+            if (icon.name && icon.name.startsWith('House_') && isHousePlaced(icon.name)) {
+              showNotification('This house is already placed on the map!');
+              return;
+            }
             pushUndo();
             mapState[idx] = mapState[idx] || [];
             if (!mapState[idx].some(ic => ic.name === icon.name)) {
@@ -656,6 +780,7 @@
               // --- Set cell as explored when icon is dropped ---
               exploredState[idx] = true;
               renderGrid();
+              renderLegend(); // Update legend after drop
               saveToLocalStorage();
             }
           });
@@ -710,23 +835,33 @@
         btn.setAttribute('aria-label', icon.label);
         btn.tabIndex = 0;
         btn.draggable = true;
+        // Grey out if house is already placed
+        if (isHousePlaced(icon.name)) {
+          btn.style.opacity = '0.4';
+          btn.disabled = true;
+        }
         btn.innerHTML = `
           <div style="display:flex;flex-direction:column;align-items:center;">
-            <img src="Icons/${icon.file}" alt="${icon.label}" width="28" height="28">
+            <img src="Icons/${icon.file}" alt="${icon.label}" width="28" height="28" style="${isHousePlaced(icon.name) ? 'filter: grayscale(1) brightness(1.2);' : ''}">
             <span style="font-size:0.85em;color:#ffe082;margin-top:2px;white-space:nowrap;">${icon.label}</span>
           </div>
         `;
         btn.addEventListener('click', () => {
+          if (isHousePlaced(icon.name)) return;
           selectedIcon = icon;
           document.querySelectorAll('.legend-icon').forEach(b => b.classList.remove('selected'));
           btn.classList.add('selected');
         });
         btn.addEventListener('keydown', e => {
-          if (e.key === 'Enter' || e.key === ' ') {
+          if ((e.key === 'Enter' || e.key === ' ') && !isHousePlaced(icon.name)) {
             btn.click();
           }
         });
         btn.addEventListener('dragstart', e => {
+          if (isHousePlaced(icon.name)) {
+            e.preventDefault();
+            return;
+          }
           e.dataTransfer.setData('application/json', JSON.stringify(icon));
           e.dataTransfer.effectAllowed = 'copy';
         });
@@ -744,6 +879,7 @@
         }
       }
       renderGrid();
+      renderLegend(); // Update legend after placement
       saveToLocalStorage();
     }
     function handleIconRemoval(idx) {
@@ -752,16 +888,20 @@
         if (mapState[i]) mapState[i] = [];
       }
       renderGrid();
+      renderLegend(); // Update legend after removal
       saveToLocalStorage();
     }
-    // --- Controls ---
+    // --- Controls and Setup ---
     document.addEventListener('DOMContentLoaded', () => {
       // Init state
       mapState = Array(GRID_SIZE * GRID_SIZE).fill().map(() => []);
       exploredState = Array(GRID_SIZE * GRID_SIZE).fill(false);
+
+      // Render UI
       renderLegend();
       renderGrid();
       loadFromLocalStorage();
+
       // Controls
       document.getElementById('explore-all').onclick = () => {
         pushUndo();
@@ -784,21 +924,21 @@
           renderGrid();
           saveToLocalStorage();
           showNotification('Map cleared!');
-          // Open POI Tracker panel to ensure DOM is available for cleaning
-          document.getElementById('poi-notes-docket').style.display = 'flex';
-          // Clear POI Tracker list and summary DOM
-          document.getElementById('poi-notes-list').innerHTML = '';
-          document.getElementById('poi-drops-summary-list').innerHTML = '';
           // Re-render panels with cleared data
-          renderPoiNotesPanel();
-          renderPoiDropsSummary();
+          if (typeof renderPoiNotesPanel === 'function') renderPoiNotesPanel();
+          if (typeof renderPoiDropsSummary === 'function') renderPoiDropsSummary();
         }
       };
       document.getElementById('export-json').onclick = () => {
-        // Build export data with coordinate labels
-        const exportMap = mapState.map((icons, idx) => ({
+        // Build export data with coordinate labels and subcells
+        const exportMap = mapState.map((cell, idx) => ({
           coord: getCellLabel(idx),
-          icons
+          icons: Array.isArray(cell) ? cell : [],
+          subcells: cell && cell.subcells ? cell.subcells : [
+            [[], [], []],
+            [[], [], []],
+            [[], [], []]
+          ]
         }));
         const exportExplored = exploredState.map((val, idx) => ({
           coord: getCellLabel(idx),
@@ -841,6 +981,10 @@
               es = Array(GRID_SIZE * GRID_SIZE);
               data.map.forEach((cell, idx) => {
                 ms[idx] = cell.icons || [];
+                // Restore subcells if present
+                if (cell.subcells) {
+                  ms[idx].subcells = cell.subcells;
+                }
               });
               data.explored.forEach((cell, idx) => {
                 es[idx] = !!cell.explored;
@@ -873,10 +1017,15 @@
       };
       document.getElementById('export-png').onclick = () => exportPNG();
       document.getElementById('share-link').onclick = () => {
-        // Build export data with coordinate labels (same as JSON export)
-        const exportMap = mapState.map((icons, idx) => ({
+        // Build export data with coordinate labels and subcells (same as JSON export)
+        const exportMap = mapState.map((cell, idx) => ({
           coord: getCellLabel(idx),
-          icons
+          icons: Array.isArray(cell) ? cell : [],
+          subcells: cell && cell.subcells ? cell.subcells : [
+            [[], [], []],
+            [[], [], []],
+            [[], [], []]
+          ]
         }));
         const exportExplored = exploredState.map((val, idx) => ({
           coord: getCellLabel(idx),
@@ -943,6 +1092,10 @@
             es = Array(GRID_SIZE * GRID_SIZE);
             data.map.forEach((cell, idx) => {
               ms[idx] = cell.icons || [];
+              // Restore subcells if present
+              if (cell.subcells) {
+                ms[idx].subcells = cell.subcells;
+              }
             });
             data.explored.forEach((cell, idx) => {
               es[idx] = !!cell.explored;
@@ -976,334 +1129,263 @@
       window.onclick = (e) => {
         if (e.target === helpModal) helpModal.style.display = 'none';
       };
-
+      // Server select
       const serverSelect = document.getElementById('server-select');
       serverSelect.value = selectedServer;
       serverSelect.onchange = function() {
         selectedServer = serverSelect.value;
         updateStormTimer();
       };
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-      document.getElementById('open-poi-notes-btn').onclick = function() {
-        document.getElementById('poi-notes-docket').style.display = 'flex';
-        renderPoiNotesPanel();
-      };
-      document.getElementById('close-poi-notes-btn').onclick = function() {
-        document.getElementById('poi-notes-docket').style.display = 'none';
-        const notesDiv = document.getElementById('poi-notes-list');
-        notesDiv.innerHTML = '';
-        // ...rest of your close logic...
-      };
-    });
-
-    // Allow closing POI Schematic Tracker with Escape key
-    document.addEventListener('keydown', function(e) {
-      const poiPanel = document.getElementById('poi-notes-docket');
-      if (poiPanel && poiPanel.style.display !== 'none' && e.key === 'Escape') {
-        poiPanel.style.display = 'none';
-        document.getElementById('poi-notes-list').innerHTML = '';
-        // Optionally update summary if needed
-        renderPoiDropsSummary();
+      // Storm timer setup
+      setInterval(updateStormTimer, 1000);
+      updateStormTimer();
+      // Icon Picker Modal Setup
+      if (!document.getElementById('iconPickerModal')) {
+        const modal = document.createElement('div');
+        modal.id = 'iconPickerModal';
+        modal.style.display = 'none';
+        modal.innerHTML = `
+          <div class="icon-picker-content">
+            <h3 style="margin-top:0;">Select an Icon</h3>
+            <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
+            <div class="icon-picker-buttons" style="margin-top:10px;">
+              <button class="icon-picker-btn cancel" type="button" id="closeIconPickerBtn">Escape</button>
+            </div>
+            <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;"></div>
+          </div>`;
+        document.body.appendChild(modal);
       }
+      document.getElementById('closeIconPickerBtn').onclick = function() {
+        document.getElementById('iconPickerModal').style.display = 'none';
+      };
     });
-
-    // --- PNG Export ---
-    function exportPNG() {
-      const cellSize = 150;
-      const gap = 2;
-      const gridSize = 9;
-      const backgroundSrc = 'background.jpg';
-      const legendPadding = 30;
-      const legendIconSize = 40;
-      const legendTextSize = 22;
-      const legendSpacing = 28;
-      const legendTitleSize = 26;
-      const legendTitle = "Legend";
-
-      // Use your icon arrays and labels
-      const leftLegendItems = resourceIcons.map(icon => ({ icon, name: icon.label }));
-      const rightLegendItems = houseIcons.map(icon => ({ icon, name: icon.label }));
-
-      const legendRows = Math.max(leftLegendItems.length, rightLegendItems.length);
-      const legendHeight = legendPadding * 2 + legendTitleSize + legendSpacing + legendRows * (legendIconSize + legendSpacing);
-      const dateHeight = 60;
-      const gridWidth = gridSize * (cellSize + gap);
-      const gridHeight = gridSize * (cellSize + gap);
-      const legendWidth = legendPadding * 2 + legendIconSize + 10 + 140;
-
-      // Align legends vertically with the map grid
-      // Calculate vertical offset so legends are centered with the grid
-      const totalHeight = Math.max(gridHeight + dateHeight, legendHeight + dateHeight);
-      const legendTop = dateHeight + ((gridHeight - legendHeight) / 2 > 0 ? (gridHeight - legendHeight) / 2 : 0);
-
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = legendWidth * 2 + gridWidth;
-      canvas.height = totalHeight;
-
-      function loadImage(src) {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => resolve(img);
-          img.onerror = reject;
-          img.src = src;
-        });
-      }
-
-      // Load all icons
-      const iconPromises = {};
-      [...resourceIcons, ...houseIcons].forEach(icon => {
-        iconPromises[icon.name] = loadImage(icon.file.startsWith('..') ? icon.file : 'Icons/' + icon.file);
-      });
-
-      Promise.all([
-        loadImage(backgroundSrc),
-        ...Object.values(iconPromises)
-      ]).then(([backgroundImage, ...iconImages]) => {
-        const iconMap = {};
-        let i = 0;
-        for (const icon of [...resourceIcons, ...houseIcons]) {
-          iconMap[icon.name] = iconImages[i++];
-        }
-
-        // Date/time bar
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, canvas.width, dateHeight);
-        const now = new Date();
-        const dateStr = timezoneUTC ? now.toUTCString() : now.toLocaleString();
-        ctx.font = "bold 32px Arial";
-        ctx.fillStyle = "#fff";
-        ctx.textBaseline = "middle";
-        ctx.fillText(dateStr, legendWidth + 20, dateHeight / 2);
-
-        // Background
-        ctx.globalAlpha = 0.4;
-        ctx.drawImage(backgroundImage, legendWidth, dateHeight, gridWidth, gridHeight);
-        ctx.globalAlpha = 1.0;
-
-        // Left legend (resources/POIs) - vertically centered with grid
-        ctx.fillStyle = "rgba(30,30,30,0.85)";
-        ctx.fillRect(0, legendTop, legendWidth, legendHeight);
-        ctx.font = `bold ${legendTitleSize}px Arial`;
-        ctx.fillStyle = "#fff";
-        ctx.textBaseline = "top";
-        ctx.fillText(legendTitle, legendPadding, legendTop + legendPadding);
-        let legendY = legendTop + legendPadding + legendTitleSize + legendSpacing;
-        ctx.font = `${legendTextSize}px Arial`;
-        leftLegendItems.forEach(item => {
-          if (iconMap[item.icon.name]) {
-            ctx.drawImage(iconMap[item.icon.name], legendPadding, legendY, legendIconSize, legendIconSize);
-          }
-          ctx.fillStyle = "#fff";
-          ctx.fillText(item.name, legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
-          legendY += legendIconSize + legendSpacing;
-        });
-
-        // Right legend (houses) - vertically centered with grid
-        ctx.fillStyle = "rgba(30,30,30,0.85)";
-        ctx.fillRect(canvas.width - legendWidth, legendTop, legendWidth, legendHeight);
-        ctx.font = `bold ${legendTitleSize}px Arial`;
-        ctx.fillStyle = "#fff";
-        ctx.textBaseline = "top";
-        ctx.fillText(legendTitle, canvas.width - legendWidth + legendPadding, legendTop + legendPadding);
-        legendY = legendTop + legendPadding + legendTitleSize + legendSpacing;
-        ctx.font = `${legendTextSize}px Arial`;
-        rightLegendItems.forEach(item => {
-          if (iconMap[item.icon.name]) {
-            ctx.drawImage(iconMap[item.icon.name], canvas.width - legendWidth + legendPadding, legendY, legendIconSize, legendIconSize);
-          }
-          ctx.fillStyle = "#fff";
-          ctx.fillText(item.name, canvas.width - legendWidth + legendPadding + legendIconSize + 10, legendY + (legendIconSize - legendTextSize) / 2);
-          legendY += legendIconSize + legendSpacing;
-        });
-
-        // Draw grid
-        for (let row = 8; row >= 0; row--) {
-          for (let col = 0; col < gridSize; col++) {
-            const canvasRow = 8 - row;
-            const x = legendWidth + col * (cellSize + gap);
-            const y = dateHeight + canvasRow * (cellSize + gap);
-            const idx = row * gridSize + col;
-            const icons = mapState[idx] || [];
-            const n = icons.length;
-
-            // --- ENSURE: If a cell has icons, treat as explored for export ---
-            const isUnexplored = !exploredState[idx] && (!mapState[idx] || mapState[idx].length === 0);
-
-            // Draw icons only if not unexplored
-            let iconSize, positions;
-            if (n === 1) {
-              iconSize = 90;
-              positions = [[cellSize / 2, cellSize / 2 + 10]];
-            } else if (n === 2) {
-              iconSize = 70;
-              positions = [
-                [cellSize / 2 - 35, cellSize / 2 + 10],
-                [cellSize / 2 + 35, cellSize / 2 + 10]
-              ];
-            } else if (n === 3) {
-              iconSize = 60;
-              positions = [
-                [cellSize / 2, cellSize / 2 - 30],
-                [cellSize / 2 - 38, cellSize / 2 + 32],
-                [cellSize / 2 + 38, cellSize / 2 + 32]
-              ];
-            } else if (n === 4) {
-              iconSize = 54;
-              positions = [
-                [cellSize / 2 - 32, cellSize / 2 - 24],
-                [cellSize / 2 + 32, cellSize / 2 - 24],
-                [cellSize / 2 - 32, cellSize / 2 + 32],
-                [cellSize / 2 + 32, cellSize / 2 + 32]
-              ];
-            } else {
-              iconSize = 40;
-              positions = [];
-              const grid = 3;
-              const offset = (cellSize - grid * iconSize) / 2;
-              for (let i = 0; i < Math.min(n, 9); i++) {
-                const gx = i % 3;
-                const gy = Math.floor(i / 3);
-                positions.push([
-                  offset + gx * iconSize + iconSize / 2,
-                  30 + offset + gy * iconSize + iconSize / 2
-                ]);
-              }
-            }
-            for (let i = 0; i < Math.min(n, 9); i++) {
-              const icon = icons[i];
-              if (icon && iconMap[icon.name]) {
-                ctx.globalAlpha = 1.0; // Always full opacity for icons
-                ctx.drawImage(
-                  iconMap[icon.name],
-                  x + positions[i][0] - iconSize / 2,
-                  y + positions[i][1] - iconSize / 2,
-                  iconSize,
-                  iconSize
-                );
-              }
-            }
-
-            // Cell overlay for explored/unexplored
-            if (isUnexplored) {
-              ctx.fillStyle = "rgba(30,30,30,0.55)";
-              ctx.fillRect(x, y, cellSize, cellSize);
-            } else {
-              ctx.fillStyle = "rgba(255,255,255,0.13)";
-              ctx.fillRect(x, y, cellSize, cellSize);
-            }
-
-            // --- Draw coordinates in the bottom right of each cell ---
-            ctx.save();
-            ctx.font = "bold 28px Arial";
-            ctx.fillStyle = "#ffe082";
-            ctx.textAlign = "right";
-            ctx.textBaseline = "bottom";
-            const coordLabel = String.fromCharCode(65 + row) + (col + 1);
-            ctx.shadowColor = "#222";
-            ctx.shadowBlur = 4;
-            ctx.fillText(coordLabel, x + cellSize - 10, y + cellSize - 10);
-            ctx.restore();
-          }
-        }
-
-        // Signature at top right, same line as date
-        loadImage('fwb.png').then(fwbImg => {
-          const sigHeight = 44;
-          const sigMargin = 18;
-          const sigY = (dateHeight - sigHeight) / 2;
-          const sigText = "Provided by Fremen with Benefits";
-          ctx.font = "bold 24px Arial";
-          const textWidth = ctx.measureText(sigText).width;
-          const sigX = canvas.width - sigMargin - sigHeight - 12 - textWidth;
-          ctx.save();
-          ctx.globalAlpha = 0.85;
-          ctx.fillStyle = "#222";
-          ctx.fillRect(sigX - 16, sigY - 8, textWidth + sigHeight + 44, sigHeight + 16);
-          ctx.globalAlpha = 1.0;
-          ctx.drawImage(fwbImg, sigX, sigY, sigHeight, sigHeight);
-          ctx.font = "bold 24px Arial";
-          ctx.fillStyle = "#ffe066";
-          ctx.textBaseline = "middle";
-          ctx.fillText(sigText, sigX + sigHeight + 12, sigY + sigHeight / 2);
-          ctx.restore();
-          const link = document.createElement('a');
-          link.download = 'grid.png';
-          link.href = canvas.toDataURL();
-          link.click();
-        });
-      });
-    }
 
     // --- Storm Timer ---
-    function getNextStorm(now, server = selectedServer) {
-      // Europe: Monday 05:00 UTC, Wednesday 04:00 UTC
-      // North America: Monday 05:00 UTC, Thursday 04:00 UTC
-      // South America: Monday 07:00 UTC, Thursday 06:00 UTC
-      // Asia: Monday 00:00 UTC, Thursday 00:00 UTC
-      // Oceania: Monday 00:00 UTC, Thursday 00:00 UTC
-      const configs = {
-        europe:   { days: [1, 3], hours: [5, 4] },
-        na:       { days: [1, 4], hours: [5, 4] },
-        sa:       { days: [1, 4], hours: [7, 6] },
-        asia:     { days: [1, 4], hours: [0, 0] },
-        oceania:  { days: [1, 4], hours: [0, 0] }
-      };
-      const cfg = configs[server] || configs.europe;
-      let next = null;
-      for (let i = 0; i < 2; i++) {
-        const d = new Date(now);
-        d.setUTCHours(cfg.hours[i], 0, 0, 0);
-        d.setUTCDate(d.getUTCDate() + ((cfg.days[i] - d.getUTCDay() + 7) % 7));
-        if (d > now && (!next || d < next)) next = d;
-      }
-      if (!next) {
-        const d = new Date(now);
-        d.setUTCHours(cfg.hours[0], 0, 0, 0);
-        d.setUTCDate(d.getUTCDate() + ((cfg.days[0] - d.getUTCDay() + 7) % 7) + 7);
-        next = d;
-      }
-      return next;
-    }
+    let phase = 'normal';
+    let diff = 0;
+    let nextStorm;
     function updateStormTimer() {
       const now = new Date();
-      const nextStorm = getNextStorm(now);
-      let diff = (nextStorm - now) / 1000;
-
-      // --- Custom phase logic for Europe server ---
-      // Between Wednesday 08:00 UTC to Monday 05:00 UTC: timer-phase-normal
-      // From Monday 05:00 UTC to Wednesday 04:00 UTC:   timer-phase-warning
-      // From Wednesday 04:00 UTC to Wednesday 08:00 UTC: timer-phase-active
-
-      let phase = 'normal';
-
-      // Only apply this logic for Europe server
+      // Europe: Storm starts Monday 17:00 UTC, ends Tuesday 05:00 UTC
       if (selectedServer === 'europe') {
-        // Get current UTC day and hour
-        const utcDay = now.getUTCDay(); // 0=Sun, 1=Mon, ..., 3=Wed, ...
-        const utcHour = now.getUTCHours();
-
-        // Helper to check if now is between two UTC times (day/hour)
-        function isBetween(startDay, startHour, endDay, endHour) {
-          const nowMinutes = utcDay * 24 * 60 + utcHour * 60 + now.getUTCMinutes();
-          const startMinutes = startDay * 24 * 60 + startHour * 60;
-          const endMinutes = endDay * 24 * 60 + endHour * 60;
-          if (startMinutes <= endMinutes) {
-            return nowMinutes >= startMinutes && nowMinutes < endMinutes;
-          } else {
-            // Wraps around week
-            return nowMinutes >= startMinutes || nowMinutes < endMinutes;
-          }
+        // Find next Monday 17:00 UTC
+        const day = now.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+        const hour = now.getUTCHours();
+        let nextStormStart = new Date(now);
+        nextStormStart.setUTCMinutes(0, 0, 0);
+        // If today is Monday and before 17:00, storm is today
+        if (day === 1 && hour < 17) {
+          nextStormStart.setUTCHours(17, 0, 0, 0);
+        } else {
+          // Otherwise, find next Monday
+          const daysUntilMonday = (8 - day) % 7 || 7;
+          nextStormStart.setUTCDate(now.getUTCDate() + daysUntilMonday);
+          nextStormStart.setUTCHours(17, 0, 0, 0);
         }
+        phase = 'normal';
+        diff = (nextStormStart - now) / 1000;
+      } else if (selectedServer === 'na') {
+        // North America: Storm active Tuesday 00:00–10:00 UTC, warning Monday 21:00–00:00 UTC
+        const utcDay = now.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+        const utcHour = now.getUTCHours();
+        const utcMinutes = now.getUTCMinutes();
 
-        if (isBetween(3, 8, 1, 5)) { // Wed 08:00 to Mon 05:00
-          phase = 'normal';
-        } else if (isBetween(1, 5, 3, 4)) { // Mon 05:00 to Wed 04:00
-          phase = 'warning';
-        } else if (isBetween(3, 4, 3, 8)) { // Wed 04:00 to Wed 08:00
+        // Minutes since week start
+        const minutesOfWeek = utcDay * 24 * 60 + utcHour * 60 + utcMinutes;
+        const stormStart = 2 * 24 * 60 + 0;   // Tuesday 00:00 UTC
+        const stormEnd = 2 * 24 * 60 + 10 * 60; // Tuesday 10:00 UTC
+        const warningStart = stormStart - 3 * 60; // Monday 21:00 UTC
+
+        if (
+          (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) ||
+          (stormEnd < stormStart && (minutesOfWeek >= stormStart || minutesOfWeek < stormEnd))
+        ) {
           phase = 'active';
+          // Countdown to storm end
+          let stormEndDate = new Date(now);
+          if (utcDay === 2 && utcHour < 10) {
+            // It's Tuesday before 10:00
+            stormEndDate.setUTCHours(10, 0, 0, 0);
+          } else {
+            // Find next Tuesday
+            const daysUntilTuesday = (9 - utcDay) % 7 || 7;
+            stormEndDate.setUTCDate(now.getUTCDate() + daysUntilTuesday);
+            stormEndDate.setUTCHours(10, 0, 0, 0);
+          }
+          diff = (stormEndDate - now) / 1000;
+        } else if (
+          (minutesOfWeek >= warningStart && minutesOfWeek < stormStart) ||
+          (warningStart < stormStart && (minutesOfWeek >= warningStart || minutesOfWeek < stormStart))
+        ) {
+          phase = 'warning';
+          // Countdown to storm start
+          let stormStartDate = new Date(now);
+          if (utcDay === 1 && utcHour >= 21) {
+            // Monday after 21:00
+            stormStartDate.setUTCHours(0, 0, 0, 0);
+            stormStartDate.setUTCDate(now.getUTCDate() + 1);
+          } else {
+            // Find next Monday
+            const daysUntilMonday = (8 - utcDay) % 7 || 7;
+            stormStartDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
+            stormStartDate.setUTCHours(21, 0, 0, 0);
+          }
+          diff = (stormStartDate - now) / 1000;
+        } else {
+          phase = 'normal';
+          // Countdown to next storm start
+          nextStorm = getNextStorm(now, 'na');
+          diff = (nextStorm - now) / 1000;
+        }
+      } else if (selectedServer === 'sa') {
+        // South America: Storm starts Monday 22:00 UTC, ends Tuesday 08:00 UTC, warning 3 hours before (Monday 19:00 UTC)
+        const utcDay = now.getUTCDay();
+        const utcHour = now.getUTCHours();
+        const utcMinutes = now.getUTCMinutes();
+        const minutesOfWeek = utcDay * 24 * 60 + utcHour * 60 + utcMinutes;
+        const stormStart = 1 * 24 * 60 + 22 * 60; // Monday 22:00 UTC
+        const stormEnd = 2 * 24 * 60 + 8 * 60;   // Tuesday 08:00 UTC
+        const warningStart = stormStart - 3 * 60; // Monday 19:00 UTC
+
+        if (
+          (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) ||
+          (stormEnd < stormStart && (minutesOfWeek >= stormStart || minutesOfWeek < stormEnd))
+        ) {
+          phase = 'active';
+          // Countdown to storm end
+          let stormEndDate = new Date(now);
+          if (utcDay === 2 && utcHour < 8) {
+            // It's Tuesday before 08:00
+            stormEndDate.setUTCHours(8, 0, 0, 0);
+          } else {
+            // Find next Tuesday
+            const daysUntilTuesday = (9 - utcDay) % 7 || 7;
+            stormEndDate.setUTCDate(now.getUTCDate() + daysUntilTuesday);
+            stormEndDate.setUTCHours(8, 0, 0, 0);
+          }
+          diff = (stormEndDate - now) / 1000;
+        } else if (
+          (minutesOfWeek >= warningStart && minutesOfWeek < stormStart) ||
+          (warningStart < stormStart && (minutesOfWeek >= warningStart || minutesOfWeek < stormStart))
+        ) {
+          phase = 'warning';
+          // Countdown to storm start
+          let stormStartDate = new Date(now);
+          if (utcDay === 1 && utcHour >= 19) {
+            // Monday after 19:00
+            stormStartDate.setUTCHours(22, 0, 0, 0);
+          } else {
+            // Find next Monday
+            const daysUntilMonday = (8 - utcDay) % 7 || 7;
+            stormStartDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
+            stormStartDate.setUTCHours(22, 0, 0, 0);
+          }
+          diff = (stormStartDate - now) / 1000;
+        } else {
+          phase = 'normal';
+          // Countdown to next storm start
+          let nextStorm = getNextStorm(now, 'sa');
+          diff = (nextStorm - now) / 1000;
+        }
+      } else if (selectedServer === 'asia') {
+        // Asia: Storm starts Monday 11:00 UTC, ends Monday 21:00 UTC, warning 3 hours before (Monday 08:00 UTC)
+        const utcDay = now.getUTCDay();
+        const utcHour = now.getUTCHours();
+        const utcMinutes = now.getUTCMinutes();
+        const minutesOfWeek = utcDay * 24 * 60 + utcHour * 60 + utcMinutes;
+        const stormStart = 1 * 24 * 60 + 11 * 60; // Monday 11:00 UTC
+        const stormEnd = 1 * 24 * 60 + 21 * 60;   // Monday 21:00 UTC
+        const warningStart = stormStart - 3 * 60; // Monday 08:00 UTC
+
+        if (
+          (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) ||
+          (stormEnd < stormStart && (minutesOfWeek >= stormStart || minutesOfWeek < stormEnd))
+        ) {
+          phase = 'active';
+          // Countdown to storm end
+          let stormEndDate = new Date(now);
+          if (utcDay === 1 && utcHour < 21) {
+            // It's Monday before 21:00
+            stormEndDate.setUTCHours(21, 0, 0, 0);
+          } else {
+            // Find next Monday
+            const daysUntilMonday = (8 - utcDay) % 7 || 7;
+            stormEndDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
+            stormEndDate.setUTCHours(21, 0, 0, 0);
+          }
+          diff = (stormEndDate - now) / 1000;
+        } else if (
+          (minutesOfWeek >= warningStart && minutesOfWeek < stormStart) ||
+          (warningStart < stormStart && (minutesOfWeek >= warningStart || minutesOfWeek < stormStart))
+        ) {
+          phase = 'warning';
+          // Countdown to storm start
+          let stormStartDate = new Date(now);
+          if (utcDay === 1 && utcHour >= 8) {
+            // Monday after 08:00
+            stormStartDate.setUTCHours(11, 0, 0, 0);
+          } else {
+            // Find next Monday
+            const daysUntilMonday = (8 - utcDay) % 7 || 7;
+            stormStartDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
+            stormStartDate.setUTCHours(11, 0, 0, 0);
+          }
+          diff = (stormStartDate - now) / 1000;
+        } else {
+          phase = 'normal';
+          // Countdown to next storm start
+          let nextStorm = getNextStorm(now, 'asia');
+          diff = (nextStorm - now) / 1000;
+        }
+      } else if (selectedServer === 'oceania') {
+        // Oceania: Storm starts Monday 09:00 UTC, ends Monday 19:00 UTC, warning 3 hours before (Monday 06:00 UTC)
+        const utcDay = now.getUTCDay();
+        const utcHour = now.getUTCHours();
+        const utcMinutes = now.getUTCMinutes();
+        const minutesOfWeek = utcDay * 24 * 60 + utcHour * 60 + utcMinutes;
+        const stormStart = 1 * 24 * 60 + 9 * 60; // Monday 09:00 UTC
+        const stormEnd = 1 * 24 * 60 + 19 * 60;  // Monday 19:00 UTC
+        const warningStart = stormStart - 3 * 60; // Monday 06:00 UTC
+
+        if (
+          (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) ||
+          (stormEnd < stormStart && (minutesOfWeek >= stormStart || minutesOfWeek < stormEnd))
+        ) {
+          phase = 'active';
+          // Countdown to storm end
+          let stormEndDate = new Date(now);
+          if (utcDay === 1 && utcHour < 19) {
+            // It's Monday before 19:00
+            stormEndDate.setUTCHours(19, 0, 0, 0);
+          } else {
+            // Find next Monday
+            const daysUntilMonday = (8 - utcDay) % 7 || 7;
+            stormEndDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
+            stormEndDate.setUTCHours(19, 0, 0, 0);
+          }
+          diff = (stormEndDate - now) / 1000;
+        } else if (
+          (minutesOfWeek >= warningStart && minutesOfWeek < stormStart) ||
+          (warningStart < stormStart && (minutesOfWeek >= warningStart || minutesOfWeek < stormStart))
+        ) {
+          phase = 'warning';
+          // Countdown to storm start
+          let stormStartDate = new Date(now);
+          if (utcDay === 1 && utcHour >= 6) {
+            // Monday after 06:00
+            stormStartDate.setUTCHours(9, 0, 0, 0);
+          } else {
+            // Find next Monday
+            const daysUntilMonday = (8 - utcDay) % 7 || 7;
+            stormStartDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
+            stormStartDate.setUTCHours(9, 0, 0, 0);
+          }
+          diff = (stormStartDate - now) / 1000;
+        } else {
+          phase = 'normal';
+          // Countdown to next storm start
+          let nextStorm = getNextStorm(now, 'oceania');
+          diff = (nextStorm - now) / 1000;
         }
       } else {
         // Fallback: original logic for other servers
@@ -1323,6 +1405,7 @@
       // Change the label to reflect the storm state
       const label = document.querySelector('.timer-label');
       if (phase === 'active') {
+
         label.textContent = 'Storm Active';
       } else if (phase === 'warning') {
         label.textContent = 'Storm Brewing';
@@ -1342,22 +1425,17 @@
 
     // --- Icon Picker Modal Logic ---
     let iconPickerCellIdx = null;
-    let iconPickerSelectedIcon = null;
+    let iconPickerGy = null;
+    let iconPickerGx = null;
 
-    // Open modal on left click
-    document.getElementById('map-grid').addEventListener('click', function(e) {
-      const cell = e.target.closest('.map-cell');
-      if (!cell) return;
-      iconPickerCellIdx = parseInt(cell.dataset.idx, 10);
-      openIconPicker();
-    });
-
-    function openIconPicker() {
-      iconPickerSelectedIcon = null;
+    // Only open icon picker for subcells
+    function openIconPicker(idx, gy, gx) {
+      iconPickerCellIdx = idx;
+      iconPickerGy = gy;
+      iconPickerGx = gx;
       const modal = document.getElementById('iconPickerModal');
       const grid = document.getElementById('iconPickerGrid');
       grid.innerHTML = '';
-      
       // Show all icons
       [...resourceIcons, ...houseIcons].forEach(icon => {
         const img = document.createElement('img');
@@ -1365,665 +1443,69 @@
         img.alt = icon.label;
         img.title = icon.label;
         img.tabIndex = 0;
-
-        // Highlight if already in cell
-        if (
-          iconPickerCellIdx != null &&
-          mapState[iconPickerCellIdx] &&
-          mapState[iconPickerCellIdx].some(ic => ic.name === icon.name)
-        ) {
+        // Highlight if already in subcell
+        const inThisSubcell = mapState[idx] && mapState[idx].subcells && mapState[idx].subcells[gy][gx].some(ic => ic.name === icon.name);
+        if (inThisSubcell) {
           img.classList.add('selected');
         }
-
-        img.onclick = () => {
-          if (iconPickerCellIdx != null) {
-            const cellIcons = mapState[iconPickerCellIdx] || [];
-            const iconIdx = cellIcons.findIndex(ic => ic.name === icon.name);
-            if (iconIdx !== -1) {
-              // Icon is already in cell: remove it
-              pushUndo();
-              cellIcons.splice(iconIdx, 1);
-              mapState[iconPickerCellIdx] = cellIcons;
-              renderGrid();
-              saveToLocalStorage();
-              showIconPickerFeedback('Icon removed!');
-              img.classList.remove('selected');
-            } else {
-              // Icon not in cell: add it
-              pushUndo();
-              mapState[iconPickerCellIdx] = mapState[iconPickerCellIdx] || [];
-              mapState[iconPickerCellIdx].push(icon);
-              exploredState[iconPickerCellIdx] = true;
-              renderGrid();
-              saveToLocalStorage();
-              showIconPickerFeedback('Icon placed!');
-              // Highlight the newly placed icon
-              grid.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
-              img.classList.add('selected');
-            }
+        // For house icons, grey out if placed elsewhere (but not in this subcell)
+        if (icon.name.startsWith('House_')) {
+          // Placed elsewhere if isHousePlaced(icon.name) && not in this subcell
+          if (isHousePlaced(icon.name) && !inThisSubcell) {
+            img.style.opacity = '0.4';
+            img.style.filter = 'grayscale(1) brightness(1.2)';
+            img.style.pointerEvents = 'none';
           }
+        }
+        img.onclick = () => {
+          // For house icons, only allow if not placed elsewhere or is in this subcell
+          if (icon.name.startsWith('House_') && isHousePlaced(icon.name) && !inThisSubcell) {
+            showNotification('This house is already placed on the map!');
+            return;
+          }
+          pushUndo();
+          // Toggle icon in subcell
+          const iconsArr = mapState[idx].subcells[gy][gx];
+          const iconIdx = iconsArr.findIndex(ic => ic.name === icon.name);
+          if (iconIdx !== -1) {
+            iconsArr.splice(iconIdx, 1);
+            showNotification('Icon removed!');
+          } else {
+            iconsArr.push(icon);
+            exploredState[idx] = true;
+            showNotification('Icon placed!');
+          }
+          renderGrid();
+          renderLegend(); // Update legend after picker
+          saveToLocalStorage();
+          setTimeout(() => {
+            openIconPicker(idx, gy, gx);
+          }, 0);
         };
         grid.appendChild(img);
       });
       modal.style.display = 'flex';
     }
 
-    function showIconPickerFeedback(msg) {
-      const feedback = document.getElementById('iconPickerFeedback');
-      feedback.textContent = msg;
-      feedback.style.display = 'block';
-      setTimeout(() => {
-        feedback.style.display = 'none';
-      }, 1200);
-    }
-
-    // Toggle explored/unexplored
-    document.getElementById('toggleExploredButton').onclick = function() {
-      if (iconPickerCellIdx == null) return;
-      pushUndo();
-      exploredState[iconPickerCellIdx] = !exploredState[iconPickerCellIdx];
-      renderGrid();
-      saveToLocalStorage();
-      showIconPickerFeedback(
-        exploredState[iconPickerCellIdx] ? 'Cell set as explored!' : 'Cell set as unexplored!'
-      );
-    };
-
-    // Escape button
-    document.getElementById('closeIconPickerBtn').onclick = closeIconPicker;
-
-    function closeIconPicker() {
-      document.getElementById('iconPickerModal').style.display = 'none';
-    }
-
-    // Allow closing icon picker with Escape key
-    document.addEventListener('keydown', function(e) {
-      const modal = document.getElementById('iconPickerModal');
-      if (modal.style.display === 'flex' && e.key === 'Escape') {
-        closeIconPicker();
-      }
-    });
-
-    // --- Help Modal Logic ---
-    document.getElementById('help-btn').onclick = function() {
-      document.getElementById('help-modal').style.display = 'flex';
-    };
-    document.getElementById('close-help-btn').onclick = function() {
-      document.getElementById('help-modal').style.display = 'none';
-    };
-    // Optional: Close help modal with Escape key
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') document.getElementById('help-modal').style.display = 'none';
-    });
-
-    // --- POI Notes Data ---
-    const testingStationNotes = {
-      "A2": [
-        "Arhun K-28 Lasgun",
-        "Compact Compactor Mk5",
-        "Collapsible Dew Reaper Mk5",
-        "Mendek's Rattle (Rifle)",
-        "Night Rider Sandbike Boost Mk5",
-        "Station Gauntlets",
-        "Steady Assault Boost Module Mk5",
-        "Double-Sealed Stilltent"
-      ],
-      "A3": [
-        "Arhun K-28 Lasgun",
-        "Compact Compactor Mk5",
-        "Collapsible Dew Reaper Mk5",
-        "Mendek's Rattle (Rifle)",
-        "Night Rider Sandbike Boost Mk5",
-        "Station Gauntlets",
-        "Steady Assault Boost Module Mk5",
-        "Double-Sealed Stilltent"
-      ],
-      "A4": [
-        "Maas Kharet Bloodbag",
-        "Cope (Heavy Pistol)",
-        "Extravagant Message (Vulcan)",
-        "Filter Extractor Mk5",
-        "Hummingbird Wing Module Mk5 (Assault)",
-        "Saturnine Stillsuit Boots",
-        "Saturnine Stillsuit Garment",
-        "Saturnine Stillsuit Gloves",
-        "Saturnine Stillsuit Mask",
-        "Wayfinder Helm"
-      ],
-      "A5": [
-        "Maas Kharet Bloodbag",
-        "Cope (Heavy Pistol)",
-        "Extravagant Message (Vulcan)",
-        "Filter Extractor Mk5",
-        "Saturnine Stillsuit Boots",
-        "Saturnine Stillsuit Garment",
-        "Saturnine Stillsuit Gloves",
-        "Saturnine Stillsuit Mask",
-        "Hummingbird Wing Module Mk5 (Assault)",
-        "Wayfinder Helm"
-      ],
-      "A8": [
-        "Albatross Wing Module Mk5 (Scout)",
-        "The Emperor's Wings Mk5",
-        "Jolt-Sword",
-        "Long Range Scanner",
-        "Scrubber (Explosive Rifle)",
-        "Focused Reaper Mk5 (Scythe)",
-        "Station Garb (Chest)",
-        "Taqwa's Double (Maula Pistol)"
-      ],
-      "A9": [
-        "Albatross Wing Module Mk5 (Scout)",
-        "The Emperor's Wings Mk5",
-        "Jolt-Sword",
-        "Long Range Scanner",
-        "Scrubber (Explosive Rifle)",
-        "Focused Reaper Mk5 (Scythe)",
-        "Station Garb (Chest)",
-        "Taqwa's Double (Maula Pistol)"
-      ]
-    };
-
-    const shipwreckNotes = {
-      "A1 - Hicetas": [
-        "Batigh Stillsuit Chest",
-        "Batigh Stillsuit Mask",
-        "Batigh Stillsuit Gloves",
-        "Batigh Stillsuit Boots",
-        "Syndicate Impaler (Scattergun)",
-        "Stormrider Boost Module Mk5"
-      ],
-      "A1 - Eumenes": [
-        "Mendek's Boots",
-        "Mendek's Chestplate",
-        "Mendek's Gauntlets",
-        "Mendek's Helmet",
-        "Mendek's Pants",
-        "Tarl Softstep Boots"
-      ],
-      "A2 - Hyperbatas": [
-        "Tarl Softstep Boots",
-        "Mendek's Gauntlets",
-        "Mendek's Pants",
-        "Mendek's Boots",
-        "Advanced Suspensor Jacket"
-      ],
-      "A3 - Archidamas III": [
-        "Adept Disruptor Pistol",
-        "Advanced Reaper Gloves",
-        "Focused Buggy Cutteray Mk5",
-        "Shaded Hood",
-        "Impure Extractor Mk5",
-        "Piter's Disruptor",
-        "Shaitan's Tongue (Flamethrower)"
-      ],
-      "A3 - Cycliadas": [
-        "Advanced Suspensor Jacket",
-        "Mendek's Helmet",
-        "Mendek's Gauntlets",
-        "Mendek's Pants",
-        "Mendek's Boots"
-      ],
-      "A4 - Dioedas": [
-        "Advanced Suspensor Jacket",
-        "Mendek's Gauntlets",
-        "Mendek's Helmet",
-        "Mendek's Chestplate",
-        "Mendek's Boots",
-        "Mendek's Pants",
-        "Tarl Softstep Boots"
-      ],
-      "A5 - Xenophon": [
-        "Batigh Stillsuit Boots",
-        "Batigh Stillsuit Gloves",
-        "Batigh Stillsuit Mask",
-        "Kharet Viper (Rapier)",
-        "Syndicate Impaler (Scattergun)"
-      ],
-      "A7 - Proxenus": [
-        "Advanced Reaper Gloves",
-        "Piter's Disruptor",
-        "Focused Buggy Cutteray Mk5",
-        "Shaitan's Tongue (Flamethrower)"
-      ],
-      "A9 - Orsippus": [
-        "Advanced Suspensor Jacket",
-        "Mendek's Chestplate",
-        "Mendek's Gauntlets",
-        "Mendek's Boots",
-        "Mendek's Helmet"
-      ],
-      "A9 - Stasanor": [
-        "Focused Buggy Cutteray Mk5",
-        "Piter's Disruptor",
-        "Adept Disruptor Pistol",
-        "Shaitan's Tongue (Flamethrower)"
-      ]
-    };
-
-    // User selections (persisted)
-    let userStationDrops = JSON.parse(localStorage.getItem('userStationDrops') || '{}');
-    let userShipwreckDrops = JSON.parse(localStorage.getItem('userShipwreckDrops') || '{}');
-
-    // Helper: get cell label from idx
-    function getCellLabel(idx) {
-      const y = Math.floor(idx / GRID_SIZE);
-      const x = idx % GRID_SIZE;
-      return String.fromCharCode(65 + y) + (x + 1);
-    }
-    // Helper: get idx from cell label
-    function getIdxFromLabel(label) {
-      const y = label.charCodeAt(0) - 65;
-      const x = parseInt(label.slice(1), 10) - 1;
-      return y * GRID_SIZE + x;
-    }
-
-    // --- Render POI Notes Panel ---
-    function renderPoiNotesPanel() {
-      const notesDiv = document.getElementById('poi-notes-list');
-      notesDiv.innerHTML = '';
-
-      // Collect all POIs present on the map
-      const poiEntries = [];
-
-      // Testing Stations
-      for (const coord in testingStationNotes) {
-        const idx = getIdxFromLabel(coord);
-        const icons = mapState[idx] || [];
-        const hasTestingStation = icons.some(ic => ic.name === 'TestingStation');
-        if (!hasTestingStation) continue;
-        for (const item of testingStationNotes[coord]) {
-          // Use a number instead of boolean for count
-          let count = 0;
-          if (userStationDrops[coord] && typeof userStationDrops[coord][item] === 'number') {
-            count = userStationDrops[coord][item];
-          }
-          poiEntries.push({
-            coord,
-            poi: 'Testing Station',
-            item,
-            count,
-            key: `station|${coord}|${item}`
-          });
+    // Returns true if the house icon is already placed anywhere in the map (including subcells)
+    function isHousePlaced(houseName) {
+      // Check main cell icons
+      for (const cell of mapState) {
+        if (Array.isArray(cell) && cell.some(ic => ic.name === houseName)) {
+          return true;
         }
-      }
-      // Shipwrecks
-      for (const label in shipwreckNotes) {
-        const [coord, wreckName] = label.split(' - ');
-        const idx = getIdxFromLabel(coord);
-        const icons = mapState[idx] || [];
-        const hasShipwreck = icons.some(ic => ic.name === 'Shipwreck' || ic.name === 'ShipwreckX2');
-        if (!hasShipwreck) continue;
-        for (const item of shipwreckNotes[label]) {
-          let count = 0;
-          if (userShipwreckDrops[label] && typeof userShipwreckDrops[label][item] === 'number') {
-            count = userShipwreckDrops[label][item];
-          }
-          poiEntries.push({
-            coord,
-            poi: `Shipwreck (${wreckName})`,
-            item,
-            count,
-            key: `shipwreck|${label}|${item}`
-          });
-        }
-      }
-
-      // Sort: by coord, then POI, then item
-      poiEntries.sort((a, b) => {
-        if (a.coord !== b.coord) return a.coord.localeCompare(b.coord);
-        if (a.poi !== b.poi) return a.poi.localeCompare(b.poi);
-        return a.item.localeCompare(b.item);
-      });
-
-      // Render as table
-      const table = document.createElement('table');
-      table.style.width = '100%';
-      table.style.borderCollapse = 'collapse';
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th class="poi-table-header">Coordinates</th>
-            <th class="poi-table-header">POI</th>
-            <th class="poi-table-header">Item</th>
-            <th class="poi-table-header number">Number</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      `;
-      const tbody = table.querySelector('tbody');
-
-      for (const entry of poiEntries) {
-        const tr = document.createElement('tr');
-        tr.style.background = selectedCells.has(getIdxFromLabel(entry.coord)) ? 'rgba(255,224,130,0.13)' : '';
-        // Coordinates
-        const tdCoord = document.createElement('td');
-        tdCoord.textContent = entry.coord;
-        tdCoord.className = 'poi-table-cell-coord';
-        tdCoord.style.cursor = 'pointer';
-        tdCoord.onclick = () => {
-          selectedCells.clear();
-          selectedCells.add(getIdxFromLabel(entry.coord));
-          renderGrid();
-          tr.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        };
-        // POI
-        const tdPoi = document.createElement('td');
-        tdPoi.textContent = entry.poi;
-        // Item
-        const tdItem = document.createElement('td');
-        tdItem.textContent = entry.item;
-        // Number input
-        const tdNumber = document.createElement('td');
-        tdNumber.className = 'poi-table-cell-number';
-        tdNumber.style.textAlign = 'center';
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.min = '0';
-        input.value = entry.count || '';
-        input.style.width = '60px';
-        input.onchange = (e) => {
-          let val = parseInt(input.value, 10);
-          if (isNaN(val) || val < 0) val = 0;
-          input.value = val;
-          if (entry.key.startsWith('station|')) {
-            const coord = entry.coord;
-            userStationDrops[coord] = userStationDrops[coord] || {};
-            userStationDrops[coord][entry.item] = val;
-            saveUserStationDropsDebounced();
-          } else if (entry.key.startsWith('shipwreck|')) {
-            const label = entry.key.split('|')[1];
-            userShipwreckDrops[label] = userShipwreckDrops[label] || {};
-            userShipwreckDrops[label][entry.item] = val;
-            saveUserShipwreckDropsDebounced();
-          }
-          updatePoiDropsSummaryAndPanel();
-        };
-        tdNumber.appendChild(input);
-
-        tr.appendChild(tdCoord);
-        tr.appendChild(tdPoi);
-        tr.appendChild(tdItem);
-        tr.appendChild(tdNumber);
-        tbody.appendChild(tr);
-      }
-
-      notesDiv.appendChild(table);
-    }
-
-    let lastPoiDropsSummaryHTML = '';
-
-    function renderPoiDropsSummary() {
-      const summaryDiv = document.getElementById('poi-drops-summary-list');
-      if (!summaryDiv) return;
-
-      const droppedEntries = collectDroppedEntries();
-
-      let html = '';
-      if (droppedEntries.length === 0) {
-        html = `<div style="color:#ffe082;text-align:center;padding:1em 0;">No drops recorded yet.</div>`;
-      } else {
-        html = `
-          <table style="width:100%;border-collapse:collapse;">
-            <thead>
-              <tr>
-                <th class="poi-table-header">Coordinates</th>
-                <th class="poi-table-header">POI</th>
-                <th class="poi-table-header">Item</th>
-                <th class="poi-table-header number">Number</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${droppedEntries.map(entry => `
-                <tr>
-                  <td class="poi-table-cell-coord">${entry.coord}</td>
-                  <td>${entry.poi}</td>
-                  <td>${entry.item}</td>
-                  <td class="poi-table-cell-number">${entry.count}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-      }
-
-      // Only update DOM if HTML changed
-      if (summaryDiv.innerHTML !== html) {
-        summaryDiv.innerHTML = html;
-        lastPoiDropsSummaryHTML = html;
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', renderPoiDropsSummary);
-
-    function updatePoiDropsSummaryAndPanel() {
-      renderPoiNotesPanel();
-      renderPoiDropsSummary();
-    }
-
-    // Update close handler for POI Notes
-    document.getElementById('close-poi-notes-btn').onclick = function() {
-      document.getElementById('poi-notes-docket').style.display = 'none';
-      const notesDiv = document.getElementById('poi-notes-list');
-      notesDiv.innerHTML = '';
-
-      const droppedEntries = collectDroppedEntries();
-
-      if (droppedEntries.length === 0) {
-        notesDiv.innerHTML = `<div style="color:#ffe082;text-align:center;padding:1em 0;">No drops recorded yet.</div>`;
-        return;
-      }
-
-      // Render as table
-      const table = document.createElement('table');
-      table.style.width = '100%';
-      table.style.borderCollapse = 'collapse';
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Coordinates</th>
-            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">POI</th>
-            <th style="text-align:left;color:#ffe082;font-size:1em;padding-bottom:4px;">Item</th>
-            <th style="text-align:center;color:#ffe082;font-size:1em;padding-bottom:4px;">Number</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      `;
-      const tbody = table.querySelector('tbody');
-
-      for (const entry of droppedEntries) {
-        const tr = document.createElement('tr');
-        // Coordinates
-        const tdCoord = document.createElement('td');
-        tdCoord.textContent = entry.coord;
-        tdCoord.style.fontWeight = 'bold';
-        // POI
-        const tdPoi = document.createElement('td');
-        tdPoi.textContent = entry.poi;
-        // Item
-        const tdItem = document.createElement('td');
-        tdItem.textContent = entry.item;
-        // Number
-        const tdNumber = document.createElement('td');
-        tdNumber.textContent = entry.count;
-        tdNumber.style.textAlign = 'center';
-
-        tr.appendChild(tdCoord);
-        tr.appendChild(tdPoi);
-        tr.appendChild(tdItem);
-        tr.appendChild(tdNumber);
-        tbody.appendChild(tr);
-      }
-
-      notesDiv.appendChild(table);
-      renderPoiDropsSummary();
-    };
-
-    // --- Show/hide POI Notes Panel ---
-    document.getElementById('open-poi-notes-btn').onclick = function() {
-      document.getElementById('poi-notes-docket').style.display = 'flex';
-      renderPoiNotesPanel();
-    };
-
-    // --- Keep panel in sync with map ---
-    const origRenderGridPoi = renderGrid;
-    renderGrid = function() {
-      origRenderGridPoi.apply(this, arguments);
-      if (document.getElementById('poi-notes-docket').style.display !== 'none') {
-        renderPoiNotesPanel();
-      }
-    };
-
-    // --- Optional: open panel if cell selected from elsewhere ---
-    document.addEventListener('DOMContentLoaded', () => {
-      // Remove old dockets if present
-      const old1 = document.getElementById('station-notes-docket');
-      const old2 = document.getElementById('shipwreck-notes-docket');
-      if (old1) old1.remove();
-      if (old2) old2.remove();
-    });
-
-    // Update the draggable logic to use the new drag handle and fixed positioning on the right
-
-    (function makePoiNotesDraggable() {
-      const panel = document.getElementById('poi-notes-docket');
-      const dragHandle = document.getElementById('poi-notes-drag-handle');
-      let isDragging = false, startX = 0, startY = 0, origX = 0, origY = 0;
-
-      // Use fixed positioning for right side
-      panel.style.position = 'fixed';
-      panel.style.right = '40px';
-      panel.style.top = '90px';
-      panel.style.left = '';
-      panel.style.transform = '';
-      panel.style.zIndex = 3000;
-
-      dragHandle.addEventListener('mousedown', function(e) {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        // Get current position
-        const rect = panel.getBoundingClientRect();
-        origX = rect.right;
-        origY = rect.top;
-        document.body.style.userSelect = 'none';
-      });
-
-      document.addEventListener('mousemove', function(e) {
-        if (!isDragging) return;
-        let dx = e.clientX - startX;
-        let dy = e.clientY - startY;
-        // Move relative to right/top
-        panel.style.right = (window.innerWidth - origX - dx) + 'px';
-        panel.style.top = (origY + dy) + 'px';
-        panel.style.left = '';
-        panel.style.transform = '';
-      });
-
-      document.addEventListener('mouseup', function() {
-        if (isDragging) {
-          isDragging = false;
-          document.body.style.userSelect = '';
-        }
-      });
-
-      // Optional: Reset position when opening
-      document.getElementById('open-poi-notes-btn').addEventListener('click', function() {
-        panel.style.right = '40px';
-        panel.style.top = '90px';
-        panel.style.left = '';
-        panel.style.transform = '';
-      });
-    })();
-
-    document.getElementById('export-poi-drops-csv').onclick = function() {
-      const droppedEntries = collectDroppedEntries();
-
-      // CSV header
-      let csv = 'Coordinates,POI,Item,Number\n';
-      for (const entry of droppedEntries) {
-        // Escape commas and quotes
-        const row = [
-          entry.coord,
-          entry.poi.replace(/"/g, '""'),
-          entry.item.replace(/"/g, '""'),
-          entry.count
-        ].map(val => `"${val}"`).join(',');
-        csv += row + '\n';
-      }
-
-      // Download as CSV
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `poi_drop_summary_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    };
-
-    function collectDroppedEntries() {
-      const droppedEntries = [];
-      // Testing Stations
-      for (const coord in testingStationNotes) {
-        const idx = getIdxFromLabel(coord);
-        const icons = mapState[idx] || [];
-        const hasTestingStation = icons.some(ic => ic.name === 'TestingStation');
-        if (!hasTestingStation) continue;
-        for (const item of testingStationNotes[coord]) {
-          if (userStationDrops[coord] && userStationDrops[coord][item] > 0) {
-            droppedEntries.push({
-              coord,
-              poi: 'Testing Station',
-              item,
-              count: userStationDrops[coord][item]
-            });
+        // Check subcells
+        if (cell && cell.subcells) {
+          for (const row of cell.subcells) {
+            for (const subcell of row) {
+              if (subcell.some(ic => ic.name === houseName)) {
+                return true;
+              }
+            }
           }
         }
       }
-      // Shipwrecks
-      for (const label in shipwreckNotes) {
-        const [coord, wreckName] = label.split(' - ');
-        const idx = getIdxFromLabel(coord);
-        const icons = mapState[idx] || [];
-        const hasShipwreck = icons.some(ic => ic.name === 'Shipwreck' || ic.name === 'ShipwreckX2');
-        if (!hasShipwreck) continue;
-        for (const item of shipwreckNotes[label]) {
-          if (userShipwreckDrops[label] && userShipwreckDrops[label][item] > 0) {
-            droppedEntries.push({
-              coord,
-              poi: `Shipwreck (${wreckName})`,
-              item,
-              count: userShipwreckDrops[label][item]
-            });
-          }
-        }
-      }
-      // Sort
-      droppedEntries.sort((a, b) => {
-        if (a.coord !== b.coord) return a.coord.localeCompare(b.coord);
-        if (a.poi !== b.poi) return a.poi.localeCompare(b.poi);
-        return a.item.localeCompare(b.item);
-      });
-      return droppedEntries;
-    }
-
-    function copyToClipboardOrPrompt(link) {
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(link)
-          .then(() => {
-            showNotification('Link copied to clipboard!');
-          })
-          .catch(() => {
-            window.prompt('Copy this link:', link);
-            showNotification('Copy this link manually.');
-          });
-      } else {
-        window.prompt('Copy this link:', link);
-        showNotification('Copy this link manually.');
-      }
+      return false;
     }
   </script>
 </body>
