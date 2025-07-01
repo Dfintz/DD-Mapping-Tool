@@ -410,22 +410,23 @@
         <option value="asia">Asia</option>
         <option value="oceania">Oceania</option>
       </select>
+      <div class="timer-phase-label" id="storm-phase-label">Normal</div>
     </div>
   </header>
   <main>
     <aside id="legend-panel" aria-label="Legend Panel">
-      <div class="legend-category" id="legend-resources">
-        <div class="legend-title">Resources & POIs</div>
-        <div class="legend-icons" id="legend-resources-icons">
-          <!-- Resource/POI icons will be injected here -->
-        </div>
+    <div class="legend-category" id="legend-resources">
+      <div class="legend-title">Resources & POIs</div>
+      <div class="legend-icons" id="legend-resources-icons">
+        <!-- Resource/POI icons will be injected here -->
       </div>
-      <div class="legend-category" id="legend-houses">
-        <div class="legend-title">Houses</div>
-        <div class="legend-icons" id="legend-houses-icons">
-          <!-- House icons will be injected here -->
-        </div>
+    </div>
+    <div class="legend-category" id="legend-houses">
+      <div class="legend-title">Houses</div>
+      <div class="legend-icons" id="legend-houses-icons">
+        <!-- House icons will be injected here -->
       </div>
+    </div>
     </aside>
     <section id="map-container">
       <div id="controls" aria-label="Map Controls">
@@ -510,6 +511,13 @@
       notif.style.display = 'block';
       setTimeout(() => notif.style.display = 'none', timeout);
     }
+    
+        function getCellLabel(idx) {
+      const row = Math.floor(idx / GRID_SIZE);
+      const col = idx % GRID_SIZE;
+      return String.fromCharCode(65 + row) + (col + 1);
+    }
+
     function saveToLocalStorage() {
       invalidateHouseCache(); // Add this line
       localStorage.setItem('dune_map_state', JSON.stringify({ mapState, exploredState }));
@@ -1925,23 +1933,33 @@ function rebuildHouseCache() {
       }
     }
     // Helper function to get next storm time (if not already defined)
-    function getNextStormTime() {
-      const now = new Date();
-      const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-      
-      // Storms occur every Tuesday at 17:00 UTC
-      let nextWeek = new Date(utcNow);
-      nextWeek.setUTCDate(utcNow.getUTCDate() + ((2 + 7 - utcNow.getUTCDay()) % 7));
-      nextWeek.setUTCHours(17, 0, 0, 0);
-      
-      // If it's Tuesday and past 17:00 UTC, move to next week
-      if (utcNow.getUTCDay() === 2 && utcNow.getUTCHours() >= 17) {
-        nextWeek.setUTCDate(nextWeek.getUTCDate() + 7);
-        nextWeek.setUTCHours(17, 0, 0, 0);
-      }
-      
-      return nextWeek;
-    }
+    function getNextStorm(now, server) {
+  const nextWeek = new Date(now);
+  
+  if (server === 'na') {
+    // North America: Next Tuesday 00:00 UTC
+    nextWeek.setUTCDate(now.getUTCDate() + ((9 - now.getUTCDay()) % 7 || 7));
+    nextWeek.setUTCHours(0, 0, 0, 0);
+  } else if (server === 'sa') {
+    // South America: Next Monday 22:00 UTC
+    nextWeek.setUTCDate(now.getUTCDate() + ((8 - now.getUTCDay()) % 7 || 7));
+    nextWeek.setUTCHours(22, 0, 0, 0);
+  } else if (server === 'asia') {
+    // Asia: Next Monday 11:00 UTC
+    nextWeek.setUTCDate(now.getUTCDate() + ((8 - now.getUTCDay()) % 7 || 7));
+    nextWeek.setUTCHours(11, 0, 0, 0);
+  } else if (server === 'oceania') {
+    // Oceania: Next Monday 09:00 UTC
+    nextWeek.setUTCDate(now.getUTCDate() + ((8 - now.getUTCDay()) % 7 || 7));
+    nextWeek.setUTCHours(9, 0, 0, 0);
+  } else {
+    // Europe (default): Next Monday 17:00 UTC
+    nextWeek.setUTCDate(now.getUTCDate() + ((8 - now.getUTCDay()) % 7 || 7));
+    nextWeek.setUTCHours(17, 0, 0, 0);
+  }
+  
+  return nextWeek;
+}
 
     // Image cache for PNG export
 const imageCache = new Map();
@@ -1966,13 +1984,6 @@ function preloadImages() {
 
 function getCachedImage(filename) {
   return imageCache.get(filename) || null;
-}
-
-// Add getCellLabel function if missing
-function getCellLabel(idx) {
-  const row = Math.floor(idx / GRID_SIZE);
-  const col = idx % GRID_SIZE;
-  return String.fromCharCode(65 + row) + (col + 1);
 }
   </script>
 </body>
