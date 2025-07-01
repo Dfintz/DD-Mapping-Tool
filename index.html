@@ -1536,94 +1536,113 @@
 
     // --- PNG Export ---
     function exportPNG() {
-      // --- Layout constants ---
       const cellSize = 94;
       const gridSize = GRID_SIZE;
       const legendIconSize = 36;
       const legendGap = 18;
-      const legendPadding = 32;
-      const legendTitleHeight = 32;
-      const legendLabelHeight = 18;
-      const legendCategoryGap = 32;
-      const legendWidth = legendPadding * 2 + legendIconSize + 8 + legendLabelHeight * 2;
-      const mapWidth = cellSize * gridSize;
-      const mapHeight = cellSize * gridSize;
+      const legendPadding = 24;
+      const legendFont = 'bold 18px sans-serif';
+      const legendLabelFont = '14px sans-serif';
       const topBarHeight = 60;
       const bottomBarHeight = 80;
-      const canvasWidth = legendWidth * 2 + mapWidth;
-      const canvasHeight = topBarHeight + mapHeight + bottomBarHeight;
+      const legendWidth = 180;
+      const canvasWidth = cellSize * gridSize + legendWidth * 2 + legendPadding * 2;
+      const canvasHeight = topBarHeight + cellSize * gridSize + bottomBarHeight;
       const scale = window.devicePixelRatio || 1;
-
-      // --- Prepare canvas ---
       const canvas = document.createElement('canvas');
       canvas.width = canvasWidth * scale;
       canvas.height = canvasHeight * scale;
       const ctx = canvas.getContext('2d');
       ctx.scale(scale, scale);
 
-      // --- Load images ---
+      // Draw background image if available
       const bgImg = new window.Image();
       bgImg.src = 'background.jpg';
-      const fwbImg = new window.Image();
-      fwbImg.src = 'fwb.png';
-
-      // Helper to draw legends
-      function drawLegend(ctx, icons, title, x, y) {
-        ctx.save();
-        ctx.font = 'bold 20px sans-serif';
-        ctx.fillStyle = '#ffe082';
-        ctx.textAlign = 'left';
-        ctx.fillText(title, x, y + legendTitleHeight - 8);
-        let yOffset = y + legendTitleHeight + 8;
-        for (const icon of icons) {
-          const img = new window.Image();
-          img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
-          ctx.drawImage(img, x, yOffset, legendIconSize, legendIconSize);
-          ctx.font = '16px sans-serif';
-          ctx.fillStyle = '#ffe082';
-          ctx.textAlign = 'left';
-          ctx.fillText(icon.label, x + legendIconSize + 8, yOffset + legendIconSize / 2 + 6);
-          yOffset += legendIconSize + 8;
-        }
-        ctx.restore();
-      }
-
-      // --- Draw everything after all images are loaded ---
-      bgImg.onload = fwbImg.onload = function() {
-        // Draw background
+      bgImg.onload = () => {
         ctx.drawImage(bgImg, 0, 0, canvasWidth, canvasHeight);
-        // Overlay semi-transparent for readability
-        ctx.fillStyle = 'rgba(30,20,10,0.85)';
+        drawOverlay();
+      };
+      bgImg.onerror = () => {
+        // fallback: solid color
+        ctx.fillStyle = '#c2b280';
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        drawOverlay();
+      };
 
-        // Draw export time and storm timer at top
+      function drawOverlay() {
+        // --- Top Bar: Time and Storm Timer ---
         ctx.save();
-        ctx.font = 'bold 28px sans-serif';
+        ctx.fillStyle = 'rgba(40,30,15,0.92)';
+        ctx.fillRect(0, 0, canvasWidth, topBarHeight);
+        ctx.font = 'bold 22px sans-serif';
         ctx.fillStyle = '#ffe082';
         ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         const now = new Date();
         const timeStr = now.toLocaleString();
-        ctx.fillText('Exported: ' + timeStr, canvasWidth / 2, 38);
+        ctx.fillText('Exported: ' + timeStr, canvasWidth / 2, topBarHeight / 2);
         // Storm timer (reuse DOM value)
-        const stormLabel = document.querySelector('.timer-label')?.textContent || '';
-        const stormCountdown = document.getElementById('storm-countdown')?.textContent || '';
-        ctx.font = 'bold 22px sans-serif';
-        ctx.fillText(`${stormLabel}: ${stormCountdown}`, canvasWidth / 2, 62);
+        const stormText = document.getElementById('storm-countdown').textContent;
+        const stormLabel = document.querySelector('.timer-label').textContent;
+        ctx.font = 'bold 18px sans-serif';
+        ctx.fillStyle = '#ffd600';
+        ctx.fillText(`${stormLabel}: ${stormText}`, canvasWidth / 2, topBarHeight - 18);
         ctx.restore();
 
-        // Draw POI/resource legend (left)
-        drawLegend(ctx, resourceIcons, 'Resources & POIs', legendPadding, topBarHeight + 8);
-        // Draw house legend (right)
-        drawLegend(ctx, houseIcons, 'Houses', canvasWidth - legendWidth + legendPadding - 8, topBarHeight + 8);
+        // --- Legends ---
+        // POI/Resource legend (left)
+        ctx.save();
+        ctx.font = legendFont;
+        ctx.fillStyle = '#ffe082';
+        ctx.textAlign = 'left';
+        ctx.fillText('Resources & POIs', legendPadding, topBarHeight + 28);
+        let yLegend = topBarHeight + 54;
+        for (const icon of resourceIcons) {
+          const img = new window.Image();
+          img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+          img.onload = () => {
+            ctx.drawImage(img, legendPadding, yLegend, legendIconSize, legendIconSize);
+          };
+          if (img.complete) ctx.drawImage(img, legendPadding, yLegend, legendIconSize, legendIconSize);
+          ctx.font = legendLabelFont;
+          ctx.fillStyle = '#ffe082';
+          ctx.fillText(icon.label, legendPadding + legendIconSize + 8, yLegend + legendIconSize / 2 + 5);
+          yLegend += legendIconSize + legendGap;
+        }
+        ctx.restore();
 
-        // Draw map grid (center)
-        const mapX = legendWidth;
-        const mapY = topBarHeight;
+        // House legend (right)
+        ctx.save();
+        ctx.font = legendFont;
+        ctx.fillStyle = '#ffe082';
+        ctx.textAlign = 'left';
+        ctx.fillText('Houses', canvasWidth - legendWidth + 8, topBarHeight + 28);
+        let yHouse = topBarHeight + 54;
+        for (const icon of houseIcons) {
+          const img = new window.Image();
+          img.src = `Icons/${icon.file}`;
+          img.onload = () => {
+            ctx.drawImage(img, canvasWidth - legendWidth + 8, yHouse, legendIconSize, legendIconSize);
+          };
+          if (img.complete) ctx.drawImage(img, canvasWidth - legendWidth + 8, yHouse, legendIconSize, legendIconSize);
+          ctx.font = legendLabelFont;
+          ctx.fillStyle = '#ffe082';
+          ctx.fillText(icon.label, canvasWidth - legendWidth + 8 + legendIconSize + 8, yHouse + legendIconSize / 2 + 5);
+          yHouse += legendIconSize + legendGap;
+        }
+        ctx.restore();
+
+        // --- Map Grid (centered) ---
+        const gridX = legendWidth + legendPadding;
+        const gridY = topBarHeight;
+        ctx.save();
+        ctx.fillStyle = 'rgba(194,178,128,0.95)';
+        ctx.fillRect(gridX, gridY, cellSize * gridSize, cellSize * gridSize);
         for (let y = gridSize - 1; y >= 0; y--) {
           for (let x = 0; x < gridSize; x++) {
             const idx = y * gridSize + x;
-            const cellX = mapX + x * cellSize;
-            const cellY = mapY + (gridSize - 1 - y) * cellSize;
+            const cellX = gridX + x * cellSize;
+            const cellY = gridY + (gridSize - 1 - y) * cellSize;
             // Cell background
             ctx.save();
             ctx.beginPath();
@@ -1675,33 +1694,41 @@
             ctx.restore();
           }
         }
-
-        // Draw FWB logo and disclaimer at bottom
-        const fwbLogoWidth = 120;
-        const fwbLogoHeight = 60;
-        const fwbX = canvasWidth / 2 - fwbLogoWidth / 2;
-        const fwbY = canvasHeight - bottomBarHeight + 8;
-        ctx.drawImage(fwbImg, fwbX, fwbY, fwbLogoWidth, fwbLogoHeight);
-        ctx.save();
-        ctx.font = 'bold 18px sans-serif';
-        ctx.fillStyle = '#ffe082';
-        ctx.textAlign = 'center';
-        ctx.fillText('Provided by Fremen With Benefits', canvasWidth / 2, canvasHeight - 16);
         ctx.restore();
 
-        // Download PNG
-        canvas.toBlob(blob => {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `dune_map_${new Date().toISOString().replace(/[:.]/g,'-')}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-        }, 'image/png');
-      };
-    }
+        // --- Bottom Bar: FWB logo and disclaimer ---
+        ctx.save();
+        ctx.fillStyle = 'rgba(40,30,15,0.92)';
+        ctx.fillRect(0, canvasHeight - bottomBarHeight, canvasWidth, bottomBarHeight);
+        // FWB logo
+        const fwbImg = new window.Image();
+        fwbImg.src = 'fwb.png';
+        fwbImg.onload = () => {
+          ctx.drawImage(fwbImg, canvasWidth / 2 - 60, canvasHeight - bottomBarHeight + 10, 120, 48);
+          drawDisclaimer();
+        };
+        fwbImg.onerror = drawDisclaimer;
+        function drawDisclaimer() {
+          ctx.font = 'bold 18px sans-serif';
+          ctx.fillStyle = '#ffe082';
+          ctx.textAlign = 'center';
+          ctx.fillText('Provided by Fremen With Benefits', canvasWidth / 2, canvasHeight - 18);
+        }
+        ctx.restore();
 
-    // Helper to draw an icon on canvas at (cx, cy) with given size
+        // --- Download PNG (after all images loaded) ---
+        setTimeout(() => {
+          canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `dune_map_${new Date().toISOString().replace(/[:.]/g,'-')}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }, 'image/png');
+        }, 400);
+      }
+    // --- Helper to draw an icon on canvas at (cx, cy) with given size ---
     function drawIconOnCanvas(ctx, icon, cx, cy, size) {
       if (!icon || !icon.file) return;
       const img = new window.Image();
