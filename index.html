@@ -932,15 +932,17 @@
       document.getElementById('export-json').onclick = () => {
         // Build export data with coordinate labels and subcells
         const exportMap = mapState.map((cell, idx) => {
-          let icons = Array.isArray(cell) ? cell.filter(ic => !ic.subcells) : [];
-          let subcells = (cell && cell.subcells) ? cell.subcells : [
+          // Always use object structure for each cell
+          let icons = [];
+          let subcells = [
             [[], [], []],
             [[], [], []],
             [[], [], []]
           ];
-          // If cell is an array and has .subcells, remove subcells from icons
-          if (Array.isArray(cell) && cell.subcells) {
-            icons = cell.filter(ic => typeof ic === 'object' && ic.name);
+          if (cell && typeof cell === 'object') {
+            if (Array.isArray(cell.icons)) icons = cell.icons;
+            else if (Array.isArray(cell)) icons = cell.filter(ic => ic && ic.name);
+            if (cell.subcells) subcells = cell.subcells;
           }
           return {
             coord: getCellLabel(idx),
@@ -1650,6 +1652,7 @@
             ctx.strokeStyle = '#ffe082';
             ctx.lineWidth = 2;
             ctx.roundRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4, 8);
+           
             ctx.fill();
             ctx.stroke();
             ctx.restore();
