@@ -576,7 +576,7 @@
           // 3x3 grid positions: [ [0,0],[0,1],[0,2] ... [2,2] ]
           const gridLabels = [
             ['',    'N',    ''],
-            ['W',   'C',    'E'],
+            ['W',   '',    'E'], // Remove 'C' from center
             ['',    'S',    '']
           ];
           // Store POIs for each subcell in mapState[idx].subcells
@@ -1536,89 +1536,169 @@
 
     // --- PNG Export ---
     function exportPNG() {
-      const gridElem = document.getElementById('map-grid');
-      const cellSize = 94; // px (default, matches CSS for desktop)
+      // --- Layout constants ---
+      const cellSize = 94;
       const gridSize = GRID_SIZE;
-      const canvas = document.createElement('canvas');
+      const legendIconSize = 36;
+      const legendGap = 18;
+      const legendPadding = 32;
+      const legendTitleHeight = 32;
+      const legendLabelHeight = 18;
+      const legendCategoryGap = 32;
+      const legendWidth = legendPadding * 2 + legendIconSize + 8 + legendLabelHeight * 2;
+      const mapWidth = cellSize * gridSize;
+      const mapHeight = cellSize * gridSize;
+      const topBarHeight = 60;
+      const bottomBarHeight = 80;
+      const canvasWidth = legendWidth * 2 + mapWidth;
+      const canvasHeight = topBarHeight + mapHeight + bottomBarHeight;
       const scale = window.devicePixelRatio || 1;
-      canvas.width = cellSize * gridSize * scale;
-      canvas.height = cellSize * gridSize * scale;
+
+      // --- Prepare canvas ---
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasWidth * scale;
+      canvas.height = canvasHeight * scale;
       const ctx = canvas.getContext('2d');
       ctx.scale(scale, scale);
 
-      // Background
-      ctx.fillStyle = '#c2b280';
-      ctx.fillRect(0, 0, cellSize * gridSize, cellSize * gridSize);
+      // --- Load images ---
+      const bgImg = new window.Image();
+      bgImg.src = 'background.jpg';
+      const fwbImg = new window.Image();
+      fwbImg.src = 'fwb.png';
 
-      // Draw each cell
-      for (let y = gridSize - 1; y >= 0; y--) {
-        for (let x = 0; x < gridSize; x++) {
-          const idx = y * gridSize + x;
-          const cellX = x * cellSize;
-          const cellY = (gridSize - 1 - y) * cellSize;
-          // Cell background
-          ctx.save();
-          ctx.beginPath();
-          ctx.fillStyle = exploredState[idx] ? 'rgba(30,20,10,0.95)' : 'rgba(60,60,60,0.7)';
-          ctx.strokeStyle = '#ffe082';
-          ctx.lineWidth = 2;
-          ctx.roundRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4, 8);
-          ctx.fill();
-          ctx.stroke();
-          ctx.restore();
-          // Draw subcells (3x3 grid)
-          const cell = mapState[idx];
-          const subcells = (cell && cell.subcells) ? cell.subcells : [
-            [[], [], []],
-            [[], [], []],
-            [[], [], []]
-          ];
-          for (let gy = 0; gy < 3; gy++) {
-            for (let gx = 0; gx < 3; gx++) {
-              const iconsArr = subcells[gy][gx];
-              const iconCount = iconsArr.length;
-              // Calculate subcell center
-              const subcellX = cellX + gx * (cellSize / 3) + (cellSize / 6);
-              const subcellY = cellY + gy * (cellSize / 3) + (cellSize / 6);
-              if (iconCount === 1) {
-                // Draw single icon centered
-                drawIconOnCanvas(ctx, iconsArr[0], subcellX, subcellY, 18);
-              } else if (iconCount === 2) {
-                // Two icons side by side
-                drawIconOnCanvas(ctx, iconsArr[0], subcellX - 7, subcellY, 14);
-                drawIconOnCanvas(ctx, iconsArr[1], subcellX + 7, subcellY, 14);
-              } else if (iconCount === 3 || iconCount === 4) {
-                // 2x2 grid
-                const positions = [
-                  [-7, -7], [7, -7], [-7, 7], [7, 7]
-                ];
-                for (let i = 0; i < iconCount; i++) {
-                  drawIconOnCanvas(ctx, iconsArr[i], subcellX + positions[i][0], subcellY + positions[i][1], 12);
+      // Helper to draw legends
+      function drawLegend(ctx, icons, title, x, y) {
+        ctx.save();
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillStyle = '#ffe082';
+        ctx.textAlign = 'left';
+        ctx.fillText(title, x, y + legendTitleHeight - 8);
+        let yOffset = y + legendTitleHeight + 8;
+        for (const icon of icons) {
+          const img = new window.Image();
+          img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+          ctx.drawImage(img, x, yOffset, legendIconSize, legendIconSize);
+          ctx.font = '16px sans-serif';
+          ctx.fillStyle = '#ffe082';
+          ctx.textAlign = 'left';
+          ctx.fillText(icon.label, x + legendIconSize + 8, yOffset + legendIconSize / 2 + 6);
+          yOffset += legendIconSize + 8;
+        }
+        ctx.restore();
+      }
+
+      // --- Draw everything after all images are loaded ---
+      bgImg.onload = fwbImg.onload = function() {
+        // Draw background
+        ctx.drawImage(bgImg, 0, 0, canvasWidth, canvasHeight);
+        // Overlay semi-transparent for readability
+        ctx.fillStyle = 'rgba(30,20,10,0.85)';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // Draw export time and storm timer at top
+        ctx.save();
+        ctx.font = 'bold 28px sans-serif';
+        ctx.fillStyle = '#ffe082';
+        ctx.textAlign = 'center';
+        const now = new Date();
+        const timeStr = now.toLocaleString();
+        ctx.fillText('Exported: ' + timeStr, canvasWidth / 2, 38);
+        // Storm timer (reuse DOM value)
+        const stormLabel = document.querySelector('.timer-label')?.textContent || '';
+        const stormCountdown = document.getElementById('storm-countdown')?.textContent || '';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText(`${stormLabel}: ${stormCountdown}`, canvasWidth / 2, 62);
+        ctx.restore();
+
+        // Draw POI/resource legend (left)
+        drawLegend(ctx, resourceIcons, 'Resources & POIs', legendPadding, topBarHeight + 8);
+        // Draw house legend (right)
+        drawLegend(ctx, houseIcons, 'Houses', canvasWidth - legendWidth + legendPadding - 8, topBarHeight + 8);
+
+        // Draw map grid (center)
+        const mapX = legendWidth;
+        const mapY = topBarHeight;
+        for (let y = gridSize - 1; y >= 0; y--) {
+          for (let x = 0; x < gridSize; x++) {
+            const idx = y * gridSize + x;
+            const cellX = mapX + x * cellSize;
+            const cellY = mapY + (gridSize - 1 - y) * cellSize;
+            // Cell background
+            ctx.save();
+            ctx.beginPath();
+            ctx.fillStyle = exploredState[idx] ? 'rgba(30,20,10,0.95)' : 'rgba(60,60,60,0.7)';
+            ctx.strokeStyle = '#ffe082';
+            ctx.lineWidth = 2;
+            ctx.roundRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4, 8);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+            // Draw subcells (3x3 grid)
+            const cell = mapState[idx];
+            const subcells = (cell && cell.subcells) ? cell.subcells : [
+              [[], [], []],
+              [[], [], []],
+              [[], [], []]
+            ];
+            for (let gy = 0; gy < 3; gy++) {
+              for (let gx = 0; gx < 3; gx++) {
+                const iconsArr = subcells[gy][gx];
+                const iconCount = iconsArr.length;
+                // Calculate subcell center
+                const subcellX = cellX + gx * (cellSize / 3) + (cellSize / 6);
+                const subcellY = cellY + gy * (cellSize / 3) + (cellSize / 6);
+                if (iconCount === 1) {
+                  drawIconOnCanvas(ctx, iconsArr[0], subcellX, subcellY, 18);
+                } else if (iconCount === 2) {
+                  drawIconOnCanvas(ctx, iconsArr[0], subcellX - 7, subcellY, 14);
+                  drawIconOnCanvas(ctx, iconsArr[1], subcellX + 7, subcellY, 14);
+                } else if (iconCount === 3 || iconCount === 4) {
+                  const positions = [
+                    [-7, -7], [7, -7], [-7, 7], [7, 7]
+                  ];
+                  for (let i = 0; i < iconCount; i++) {
+                    drawIconOnCanvas(ctx, iconsArr[i], subcellX + positions[i][0], subcellY + positions[i][1], 12);
+                  }
                 }
               }
             }
+            // Draw coordinate label
+            ctx.save();
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillStyle = '#ffe082cc';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            const rowLabel = String.fromCharCode(65 + y);
+            const colLabel = (x + 1).toString();
+            ctx.fillText(`${rowLabel}${colLabel}`, cellX + cellSize - 8, cellY + cellSize - 8);
+            ctx.restore();
           }
-          // Draw coordinate label
-          ctx.save();
-          ctx.font = 'bold 16px sans-serif';
-          ctx.fillStyle = '#ffe082cc';
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'bottom';
-          const rowLabel = String.fromCharCode(65 + y);
-          const colLabel = (x + 1).toString();
-          ctx.fillText(`${rowLabel}${colLabel}`, cellX + cellSize - 8, cellY + cellSize - 8);
-          ctx.restore();
         }
-      }
-      // Download PNG
-      canvas.toBlob(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `dune_map_${new Date().toISOString().replace(/[:.]/g,'-')}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }, 'image/png');
+
+        // Draw FWB logo and disclaimer at bottom
+        const fwbLogoWidth = 120;
+        const fwbLogoHeight = 60;
+        const fwbX = canvasWidth / 2 - fwbLogoWidth / 2;
+        const fwbY = canvasHeight - bottomBarHeight + 8;
+        ctx.drawImage(fwbImg, fwbX, fwbY, fwbLogoWidth, fwbLogoHeight);
+        ctx.save();
+        ctx.font = 'bold 18px sans-serif';
+        ctx.fillStyle = '#ffe082';
+        ctx.textAlign = 'center';
+        ctx.fillText('Provided by Fremen With Benefits', canvasWidth / 2, canvasHeight - 16);
+        ctx.restore();
+
+        // Download PNG
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `dune_map_${new Date().toISOString().replace(/[:.]/g,'-')}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+      };
     }
 
     // Helper to draw an icon on canvas at (cx, cy) with given size
