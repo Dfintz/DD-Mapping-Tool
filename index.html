@@ -1176,6 +1176,8 @@
       document.getElementById('closeIconPickerBtn').onclick = function() {
         document.getElementById('iconPickerModal').style.display = 'none';
       };
+      // Preload images for icon picker
+      preloadImages();
     });
 
     // --- Storm Timer ---
@@ -1796,9 +1798,8 @@ function rebuildHouseCache() {
               const subX = cellX + subCol * subcellSize;
               const subY = cellY + subRow * subcellSize;
               
-              subcellIcons.forEach((iconName, iconIdx) => {
-                const icon = [...resourceIcons, ...houseIcons].find(i => i.name === iconName);
-                if (icon) {
+              subcellIcons.forEach((icon, iconIdx) => {
+                if (icon && icon.file) {
                   const iconSize = 15;
                   const centerX = subX + subcellSize / 2;
                   const centerY = subY + subcellSize / 2;
@@ -1941,6 +1942,38 @@ function rebuildHouseCache() {
       
       return nextWeek;
     }
+
+    // Image cache for PNG export
+const imageCache = new Map();
+
+function preloadImages() {
+  const allIcons = [...resourceIcons, ...houseIcons];
+  allIcons.forEach(icon => {
+    const img = new Image();
+    img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+    imageCache.set(icon.file, img);
+  });
+  
+  // Preload background and logo
+  const bgImg = new Image();
+  bgImg.src = 'background.jpg';
+  imageCache.set('background.jpg', bgImg);
+  
+  const fwbImg = new Image();
+  fwbImg.src = 'arrakis.png'; // Changed from 'fwb.png' to match your actual logo
+  imageCache.set('arrakis.png', fwbImg);
+}
+
+function getCachedImage(filename) {
+  return imageCache.get(filename) || null;
+}
+
+// Add getCellLabel function if missing
+function getCellLabel(idx) {
+  const row = Math.floor(idx / GRID_SIZE);
+  const col = idx % GRID_SIZE;
+  return String.fromCharCode(65 + row) + (col + 1);
+}
   </script>
 </body>
 </html>
