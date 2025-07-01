@@ -502,14 +502,6 @@
     let timezoneUTC = true;
     let selectedServer = 'europe';
 
-    // --- Always use object structure for each cell ---
-    function ensureCell(idx) {
-      if (!mapState[idx] || typeof mapState[idx] !== 'object') {
-        mapState[idx] = { icons: [], subcells: [[[],[],[]],[[],[],[]],[[],[],[]]] };
-      }
-      if (!mapState[idx].subcells) mapState[idx].subcells = [[[],[],[]],[[],[],[]],[[],[],[]]];
-      if (!mapState[idx].icons) mapState[idx].icons = [];
-    }
 
     // --- Utility Functions ---
     function showNotification(msg, timeout=2500) {
@@ -556,43 +548,53 @@
       exploredState = JSON.parse(next.explored);
       renderGrid();
     }
+    // --- Cell State Helper ---
+    function ensureCell(idx) {
+      if (!mapState[idx] || typeof mapState[idx] !== 'object' || !('icons' in mapState[idx])) {
+        mapState[idx] = {
+          icons: [],
+          subcells: [
+            [[], [], []],
+            [[], [], []],
+            [[], [], []]
+          ]
+        };
+      }
+      if (!mapState[idx].subcells) {
+        mapState[idx].subcells = [
+          [[], [], []],
+          [[], [], []],
+          [[], [], []]
+        ];
+      }
+      if (!mapState[idx].icons) mapState[idx].icons = [];
+    }
     // --- Grid Rendering ---
     function renderGrid() {
       const grid = document.getElementById('map-grid');
       grid.innerHTML = '';
-      // Render cells from bottom (A) to top (I), left 1 to right 9
       for (let y = GRID_SIZE - 1; y >= 0; y--) {
         for (let x = 0; x < GRID_SIZE; x++) {
           const idx = y * GRID_SIZE + x;
+          ensureCell(idx);
           const cell = document.createElement('div');
           cell.className = 'map-cell';
           cell.setAttribute('role', 'gridcell');
           cell.setAttribute('tabindex', '0');
-          // Coordinates: bottom A (y=0) to top I (y=8), left 1 (x=0) to right 9 (x=8)
-          const rowLabel = String.fromCharCode(65 + y); // A-I
+          const rowLabel = String.fromCharCode(65 + y);
           const colLabel = (x + 1).toString();
           cell.setAttribute('aria-label', `Cell ${rowLabel}${colLabel}`);
           if (!exploredState[idx]) cell.classList.add('unexplored');
           if (selectedCells.has(idx)) cell.classList.add('selected');
           cell.dataset.idx = idx;
-          // Icons
           const iconDiv = document.createElement('div');
           iconDiv.className = 'cell-icons';
-          // --- 3x3 Grid Overlay ---
           const gridOverlay = document.createElement('div');
           gridOverlay.className = 'cell-3x3-grid';
-          // 3x3 grid positions: [ [0,0],[0,1],[0,2] ... [2,2] ]
           const gridLabels = [
             ['',    'N',    ''],
-            ['W',   '',    'E'], // Remove 'C' from center
+            ['W',   '',    'E'],
             ['',    'S',    '']
-          ];
-          // Store POIs for each subcell in mapState[idx].subcells
-          if (!mapState[idx]) mapState[idx] = [];
-          if (!mapState[idx].subcells) mapState[idx].subcells = [
-            [[], [], []],
-            [[], [], []],
-            [[], [], []]
           ];
           for (let gy = 0; gy < 3; gy++) {
             const row = document.createElement('div');
@@ -604,7 +606,6 @@
                 cell3.textContent = gridLabels[gy][gx];
                 cell3.classList.add('cell-3x3-' + gridLabels[gy][gx].toLowerCase());
               }
-              // Drag & drop support for POI placement
               cell3.addEventListener('dragover', e => {
                 e.preventDefault();
                 cell3.classList.add('active');
@@ -621,26 +622,21 @@
                 } catch { return; }
                 if (!icon) return;
                 pushUndo();
-                // Only add if not already present in this subcell
                 if (!mapState[idx].subcells[gy][gx].some(ic => ic.name === icon.name)) {
                   mapState[idx].subcells[gy][gx].push(icon);
                   exploredState[idx] = true;
                   renderGrid();
-                  renderLegend(); // Update legend after drop
+                  renderLegend();
                   saveToLocalStorage();
                 }
               });
-              // Icon picker on click
               cell3.addEventListener('click', e => {
                 e.stopPropagation();
-                // Open icon picker for this subcell
                 openIconPicker(idx, gy, gx);
               });
-              // Render icons in subcell
               const iconsArr = mapState[idx].subcells[gy][gx];
               const iconCount = iconsArr.length;
               if (iconCount === 1) {
-                // Center single icon
                 const icon = iconsArr[0];
                 const img = document.createElement('img');
                 img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
@@ -651,7 +647,6 @@
                 img.style.margin = '1px';
                 cell3.appendChild(img);
               } else if (iconCount === 2) {
-                // Two icons side by side
                 iconsArr.forEach((icon, i) => {
                   const img = document.createElement('img');
                   img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
@@ -669,7 +664,6 @@
                   cell3.appendChild(img);
                 });
               } else if (iconCount === 3 || iconCount === 4) {
-                // Arrange in 2x2 grid
                 iconsArr.forEach((icon, i) => {
                   const img = document.createElement('img');
                   img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
@@ -679,7 +673,6 @@
                   img.height = 12;
                   img.style.margin = '0px';
                   img.style.position = 'absolute';
-                  // 2x2 grid positions
                   const positions = [
                     { left: '2px', top: '2px' },
                     { right: '2px', top: '2px' },
@@ -697,25 +690,18 @@
             gridOverlay.appendChild(row);
           }
           iconDiv.appendChild(gridOverlay);
-
-          const icons = mapState[idx] || [];
+          // Use icons array for legacy support, but always update exploredState if icons present
+          const icons = mapState[idx].icons;
           const isUnexplored = !exploredState[idx];
           const hasIcons = icons.length > 0;
-
-          // Set cell opacity if unexplored and has icons
           if (isUnexplored && hasIcons) {
             cell.style.opacity = '0.5';
           } else {
             cell.style.opacity = '1';
           }
-
-          // Remove old icon rendering in main cell (handled by subcells now)
-
-          // --- AUTO-EXPLORE: If a cell has icons, set it as explored ---
           if (icons.length > 0 && !exploredState[idx]) {
             exploredState[idx] = true;
           }
-
           cell.appendChild(iconDiv);
           // Add coordinate label in corner
           const coordLabel = document.createElement('div');
@@ -782,18 +768,16 @@
               return;
             }
             pushUndo();
-            mapState[idx] = mapState[idx] || [];
-            if (!mapState[idx].some(ic => ic.name === icon.name)) {
-              mapState[idx].push(icon);
-              // --- Set cell as explored when icon is dropped ---
+            if (!mapState[idx].icons.some(ic => ic.name === icon.name)) {
+              mapState[idx].icons.push(icon);
               exploredState[idx] = true;
               renderGrid();
-              renderLegend(); // Update legend after drop
+              renderLegend();
               saveToLocalStorage();
             }
           });
           cell.addEventListener('contextmenu', e => {
-            e.preventDefault(); // Prevent the browser context menu
+            e.preventDefault();
             pushUndo();
             exploredState[idx] = !exploredState[idx];
             renderGrid();
@@ -1733,7 +1717,7 @@
           }, 'image/png');
         }, 400);
       }
-
+    }
     // --- Helper to draw an icon on canvas at (cx, cy) with given size ---
     function drawIconOnCanvas(ctx, icon, cx, cy, size) {
       if (!icon || !icon.file) return;
