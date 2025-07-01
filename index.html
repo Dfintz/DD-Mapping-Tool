@@ -511,6 +511,7 @@
       setTimeout(() => notif.style.display = 'none', timeout);
     }
     function saveToLocalStorage() {
+      invalidateHouseCache(); // Add this line
       localStorage.setItem('dune_map_state', JSON.stringify({ mapState, exploredState }));
     }
     function loadFromLocalStorage() {
@@ -1027,15 +1028,13 @@
       document.getElementById('share-link').onclick = () => {
         // Build export data with coordinate labels and subcells (same as JSON export)
         const exportMap = mapState.map((cell, idx) => {
-          let icons = Array.isArray(cell) ? cell.filter(ic => !ic.subcells) : [];
+          // Always use object structure for each cell
+          let icons = (cell && cell.icons) ? cell.icons : [];
           let subcells = (cell && cell.subcells) ? cell.subcells : [
             [[], [], []],
             [[], [], []],
             [[], [], []]
           ];
-          if (Array.isArray(cell) && cell.subcells) {
-            icons = cell.filter(ic => typeof ic === 'object' && ic.name);
-          }
           return {
             coord: getCellLabel(idx),
             icons,
@@ -1106,11 +1105,15 @@
             ms = Array(GRID_SIZE * GRID_SIZE);
             es = Array(GRID_SIZE * GRID_SIZE);
             data.map.forEach((cell, idx) => {
-              ms[idx] = cell.icons || [];
-              // Restore subcells if present
-              if (cell.subcells) {
-                ms[idx].subcells = cell.subcells;
-              }
+              // Always use object structure for each cell
+              ms[idx] = {
+                icons: Array.isArray(cell.icons) ? cell.icons : [],
+                subcells: cell.subcells ? cell.subcells : [
+                  [[], [], []],
+                  [[], [], []],
+                  [[], [], []]
+                ]
+              };
             });
             data.explored.forEach((cell, idx) => {
               es[idx] = !!cell.explored;
@@ -1435,8 +1438,6 @@
         updateStormTimer();
       };
     }
-    setInterval(updateStormTimer, 1000);
-    updateStormTimer();
 
     // --- Icon Picker Modal Logic ---
     let iconPickerCellIdx = null;
@@ -1502,26 +1503,49 @@
       modal.style.display = 'flex';
     }
 
-    // Returns true if the house icon is already placed anywhere in the map (including subcells)
-    function isHousePlaced(houseName) {
-      // Check main cell icons
-      for (const cell of mapState) {
-        if (Array.isArray(cell) && cell.some(ic => ic.name === houseName)) {
-          return true;
+    // Add caching for house placement status
+let housePlacementCache = new Map();
+let cacheInvalid = false;
+
+function invalidateHouseCache() {
+  cacheInvalid = true;
+}
+
+function isHousePlaced(houseName) {
+  if (cacheInvalid || !housePlacementCache.has(houseName)) {
+    rebuildHouseCache();
+  }
+  return housePlacementCache.get(houseName) || false;
+}
+
+function rebuildHouseCache() {
+  housePlacementCache.clear();
+  for (const cell of mapState) {
+    // Check main cell icons
+    if (Array.isArray(cell) && cell.length > 0) {
+      cell.forEach(icon => {
+        if (icon.name && icon.name.startsWith('House_')) {
+          housePlacementCache.set(icon.name, true);
         }
-        // Check subcells
-        if (cell && cell.subcells) {
-          for (const row of cell.subcells) {
-            for (const subcell of row) {
-              if (subcell.some(ic => ic.name === houseName)) {
-                return true;
-              }
+      });
+    }
+    // Check subcells
+    if (cell && cell.subcells) {
+      for (const row of cell.subcells) {
+        for (const subcell of row) {
+          subcell.forEach(icon => {
+            if (icon.name && icon.name.startsWith('House_')) {
+              housePlacementCache.set(icon.name, true);
             }
-          }
+          });
         }
       }
-      return false;
     }
+  }
+  cacheInvalid = false;
+}
+
+// Call invalidateHouseCache() whenever map state changes
 
     // --- PNG Export ---
     function exportPNG() {
@@ -1544,169 +1568,12 @@
       const ctx = canvas.getContext('2d');
       ctx.scale(scale, scale);
 
-      // Draw background image if available
-      const bgImg = new window.Image();
-      bgImg.src = 'background.jpg';
-      bgImg.onload = () => {
-        ctx.drawImage(bgImg, 0, 0, canvasWidth, canvasHeight);
-        drawOverlay();
-      };
-      bgImg.onerror = () => {
-        // fallback: solid color
-        ctx.fillStyle = '#c2b280';
-        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-        drawOverlay();
-      };
+      let imagesToLoad = 0;
+      let imagesLoaded = 0;
 
-      function drawOverlay() {
-        // --- Top Bar: Time and Storm Timer ---
-        ctx.save();
-        ctx.fillStyle = 'rgba(40,30,15,0.92)';
-        ctx.fillRect(0, 0, canvasWidth, topBarHeight);
-        ctx.font = 'bold 22px sans-serif';
-        ctx.fillStyle = '#ffe082';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const now = new Date();
-        const timeStr = now.toLocaleString();
-        ctx.fillText('Exported: ' + timeStr, canvasWidth / 2, topBarHeight / 2);
-        // Storm timer (reuse DOM value)
-        const stormText = document.getElementById('storm-countdown').textContent;
-        const stormLabel = document.querySelector('.timer-label').textContent;
-        ctx.font = 'bold 18px sans-serif';
-        ctx.fillStyle = '#ffd600';
-        ctx.fillText(`${stormLabel}: ${stormText}`, canvasWidth / 2, topBarHeight - 18);
-        ctx.restore();
-
-        // --- Legends ---
-        // POI/Resource legend (left)
-        ctx.save();
-        ctx.font = legendFont;
-        ctx.fillStyle = '#ffe082';
-        ctx.textAlign = 'left';
-        ctx.fillText('Resources & POIs', legendPadding, topBarHeight + 28);
-        let yLegend = topBarHeight + 54;
-        for (const icon of resourceIcons) {
-          const img = new window.Image();
-          img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
-          img.onload = () => {
-            ctx.drawImage(img, legendPadding, yLegend, legendIconSize, legendIconSize);
-          };
-          if (img.complete) ctx.drawImage(img, legendPadding, yLegend, legendIconSize, legendIconSize);
-          ctx.font = legendLabelFont;
-          ctx.fillStyle = '#ffe082';
-          ctx.fillText(icon.label, legendPadding + legendIconSize + 8, yLegend + legendIconSize / 2 + 5);
-          yLegend += legendIconSize + legendGap;
-        }
-        ctx.restore();
-
-        // House legend (right)
-        ctx.save();
-        ctx.font = legendFont;
-        ctx.fillStyle = '#ffe082';
-        ctx.textAlign = 'left';
-        ctx.fillText('Houses', canvasWidth - legendWidth + 8, topBarHeight + 28);
-        let yHouse = topBarHeight + 54;
-        for (const icon of houseIcons) {
-          const img = new window.Image();
-          img.src = `Icons/${icon.file}`;
-          img.onload = () => {
-            ctx.drawImage(img, canvasWidth - legendWidth + 8, yHouse, legendIconSize, legendIconSize);
-          };
-          if (img.complete) ctx.drawImage(img, canvasWidth - legendWidth + 8, yHouse, legendIconSize, legendIconSize);
-          ctx.font = legendLabelFont;
-          ctx.fillStyle = '#ffe082';
-          ctx.fillText(icon.label, canvasWidth - legendWidth + 8 + legendIconSize + 8, yHouse + legendIconSize / 2 + 5);
-          yHouse += legendIconSize + legendGap;
-        }
-        ctx.restore();
-
-        // --- Map Grid (centered) ---
-        const gridX = legendWidth + legendPadding;
-        const gridY = topBarHeight;
-        ctx.save();
-        ctx.fillStyle = 'rgba(194,178,128,0.95)';
-        ctx.fillRect(gridX, gridY, cellSize * gridSize, cellSize * gridSize);
-        for (let y = gridSize - 1; y >= 0; y--) {
-          for (let x = 0; x < gridSize; x++) {
-            const idx = y * gridSize + x;
-            const cellX = gridX + x * cellSize;
-            const cellY = gridY + (gridSize - 1 - y) * cellSize;
-            // Cell background
-            ctx.save();
-            ctx.beginPath();
-            ctx.fillStyle = exploredState[idx] ? 'rgba(30,20,10,0.95)' : 'rgba(60,60,60,0.7)';
-            ctx.strokeStyle = '#ffe082';
-            ctx.lineWidth = 2;
-            ctx.roundRect(cellX + 2, cellY + 2, cellSize - 4, cellSize - 4, 8);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
-            // Draw subcells (3x3 grid)
-            const cell = mapState[idx];
-            const subcells = (cell && cell.subcells) ? cell.subcells : [
-              [[], [], []],
-              [[], [], []],
-              [[], [], []]
-            ];
-            for (let gy = 0; gy < 3; gy++) {
-              for (let gx = 0; gx < 3; gx++) {
-                const iconsArr = subcells[gy][gx];
-                const iconCount = iconsArr.length;
-                // Calculate subcell center
-                const subcellX = cellX + gx * (cellSize / 3) + (cellSize / 6);
-                const subcellY = cellY + gy * (cellSize / 3) + (cellSize / 6);
-                if (iconCount === 1) {
-                  drawIconOnCanvas(ctx, iconsArr[0], subcellX, subcellY, 18);
-                } else if (iconCount === 2) {
-                  drawIconOnCanvas(ctx, iconsArr[0], subcellX - 7, subcellY, 14);
-                  drawIconOnCanvas(ctx, iconsArr[1], subcellX + 7, subcellY, 14);
-                } else if (iconCount === 3 || iconCount === 4) {
-                  const positions = [
-                    [-7, -7], [7, -7], [-7, 7], [7, 7]
-                  ];
-                  for (let i = 0; i < iconCount; i++) {
-                    drawIconOnCanvas(ctx, iconsArr[i], subcellX + positions[i][0], subcellY + positions[i][1], 12);
-                  }
-                }
-              }
-            }
-            // Draw coordinate label
-            ctx.save();
-            ctx.font = 'bold 16px sans-serif';
-            ctx.fillStyle = '#ffe082cc';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'bottom';
-            const rowLabel = String.fromCharCode(65 + y);
-            const colLabel = (x + 1).toString();
-            ctx.fillText(`${rowLabel}${colLabel}`, cellX + cellSize - 8, cellY + cellSize - 8);
-            ctx.restore();
-          }
-        }
-        ctx.restore();
-
-        // --- Bottom Bar: FWB logo and disclaimer ---
-        ctx.save();
-        ctx.fillStyle = 'rgba(40,30,15,0.92)';
-        ctx.fillRect(0, canvasHeight - bottomBarHeight, canvasWidth, bottomBarHeight);
-        // FWB logo
-        const fwbImg = new window.Image();
-        fwbImg.src = 'fwb.png';
-        fwbImg.onload = () => {
-          ctx.drawImage(fwbImg, canvasWidth / 2 - 60, canvasHeight - bottomBarHeight + 10, 120, 48);
-          drawDisclaimer();
-        };
-        fwbImg.onerror = drawDisclaimer;
-        function drawDisclaimer() {
-          ctx.font = 'bold 18px sans-serif';
-          ctx.fillStyle = '#ffe082';
-          ctx.textAlign = 'center';
-          ctx.fillText('Provided by Fremen With Benefits', canvasWidth / 2, canvasHeight - 18);
-        }
-        ctx.restore();
-
-        // --- Download PNG (after all images loaded) ---
-        setTimeout(() => {
+      function checkAllImagesLoaded() {
+        if (imagesLoaded >= imagesToLoad) {
+          // All images loaded, safe to download
           canvas.toBlob(blob => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1715,7 +1582,29 @@
             a.click();
             URL.revokeObjectURL(url);
           }, 'image/png');
-        }, 400);
+        }
+      }
+
+      function drawOverlay() {
+        // Count images that need loading
+        imagesToLoad = resourceIcons.length + houseIcons.length + 2; // +2 for bg and fwb
+        
+        // Use cached images or load with proper tracking
+        for (const icon of resourceIcons) {
+          const img = getCachedImage(icon.file) || new window.Image();
+          if (img.complete) {
+            ctx.drawImage(img, /* coordinates */);
+            imagesLoaded++;
+          } else {
+            img.onload = () => {
+              ctx.drawImage(img, /* coordinates */);
+              imagesLoaded++;
+              checkAllImagesLoaded();
+            };
+          }
+        }
+        
+        checkAllImagesLoaded();
       }
     }
     // --- Helper to draw an icon on canvas at (cx, cy) with given size ---
@@ -1732,6 +1621,234 @@
         };
       }
     }
+
+    // Add debounced rendering and selective updates
+    let renderGridPending = false;
+
+    function requestGridRender() {
+      if (renderGridPending) return;
+      renderGridPending = true;
+      requestAnimationFrame(() => {
+        renderGrid();
+        renderGridPending = false;
+      });
+    }
+
+    // Replace individual cell updates instead of full grid rebuilds
+    function updateCell(idx) {
+      const cellElement = document.querySelector(`[data-idx="${idx}"]`);
+      if (cellElement) {
+        // Update only this specific cell instead of rebuilding entire grid
+        updateSingleCell(cellElement, idx);
+      }
+    }
+
+    function updateSingleCell(cellElement, idx) {
+      ensureCell(idx);
+      // Update cell content without rebuilding
+      const iconDiv = cellElement.querySelector('.cell-icons');
+      // Update only the icon content, preserve event listeners
+      updateCellIcons(iconDiv, idx);
+    }
+
+    // Add image preloading and caching
+const imageCache = new Map();
+
+function preloadImages() {
+  const allIcons = [...resourceIcons, ...houseIcons];
+  allIcons.forEach(icon => {
+    const img = new Image();
+    img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+    imageCache.set(icon.file, img);
+  });
+  
+  // Preload background and logo
+  const bgImg = new Image();
+  bgImg.src = 'background.jpg';
+  imageCache.set('background.jpg', bgImg);
+  
+  const fwbImg = new Image();
+  fwbImg.src = 'fwb.png';
+  imageCache.set('fwb.png', fwbImg);
+}
+
+function getCachedImage(filename) {
+  return imageCache.get(filename) || null;
+}
+
+// Call preloadImages() in DOMContentLoaded
+
+// Reuse objects instead of creating new ones
+const tempIconPositions = [
+  { left: '2px', top: '2px' },
+  { right: '2px', top: '2px' },
+  { left: '2px', bottom: '2px' },
+  { right: '2px', bottom: '2px' }
+];
+
+// Reuse DOM elements where possible
+const cellElementPool = [];
+
+function createOrReuseCellElement() {
+  return cellElementPool.pop() || document.createElement('div');
+}
+
+function recycleCellElement(element) {
+  // Clean element and add to pool
+  element.innerHTML = '';
+  element.className = 'map-cell';
+  cellElementPool.push(element);
+}
+
+// Use event delegation instead of individual listeners
+document.getElementById('map-grid').addEventListener('click', (e) => {
+  const cell = e.target.closest('.map-cell');
+  if (cell) {
+    const idx = parseInt(cell.dataset.idx);
+    handleCellClick(e, idx);
+  }
+});
+
+// Similar for other events (dragover, drop, contextmenu)
+
+// Add the missing getCellLabel function
+function getCellLabel(idx) {
+  const x = idx % GRID_SIZE;
+  const y = Math.floor(idx / GRID_SIZE);
+  const rowLabel = String.fromCharCode(65 + y);
+  const colLabel = (x + 1).toString();
+  return `${rowLabel}${colLabel}`;
+}
+
+// Fix the share link function - replace the existing share-link onclick handler
+document.getElementById('share-link').onclick = () => {
+  // Build export data with coordinate labels and subcells (same as JSON export)
+  const exportMap = mapState.map((cell, idx) => {
+    // Always use object structure for each cell
+    let icons = (cell && cell.icons) ? cell.icons : [];
+    let subcells = (cell && cell.subcells) ? cell.subcells : [
+      [[], [], []],
+      [[], [], []],
+      [[], [], []]
+    ];
+    return {
+      coord: getCellLabel(idx),
+      icons,
+      subcells
+    };
+  });
+  const exportExplored = exploredState.map((val, idx) => ({
+    coord: getCellLabel(idx),
+    explored: val
+  }));
+
+  const data = {
+    map: exportMap,
+    explored: exportExplored,
+    date: new Date().toISOString()
+  };
+
+  const json = JSON.stringify(data);
+  const compressed = LZString.compressToEncodedURIComponent(json);
+  const url = `${location.origin}${location.pathname}?map=${compressed}`;
+  const longUrl = url;
+
+  fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`)
+    .then(res => res.text())
+    .then(shortUrl => {
+      // Only copy the TinyURL link to clipboard
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(shortUrl)
+          .then(() => showNotification('Short shareable link copied to clipboard!'))
+          .catch(() => {
+            window.prompt('Copy this link:', shortUrl);
+            showNotification('Copy this link manually.');
+          });
+      } else {
+        window.prompt('Copy this link:', shortUrl);
+        showNotification('Copy this link manually.');
+      }
+    })
+    .catch(() => {
+      window.prompt('Copy this link:', longUrl);
+      showNotification('Could not shorten link, copied full link instead.');
+    });
+};
+
+// Also add missing functions for other features to work properly
+function getNextStorm(now, server) {
+  // This function is called in the storm timer but not defined
+  // Add basic implementation for now
+  const nextWeek = new Date(now);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  
+  if (server === 'na') {
+    nextWeek.setUTCDay(2); // Tuesday
+    nextWeek.setUTCHours(0, 0, 0, 0);
+  } else if (server === 'sa') {
+    nextWeek.setUTCDay(1); // Monday
+    nextWeek.setUTCHours(22, 0, 0, 0);
+  } else if (server === 'asia') {
+    nextWeek.setUTCDay(1); // Monday
+    nextWeek.setUTCHours(11, 0, 0, 0);
+  } else if (server === 'oceania') {
+    nextWeek.setUTCDay(1); // Monday
+    nextWeek.setUTCHours(9, 0, 0, 0);
+  } else {
+    // Europe default
+    nextWeek.setUTCDay(1); // Monday
+    nextWeek.setUTCHours(17, 0, 0, 0);
+  }
+  
+  return nextWeek;
+}
+
+// Fix the URL loading section as well - replace the existing URL loading code
+const params = new URLSearchParams(window.location.search);
+if (params.has('map')) {
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(params.get('map'));
+    const data = JSON.parse(json);
+
+    let ms, es;
+    if (Array.isArray(data.map) && Array.isArray(data.explored)) {
+      // New format with coord labels
+      ms = Array(GRID_SIZE * GRID_SIZE);
+      es = Array(GRID_SIZE * GRID_SIZE);
+      data.map.forEach((cell, idx) => {
+        // Always use object structure for each cell
+        ms[idx] = {
+          icons: Array.isArray(cell.icons) ? cell.icons : [],
+          subcells: cell.subcells ? cell.subcells : [
+            [[], [], []],
+            [[], [], []],
+            [[], [], []]
+          ]
+        };
+      });
+      data.explored.forEach((cell, idx) => {
+        es[idx] = !!cell.explored;
+      });
+    } else if (Array.isArray(data.mapState) && Array.isArray(data.exploredState)) {
+      // Old format
+      ms = data.mapState;
+      es = data.exploredState;
+    }
+
+    if (
+      Array.isArray(ms) && Array.isArray(es) &&
+      ms.length === GRID_SIZE * GRID_SIZE &&
+      es.length === GRID_SIZE * GRID_SIZE
+    ) {
+      mapState = ms;
+      exploredState = es;
+      renderGrid();
+      showNotification('Loaded map from link!');
+    }
+  } catch {
+    showNotification('Failed to load map from link.', 3000);
+  }
+}
   </script>
 </body>
 </html>
