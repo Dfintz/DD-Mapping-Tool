@@ -502,6 +502,14 @@
     let timezoneUTC = true;
     let selectedServer = 'europe';
 
+    // --- Always use object structure for each cell ---
+    function ensureCell(idx) {
+      if (!mapState[idx] || typeof mapState[idx] !== 'object') {
+        mapState[idx] = { icons: [], subcells: [[[],[],[]],[[],[],[]],[[],[],[]]] };
+      }
+      if (!mapState[idx].subcells) mapState[idx].subcells = [[[],[],[]],[[],[],[]],[[],[],[]]];
+      if (!mapState[idx].icons) mapState[idx].icons = [];
+    }
 
     // --- Utility Functions ---
     function showNotification(msg, timeout=2500) {
@@ -1725,6 +1733,7 @@
           }, 'image/png');
         }, 400);
       }
+
     // --- Helper to draw an icon on canvas at (cx, cy) with given size ---
     function drawIconOnCanvas(ctx, icon, cx, cy, size) {
       if (!icon || !icon.file) return;
