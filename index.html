@@ -1619,14 +1619,14 @@ function rebuildHouseCache() {
     function exportPNG() {
       const cellSize = 94;
       const gridSize = GRID_SIZE;
-      const legendIconSize = 28; // Reduced from 36
-      const legendGap = 12; // Reduced from 18
-      const legendPadding = 24;
-      const legendFont = 'bold 18px sans-serif';
-      const legendLabelFont = '12px sans-serif'; // Reduced from 14px
+      const legendIconSize = 24; // Further reduced from 28
+      const legendGap = 8; // Further reduced from 12
+      const legendPadding = 20; // Slightly reduced from 24
+      const legendFont = 'bold 16px sans-serif'; // Slightly smaller
+      const legendLabelFont = '11px sans-serif'; // Further reduced from 12px
       const topBarHeight = 60;
-      const bottomBarHeight = 0; // Changed from 80 to 0 - removing footer
-      const legendWidth = 200; // Increased from 180
+      const bottomBarHeight = 0;
+      const legendWidth = 200;
       const canvasWidth = cellSize * gridSize + legendWidth * 2 + legendPadding * 2;
       const canvasHeight = topBarHeight + cellSize * gridSize + bottomBarHeight;
       const scale = window.devicePixelRatio || 1;
@@ -1696,6 +1696,7 @@ function rebuildHouseCache() {
         // Save current context
         ctx.save();
         
+                       
         // Create clipping region for grid area only
         const gridX = legendWidth + legendPadding;
                const gridY = topBarHeight;
@@ -1877,20 +1878,49 @@ function rebuildHouseCache() {
             if (subcellIcons && subcellIcons.length > 0) {
               const subX = cellX + subCol * subcellSize;
               const subY = cellY + subRow * subcellSize;
+              const iconCount = subcellIcons.length;
               
-              subcellIcons.forEach((icon, iconIdx) => {
-                if (icon && icon.file) {
-                  const iconSize = 15;
-                  const centerX = subX + subcellSize / 2;
-                  const centerY = subY + subcellSize / 2;
-                  
+              if (iconCount === 1) {
+                // Single icon - larger size
+                const icon = subcellIcons[0];
+                const iconSize = 26; // Matching web version
+                const centerX = subX + subcellSize / 2;
+                const centerY = subY + subcellSize / 2;
+                
+                const img = getCachedImage(icon.file) || new Image();
+                if (img.complete && img.naturalWidth > 0) {
+                  ctx.drawImage(img, centerX - iconSize/2, centerY - iconSize/2, iconSize, iconSize);
+                } else {
+                  imagesToLoad++;
+                  img.onload = () => {
+                    ctx.drawImage(img, centerX - iconSize/2, centerY - iconSize/2, iconSize, iconSize);
+                    imageLoadHandler();
+                  };
+                  img.onerror = () => {
+                    console.warn('Failed to load subcell icon:', icon.file);
+                    imageLoadHandler();
+                  };
+                  if (!img.src) {
+                    img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                  }
+                }
+              } else if (iconCount === 2) {
+                // Two icons - side by side
+                const iconSize = 20;
+                const positions = [
+                  { x: subX + subcellSize * 0.25, y: subY + subcellSize * 0.5 },
+                  { x: subX + subcellSize * 0.75, y: subY + subcellSize * 0.5 }
+                ];
+                
+                subcellIcons.forEach((icon, idx) => {
+                  const pos = positions[idx];
                   const img = getCachedImage(icon.file) || new Image();
                   if (img.complete && img.naturalWidth > 0) {
-                    ctx.drawImage(img, centerX - iconSize/2, centerY - iconSize/2, iconSize, iconSize);
+                    ctx.drawImage(img, pos.x - iconSize/2, pos.y - iconSize/2, iconSize, iconSize);
                   } else {
                     imagesToLoad++;
                     img.onload = () => {
-                      ctx.drawImage(img, centerX - iconSize/2, centerY - iconSize/2, iconSize, iconSize);
+                      ctx.drawImage(img, pos.x - iconSize/2, pos.y - iconSize/2, iconSize, iconSize);
                       imageLoadHandler();
                     };
                     img.onerror = () => {
@@ -1901,8 +1931,96 @@ function rebuildHouseCache() {
                       img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
                     }
                   }
-                }
-              });
+                });
+              } else if (iconCount === 3) {
+                // Three icons - triangle layout
+                const iconSize = 16;
+                const positions = [
+                  { x: subX + subcellSize * 0.5, y: subY + subcellSize * 0.22 },  // Top center
+                  { x: subX + subcellSize * 0.28, y: subY + subcellSize * 0.7 },  // Bottom left
+                  { x: subX + subcellSize * 0.72, y: subY + subcellSize * 0.7 }   // Bottom right
+                ];
+                
+                subcellIcons.forEach((icon, idx) => {
+                  const pos = positions[idx];
+                  const img = getCachedImage(icon.file) || new Image();
+                  if (img.complete && img.naturalWidth > 0) {
+                    ctx.drawImage(img, pos.x - iconSize/2, pos.y - iconSize/2, iconSize, iconSize);
+                  } else {
+                    imagesToLoad++;
+                    img.onload = () => {
+                      ctx.drawImage(img, pos.x - iconSize/2, pos.y - iconSize/2, iconSize, iconSize);
+                      imageLoadHandler();
+                    };
+                    img.onerror = () => {
+                      console.warn('Failed to load subcell icon:', icon.file);
+                      imageLoadHandler();
+                    };
+                    if (!img.src) {
+                      img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                    }
+                  }
+                });
+              } else if (iconCount === 4) {
+                // Four icons - 2x2 grid
+                const iconSize = 14;
+                const positions = [
+                  { x: subX + subcellSize * 0.28, y: subY + subcellSize * 0.28 },  // Top left
+                  { x: subX + subcellSize * 0.72, y: subY + subcellSize * 0.28 },  // Top right
+                  { x: subX + subcellSize * 0.28, y: subY + subcellSize * 0.72 },  // Bottom left
+                  { x: subX + subcellSize * 0.72, y: subY + subcellSize * 0.72 }   // Bottom right
+                ];
+                
+                subcellIcons.forEach((icon, idx) => {
+                  const pos = positions[idx];
+                  const img = getCachedImage(icon.file) || new Image();
+                  if (img.complete && img.naturalWidth > 0) {
+                    ctx.drawImage(img, pos.x - iconSize/2, pos.y - iconSize/2, iconSize, iconSize);
+                  } else {
+                    imagesToLoad++;
+                    img.onload = () => {
+                      ctx.drawImage(img, pos.x - iconSize/2, pos.y - iconSize/2, iconSize, iconSize);
+                      imageLoadHandler();
+                    };
+                    img.onerror = () => {
+                      console.warn('Failed to load subcell icon:', icon.file);
+                      imageLoadHandler();
+                    };
+                    if (!img.src) {
+                      img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                    }
+                  }
+                });
+              } else {
+                // More than 4 icons - dynamic grid
+                const gridSize = Math.ceil(Math.sqrt(iconCount));
+                const iconSize = Math.max(10, Math.floor(subcellSize * 0.8 / gridSize));
+                
+                subcellIcons.forEach((icon, idx) => {
+                  const row = Math.floor(idx / gridSize);
+                  const col = idx % gridSize;
+                  const x = subX + subcellSize * (0.1 + (col + 0.5) * 0.8 / gridSize);
+                  const y = subY + subcellSize * (0.1 + (row + 0.5) * 0.8 / gridSize);
+                  
+                  const img = getCachedImage(icon.file) || new Image();
+                  if (img.complete && img.naturalWidth > 0) {
+                    ctx.drawImage(img, x - iconSize/2, y - iconSize/2, iconSize, iconSize);
+                  } else {
+                    imagesToLoad++;
+                    img.onload = () => {
+                      ctx.drawImage(img, x - iconSize/2, y - iconSize/2, iconSize, iconSize);
+                      imageLoadHandler();
+                    };
+                    img.onerror = () => {
+                      console.warn('Failed to load subcell icon:', icon.file);
+                      imageLoadHandler();
+                    };
+                    if (!img.src) {
+                      img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                    }
+                  }
+                });
+              }
             }
           }
         }
@@ -1935,7 +2053,7 @@ function rebuildHouseCache() {
         // Draw legend items
         ctx.font = legendLabelFont;
         icons.forEach((icon, idx) => {
-          const itemY = y + 15 + idx * (legendIconSize + legendGap); // Reduced spacing
+          const itemY = y + 12 + idx * (legendIconSize + legendGap); // Further reduced initial offset
           
           // Draw icon
           const img = getCachedImage(icon.file) || new Image();
@@ -1963,7 +2081,7 @@ function rebuildHouseCache() {
           ctx.shadowBlur = 2;
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
-          ctx.fillText(icon.label, x + legendIconSize + 8, itemY + legendIconSize / 2); // Reduced spacing
+          ctx.fillText(icon.label, x + legendIconSize + 6, itemY + legendIconSize / 2); // Further reduced spacing
           ctx.restore();
         });
       }
