@@ -1621,14 +1621,14 @@ function rebuildHouseCache() {
     function exportPNG() {
       const cellSize = 94;
       const gridSize = GRID_SIZE;
-      const legendIconSize = 36;
-      const legendGap = 18;
+      const legendIconSize = 28; // Reduced from 36
+      const legendGap = 12; // Reduced from 18
       const legendPadding = 24;
       const legendFont = 'bold 18px sans-serif';
-      const legendLabelFont = '14px sans-serif';
+      const legendLabelFont = '12px sans-serif'; // Reduced from 14px
       const topBarHeight = 60;
       const bottomBarHeight = 0; // Changed from 80 to 0 - removing footer
-      const legendWidth = 180;
+      const legendWidth = 200; // Increased from 180
       const canvasWidth = cellSize * gridSize + legendWidth * 2 + legendPadding * 2;
       const canvasHeight = topBarHeight + cellSize * gridSize + bottomBarHeight;
       const scale = window.devicePixelRatio || 1;
@@ -1937,7 +1937,7 @@ function rebuildHouseCache() {
         // Draw legend items
         ctx.font = legendLabelFont;
         icons.forEach((icon, idx) => {
-          const itemY = y + 20 + idx * (legendIconSize + legendGap);
+          const itemY = y + 15 + idx * (legendIconSize + legendGap); // Reduced spacing
           
           // Draw icon
           const img = getCachedImage(icon.file) || new Image();
@@ -1958,12 +1958,14 @@ function rebuildHouseCache() {
             }
           }
 
-          // Draw label with shadow for visibility
+          // Draw label next to icon (not on top) with shadow for visibility
           ctx.save();
           ctx.fillStyle = '#ffe082';
           ctx.shadowColor = '#000';
           ctx.shadowBlur = 2;
-          ctx.fillText(icon.label, x + legendIconSize + 10, itemY + legendIconSize / 2 + 5);
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(icon.label, x + legendIconSize + 8, itemY + legendIconSize / 2); // Reduced spacing
           ctx.restore();
         });
       }
