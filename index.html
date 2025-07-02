@@ -1666,7 +1666,7 @@ function rebuildHouseCache() {
 
       function drawBackground() {
         // Fill entire canvas with white background
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#222';
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
         // Load and draw background image only behind the grid
@@ -1741,12 +1741,13 @@ function rebuildHouseCache() {
           }
         }
 
-        // Draw title
+        // Draw timestamp instead of title
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 24px sans-serif';
+        ctx.font = 'bold 20px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('Dune Awakening Deep Desert Map', canvasWidth / 2, 35);
-      }
+        const now = new Date();
+        const timestamp = now.toLocaleString();
+        ctx.fillText(timestamp, canvasWidth / 2, 35);
 
       function drawGrid() {
         const gridX = legendWidth + legendPadding;
@@ -1821,6 +1822,21 @@ function rebuildHouseCache() {
           if (cell && cell.subcells) {
             drawSubcellIcons(ctx, cell.subcells, cellX, cellY);
           }
+
+          const coordLabel = String.fromCharCode(65 + row) + (col + 1);
+          ctx.save();
+          ctx.font = 'bold 14px sans-serif';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'bottom';
+          ctx.fillStyle = '#ffe082cc';
+          ctx.shadowColor = '#222';
+          ctx.shadowBlur = 2;
+          ctx.fillText(
+            coordLabel,
+            cellX + cellSize - 6,
+            cellY + cellSize - 4
+          );
+          ctx.restore();
         }
       }
 
@@ -1897,6 +1913,20 @@ function rebuildHouseCache() {
       }
 
       function drawLegends() {
+
+        // Calculate legend heights
+        const resourceLegendHeight = resourceIcons.length * (legendIconSize + legendGap) + 60;
+        const houseLegendHeight = houseIcons.length * (legendIconSize + legendGap) + 60;
+
+        // Calculate grid area vertical center
+        const gridY = topBarHeight;
+        const gridHeight = cellSize * gridSize;
+        const gridCenterY = gridY + gridHeight / 2;
+
+        // Calculate Y so that the legend is vertically centered with the grid
+        const resourceLegendY = gridCenterY - resourceLegendHeight / 2;
+        const houseLegendY = gridCenterY - houseLegendHeight / 2;
+
         // Left legend (Resources)
         drawLegend('Resources', resourceIcons, legendPadding, topBarHeight + 20);
         
