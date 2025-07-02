@@ -664,93 +664,91 @@
               const iconCount = iconsArr.length;
               cell3.style.position = 'relative'; // Always set for icon overlays
 
-if (iconCount === 1) {
-  const icon = iconsArr[0];
-  const img = document.createElement('img');
-  img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
-  img.alt = icon.label;
-  img.title = icon.label;
-  img.width = 32;
-  img.height = 32;
-  img.style.position = 'absolute';
-  img.style.left = '50%';
-  img.style.top = '50%';
-  img.style.transform = 'translate(-50%,-50%)';
-  cell3.appendChild(img);
-} else if (iconCount === 2) {
-  // Side-by-side, centered vertically
-  const positions = [
-    { left: '22%', top: '50%', transform: 'translate(-50%,-50%)' },
-    { left: '78%', top: '50%', transform: 'translate(-50%,-50%)' }
-  ];
-  iconsArr.forEach((icon, i) => {
-    const img = document.createElement('img');
-    img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
-    img.alt = icon.label;
-    img.title = icon.label;
-    img.width = 24;
-    img.height = 24;
-    img.style.position = 'absolute';
-    Object.assign(img.style, positions[i]);
-    cell3.appendChild(img);
-  });
-} else if (iconCount === 3) {
-  // Triangle layout, no overlap
-  const positions = [
-    { left: '50%', top: '18%', transform: 'translate(-50%,-50%)' },   // Top center
-    { left: '24%', top: '72%', transform: 'translate(-50%,-50%)' },   // Bottom left
-    { left: '76%', top: '72%', transform: 'translate(-50%,-50%)' }    // Bottom right
-  ];
-  iconsArr.forEach((icon, i) => {
-    const img = document.createElement('img');
-    img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
-    img.alt = icon.label;
-    img.title = icon.label;
-    img.width = 20;
-    img.height = 20;
-    img.style.position = 'absolute';
-    Object.assign(img.style, positions[i]);
-    cell3.appendChild(img);
-  });
-} else if (iconCount === 4) {
-  // 2x2 grid, corners
-  const positions = [
-    { left: '26%', top: '26%', transform: 'translate(-50%,-50%)' },   // Top left
-    { left: '74%', top: '26%', transform: 'translate(-50%,-50%)' },   // Top right
-    { left: '26%', top: '74%', transform: 'translate(-50%,-50%)' },   // Bottom left
-    { left: '74%', top: '74%', transform: 'translate(-50%,-50%)' }    // Bottom right
-  ];
-  iconsArr.forEach((icon, i) => {
-    const img = document.createElement('img');
-    img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
-    img.alt = icon.label;
-    img.title = icon.label;
-    img.width = 18;
-    img.height = 18;
-    img.style.position = 'absolute';
-    Object.assign(img.style, positions[i]);
-    cell3.appendChild(img);
-  });
-              } else if (iconCount === 4) {
-                // 2x2 grid for 4 icons
-                const gridPositions = [
-                  { left: '10%', top: '10%' },    // Top left
-                  { right: '10%', top: '10%' },   // Top right
-                  { left: '10%', bottom: '10%' }, // Bottom left
-                  { right: '10%', bottom: '10%' } // Bottom right
+              if (iconCount === 1) {
+                const icon = iconsArr[0];
+                const img = document.createElement('img');
+                img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                img.alt = icon.label;
+                img.title = icon.label;
+                img.width = 40;  // Increased from 32
+                img.height = 40;
+                img.style.position = 'absolute';
+                img.style.left = '50%';
+                img.style.top = '50%';
+                img.style.transform = 'translate(-50%,-50%)';
+                cell3.appendChild(img);
+              } else if (iconCount === 2) {
+                // Side-by-side, centered vertically
+                const positions = [
+                  { left: '25%', top: '50%', transform: 'translate(-50%,-50%)' },
+                  { left: '75%', top: '50%', transform: 'translate(-50%,-50%)' }
                 ];
                 iconsArr.forEach((icon, i) => {
                   const img = document.createElement('img');
                   img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
                   img.alt = icon.label;
                   img.title = icon.label;
-                  img.width = 18;
-                  img.height = 18;
-                  img.style.margin = '0px';
+                  img.width = 30;  // Increased from 24
+                  img.height = 30;
                   img.style.position = 'absolute';
-                  const pos = gridPositions[i];
-                  for (const key in pos) img.style[key] = pos[key];
-                  cell3.style.position = 'relative';
+                  Object.assign(img.style, positions[i]);
+                  cell3.appendChild(img);
+                });
+              } else if (iconCount === 3) {
+                // Triangle layout, no overlap
+                const positions = [
+                  { left: '50%', top: '22%', transform: 'translate(-50%,-50%)' },   // Top center
+                  { left: '28%', top: '70%', transform: 'translate(-50%,-50%)' },   // Bottom left
+                  { left: '72%', top: '70%', transform: 'translate(-50%,-50%)' }    // Bottom right
+                ];
+                iconsArr.forEach((icon, i) => {
+                  const img = document.createElement('img');
+                  img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                  img.alt = icon.label;
+                  img.title = icon.label;
+                  img.width = 24;  // Increased from 20
+                  img.height = 24;
+                  img.style.position = 'absolute';
+                  Object.assign(img.style, positions[i]);
+                  cell3.appendChild(img);
+                });
+              } else if (iconCount === 4) {
+                // 2x2 grid, corners
+                const positions = [
+                  { left: '28%', top: '28%', transform: 'translate(-50%,-50%)' },   // Top left
+                  { left: '72%', top: '28%', transform: 'translate(-50%,-50%)' },   // Top right
+                  { left: '28%', top: '72%', transform: 'translate(-50%,-50%)' },   // Bottom left
+                  { left: '72%', top: '72%', transform: 'translate(-50%,-50%)' }    // Bottom right
+                ];
+                iconsArr.forEach((icon, i) => {
+                  const img = document.createElement('img');
+                  img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                  img.alt = icon.label;
+                  img.title = icon.label;
+                  img.width = 20;  // Increased from 18
+                  img.height = 20;
+                  img.style.position = 'absolute';
+                  Object.assign(img.style, positions[i]);
+                  cell3.appendChild(img);
+                });
+              } else if (iconCount > 4) {
+                // For more than 4 icons, create a grid layout
+                const gridSize = Math.ceil(Math.sqrt(iconCount));
+                const iconSize = Math.max(12, Math.floor(40 / gridSize)); // Dynamic sizing
+                
+                iconsArr.forEach((icon, i) => {
+                  const row = Math.floor(i / gridSize);
+                  const col = i % gridSize;
+                  const img = document.createElement('img');
+                  img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
+                  img.alt = icon.label;
+                  img.title = icon.label;
+                  img.width = iconSize;
+                  img.height = iconSize;
+                  img.style.position = 'absolute';
+                  img.style.left = `${15 + (col * 70 / gridSize)}%`;
+                  img.style.top = `${15 + (row * 70 / gridSize)}%`;
+                  img.style.transform = 'translate(-50%,-50%)';
                   cell3.appendChild(img);
                 });
               }
@@ -1728,7 +1726,6 @@ function rebuildHouseCache() {
         } else {
           imagesToLoad++;
           fwbImg.onload = () => {
-            const logoSize = 40;
             ctx.drawImage(fwbImg, 20, 10, logoSize, logoSize);
             imageLoadHandler();
           };
