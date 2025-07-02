@@ -618,9 +618,9 @@
           const gridOverlay = document.createElement('div');
           gridOverlay.className = 'cell-3x3-grid';
           const gridLabels = [
-            ['',    'N',    ''],
-            ['W',   '',    'E'],
-            ['',    'S',    '']
+            ['',    '',    ''],
+            ['',   '',    ''],
+            ['',    '',    '']
           ];
           for (let gy = 0; gy < 3; gy++) {
             const row = document.createElement('div');
@@ -1627,7 +1627,7 @@ function rebuildHouseCache() {
       const legendFont = 'bold 18px sans-serif';
       const legendLabelFont = '14px sans-serif';
       const topBarHeight = 60;
-      const bottomBarHeight = 80;
+      const bottomBarHeight = 0; // Changed from 80 to 0 - removing footer
       const legendWidth = 180;
       const canvasWidth = cellSize * gridSize + legendWidth * 2 + legendPadding * 2;
       const canvasHeight = topBarHeight + cellSize * gridSize + bottomBarHeight;
@@ -1691,7 +1691,7 @@ function rebuildHouseCache() {
         drawTopBar();
         drawGrid();
         drawLegends();
-        drawBottomBar();
+        // Removed drawBottomBar() call
       }
 
       function drawBackgroundImage(bgImg) {
@@ -1911,42 +1911,28 @@ function rebuildHouseCache() {
       }
 
       function drawLegends() {
-
-        // Calculate legend heights
-        const resourceLegendHeight = resourceIcons.length * (legendIconSize + legendGap) + 60;
-        const houseLegendHeight = houseIcons.length * (legendIconSize + legendGap) + 60;
-
-        // Calculate grid area vertical center
+        // Align legends with the top of the grid
         const gridY = topBarHeight;
-        const gridHeight = cellSize * gridSize;
-        const gridCenterY = gridY + gridHeight / 2;
-
-        // Calculate Y so that the legend is vertically centered with the grid
-        const resourceLegendY = gridCenterY - resourceLegendHeight / 2;
-        const houseLegendY = gridCenterY - houseLegendHeight / 2;
-
-        // Left legend (Resources)
-        drawLegend('Resources', resourceIcons, legendPadding, resourceLegendY);
         
-        // Right legend (Houses)
-        drawLegend('Houses', houseIcons, canvasWidth - legendWidth - legendPadding, houseLegendY);
+        // Left legend (Resources) - aligned with top of grid
+        drawLegend('Resources', resourceIcons, legendPadding, gridY + 10);
+        
+        // Right legend (Houses) - aligned with top of grid
+        drawLegend('Houses', houseIcons, canvasWidth - legendWidth - legendPadding, gridY + 10);
       }
 
       function drawLegend(title, icons, x, y) {
-        // Draw solid background for legend
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        ctx.fillRect(x - 10, y - 30, legendWidth + 20, icons.length * (legendIconSize + legendGap) + 60);
+        // Removed solid background and border - now transparent
         
-        // Draw border
-        ctx.strokeStyle = '#bdc3c7';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x - 10, y - 30, legendWidth + 20, icons.length * (legendIconSize + legendGap) + 60);
-
-        // Draw title
-        ctx.fillStyle = '#2c3e50';
+        // Draw title with shadow for visibility
+        ctx.save();
+        ctx.fillStyle = '#ffe082';
         ctx.font = legendFont;
         ctx.textAlign = 'left';
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur = 3;
         ctx.fillText(title, x, y - 5);
+        ctx.restore();
 
         // Draw legend items
         ctx.font = legendLabelFont;
@@ -1972,48 +1958,17 @@ function rebuildHouseCache() {
             }
           }
 
-          // Draw label
+          // Draw label with shadow for visibility
+          ctx.save();
+          ctx.fillStyle = '#ffe082';
+          ctx.shadowColor = '#000';
+          ctx.shadowBlur = 2;
           ctx.fillText(icon.label, x + legendIconSize + 10, itemY + legendIconSize / 2 + 5);
+          ctx.restore();
         });
       }
 
-      function drawBottomBar() {
-        const bottomY = canvasHeight - bottomBarHeight;
-        
-        // Draw solid background for bottom bar
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        ctx.fillRect(0, bottomY, canvasWidth, bottomBarHeight);
-        
-        // Draw border
-        ctx.strokeStyle = '#bdc3c7';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(0, bottomY, canvasWidth, bottomBarHeight);
-
-        // Draw storm timer
-        ctx.fillStyle = '#2c3e50';
-        ctx.font = 'bold 18px sans-serif';
-        ctx.textAlign = 'center';
-        
-        const nextStorm = getNextStorm(new Date(), selectedServer);
-        const now = new Date();
-        const timeDiff = nextStorm.getTime() - now.getTime();
-        
-        let timeText = 'Storm Timer: ';
-        if (timeDiff > 0) {
-          const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-          const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-          timeText += `${days}d ${hours}h ${minutes}m`;
-        } else {
-          timeText += 'Active Now!';
-        }
-        
-        ctx.fillText(timeText, canvasWidth / 2, bottomY + 30);
-        
-        // Draw export info
-        ctx.font = '14px sans-serif';
-        ctx.fillText(`Exported on ${new Date().toLocaleString()}`, canvasWidth / 2, bottomY + 55);
-      }
+      // Remove the drawBottomBar function entirely since we're not using it
 
       // If no images need loading, trigger download immediately
       if (imagesToLoad === 0) {
