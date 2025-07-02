@@ -1700,7 +1700,7 @@ function rebuildHouseCache() {
         
         // Create clipping region for grid area only
         const gridX = legendWidth + legendPadding;
-        const gridY = topBarHeight;
+               const gridY = topBarHeight;
         const gridWidth = cellSize * gridSize;
         const gridHeight = cellSize * gridSize;
         
@@ -1801,11 +1801,12 @@ function rebuildHouseCache() {
             const cellX = gridX + x * cellSize;
             const cellY = gridY + (GRID_SIZE - 1 - y) * cellSize;
 
-            // Draw explored indicator
-            if (exploredState[idx]) {
-              ctx.fillStyle = 'rgba(76, 175, 80, 0.3)';
+            // Draw unexplored overlay (no tint for explored cells)
+            if (!exploredState[idx]) {
+              ctx.fillStyle = 'rgba(60, 60, 60, 0.7)'; // Dark gray overlay, 70% opacity
               ctx.fillRect(cellX + 1, cellY + 1, cellSize - 2, cellSize - 2);
             }
+            // Removed the green tint for explored cells
 
             // Draw cell icons
             const cell = mapState[idx];
