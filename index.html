@@ -1748,7 +1748,7 @@ function rebuildHouseCache() {
         const now = new Date();
         const timestamp = now.toLocaleString();
         ctx.fillText(timestamp, canvasWidth / 2, 35);
-
+      }
       function drawGrid() {
         const gridX = legendWidth + legendPadding;
         const gridY = topBarHeight;
@@ -1810,12 +1810,9 @@ function rebuildHouseCache() {
           // Draw cell icons
           const cell = mapState[idx];
           if (cell && cell.icons && cell.icons.length > 0) {
-            cell.icons.forEach((iconName, iconIdx) => {
-              const icon = [...resourceIcons, ...houseIcons].find(i => i.name === iconName);
-              if (icon) {
-                drawIconOnCanvas(ctx, icon, cellX, cellY, iconIdx);
-              }
-            });
+              drawIconOnCanvas(ctx, icon, cellX, cellY, iconIdx);
+
+            };
           }
 
           // Draw subcell icons
@@ -1928,10 +1925,10 @@ function rebuildHouseCache() {
         const houseLegendY = gridCenterY - houseLegendHeight / 2;
 
         // Left legend (Resources)
-        drawLegend('Resources', resourceIcons, legendPadding, topBarHeight + 20);
+        drawLegend('Resources', resourceIcons, legendPadding, resourceLegendY);
         
         // Right legend (Houses)
-        drawLegend('Houses', houseIcons, canvasWidth - legendWidth - legendPadding, topBarHeight + 20);
+        drawLegend('Houses', houseIcons, canvasWidth - legendWidth - legendPadding, houseLegendY);
       }
 
       function drawLegend(title, icons, x, y) {
@@ -1975,7 +1972,7 @@ function rebuildHouseCache() {
           }
 
           // Draw label
-          ctx.fillText(icon.name, x + legendIconSize + 10, itemY + legendIconSize / 2 + 5);
+          ctx.fillText(icon.label, x + legendIconSize + 10, itemY + legendIconSize / 2 + 5);
         });
       }
 
@@ -1996,7 +1993,7 @@ function rebuildHouseCache() {
         ctx.font = 'bold 18px sans-serif';
         ctx.textAlign = 'center';
         
-        const nextStorm = getNextStormTime();
+        const nextStorm = getNextStorm(new Date(), selectedServer);
         const now = new Date();
         const timeDiff = nextStorm.getTime() - now.getTime();
         
@@ -2021,7 +2018,7 @@ function rebuildHouseCache() {
       if (imagesToLoad === 0) {
         checkAllImagesLoaded();
       }
-    }
+
     // Helper function to get next storm time (if not already defined)
     function getNextStorm(now, server) {
   const nextWeek = new Date(now);
@@ -2050,8 +2047,7 @@ function rebuildHouseCache() {
   
   return nextWeek;
 }
-
-    // Image cache for PNG export
+// Image cache for PNG export
 const imageCache = new Map();
 
 function preloadImages() {
@@ -2068,8 +2064,8 @@ function preloadImages() {
   imageCache.set('background.jpg', bgImg);
   
   const fwbImg = new Image();
-  fwbImg.src = 'arrakis.png'; // Changed from 'fwb.png' to match your actual logo
-  imageCache.set('arrakis.png', fwbImg);
+  fwbImg.src = 'fwb.png'; 
+  imageCache.set('fwb.png', fwbImg);
 }
 
 function getCachedImage(filename) {
