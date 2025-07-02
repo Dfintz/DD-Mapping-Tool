@@ -1795,45 +1795,46 @@ function rebuildHouseCache() {
       }
 
       function drawCellContents(gridX, gridY) {
-        for (let idx = 0; idx < mapState.length; idx++) {
-          const row = Math.floor(idx / gridSize);
-          const col = idx % gridSize;
-          const cellX = gridX + col * cellSize;
-          const cellY = gridY + row * cellSize;
+        for (let y = GRID_SIZE - 1; y >= 0; y--) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            const idx = y * GRID_SIZE + x;
+            const cellX = gridX + x * cellSize;
+            const cellY = gridY + (GRID_SIZE - 1 - y) * cellSize;
 
-          // Draw explored indicator
-          if (exploredState[idx]) {
-            ctx.fillStyle = 'rgba(76, 175, 80, 0.3)';
-            ctx.fillRect(cellX + 1, cellY + 1, cellSize - 2, cellSize - 2);
+            // Draw explored indicator
+            if (exploredState[idx]) {
+              ctx.fillStyle = 'rgba(76, 175, 80, 0.3)';
+              ctx.fillRect(cellX + 1, cellY + 1, cellSize - 2, cellSize - 2);
+            }
+
+            // Draw cell icons
+            const cell = mapState[idx];
+            if (cell && cell.icons && cell.icons.length > 0) {
+              cell.icons.forEach((icon, iconIdx) => {
+                drawIconOnCanvas(ctx, icon, cellX, cellY, iconIdx);
+              });
+            }
+
+            // Draw subcell icons
+            if (cell && cell.subcells) {
+              drawSubcellIcons(ctx, cell.subcells, cellX, cellY);
+            }
+
+            const coordLabel = String.fromCharCode(65 + y) + (x + 1);
+            ctx.save();
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillStyle = '#ffe082cc';
+            ctx.shadowColor = '#222';
+            ctx.shadowBlur = 2;
+            ctx.fillText(
+              coordLabel,
+              cellX + cellSize - 6,
+              cellY + cellSize - 4
+            );
+            ctx.restore();
           }
-
-          // Draw cell icons
-          const cell = mapState[idx];
-          if (cell && cell.icons && cell.icons.length > 0) {
-              drawIconOnCanvas(ctx, icon, cellX, cellY, iconIdx);
-
-            };
-          }
-
-          // Draw subcell icons
-          if (cell && cell.subcells) {
-            drawSubcellIcons(ctx, cell.subcells, cellX, cellY);
-          }
-
-          const coordLabel = String.fromCharCode(65 + row) + (col + 1);
-          ctx.save();
-          ctx.font = 'bold 14px sans-serif';
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'bottom';
-          ctx.fillStyle = '#ffe082cc';
-          ctx.shadowColor = '#222';
-          ctx.shadowBlur = 2;
-          ctx.fillText(
-            coordLabel,
-            cellX + cellSize - 6,
-            cellY + cellSize - 4
-          );
-          ctx.restore();
         }
       }
 
@@ -2018,6 +2019,7 @@ function rebuildHouseCache() {
       if (imagesToLoad === 0) {
         checkAllImagesLoaded();
       }
+    } // <-- Add this closing brace to end exportPNG function
 
     // Helper function to get next storm time (if not already defined)
     function getNextStorm(now, server) {
