@@ -209,10 +209,21 @@
     .timer-phase-active {
       color: #ff5252;
     }
-    .timer-phase-warning {
-      color: #ffd600;
-    }
     .timer-phase-normal {
+      color: #80cbc4;
+    }
+    .timer-phase-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+      color: #ffe082;
+    }
+    .timer-phase-label.timer-phase-active {
+      color: #ff5252;
+    }
+    .timer-phase-label.timer-phase-normal {
       color: #80cbc4;
     }
     /* Icon Picker Modal */
@@ -469,22 +480,61 @@
 
   <!-- Help Modal -->
   <div id="help-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:4000;">
-    <div style="background:#2d2211;color:#ffe082;padding:2rem 2.5rem;border-radius:14px;max-width:480px;width:90vw;box-shadow:0 8px 32px #000a;position:relative;">
+    <div style="background:#2d2211;color:#ffe082;padding:2rem 2.5rem;border-radius:14px;max-width:600px;width:90vw;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px #000a;position:relative;">
       <h2 style="margin-top:0;">How to Use the Deep Desert Mapping Tool</h2>
+      
+      <h3 style="margin-top:1.5rem;margin-bottom:0.8rem;">Basic Controls</h3>
       <ul style="line-height:1.7;">
-        <li><b>Left-click</b> a grid cell to open the icon picker and add an icon.</li>
-        <li><b>Right-click</b> a grid cell to toggle explored/unexplored.</li>
-        <li><b>Drag</b> icons from the legend to the grid to place them.</li>
-        <li><b>Export</b> your map as PNG or JSON using the buttons below the grid.</li>
-        <li><b>Import</b> a saved map with the Import JSON button.</li>
-        <li><b>Undo/Redo</b> your last actions with the respective buttons.</li>
-        <li><b>Share Link</b> to copy a shareable map link.</li>
-        <li><b>Clear Map</b> resets the map and all POI/loot data.</li>
-        <li><b>Storm Timer</b> shows the next storm for your selected server and time zone.</li>
-        <li>Unexplored cells appear faded (50% opacity).</li>
-        <li>POI panel can be dragged and closed with <b>Esc</b> or the close button.</li>
+        <li><b>Left-click</b> a subcell (3x3 grid within each cell) to open the icon picker.</li>
+        <li><b>Right-click</b> a grid cell to toggle explored/unexplored status.</li>
+        <li><b>Double-click</b> a grid cell to toggle explored/unexplored status.</li>
+        <li><b>Drag & Drop</b> icons from the legend panels to place them on the map.</li>
+        <li><b>Shift-click</b> to select multiple cells at once.</li>
       </ul>
-      <button id="close-help-btn" class="control-btn" style="margin-top:1rem;">Close</button>
+      
+      <h3 style="margin-top:1.5rem;margin-bottom:0.8rem;">Icon Management</h3>
+      <ul style="line-height:1.7;">
+        <li>Each cell is divided into a <b>3x3 subcell grid</b> for precise icon placement.</li>
+        <li>Icons automatically <b>scale based on quantity</b> in the same subcell (1-4+ icons).</li>
+        <li><b>House icons</b> can only be placed once per map and show as grayed out when already placed.</li>
+        <li>Click an icon in the picker again to <b>remove it</b> from the subcell.</li>
+      </ul>
+      
+      <h3 style="margin-top:1.5rem;margin-bottom:0.8rem;">Map Features</h3>
+      <ul style="line-height:1.7;">
+        <li><b>Explore All</b> - Mark all cells as explored at once.</li>
+        <li><b>Undo/Redo</b> - Revert or replay your last actions (up to 100 steps).</li>
+        <li><b>Clear Map</b> - Reset the entire map (requires confirmation).</li>
+        <li><b>Unexplored cells</b> appear with a dark overlay (70% opacity).</li>
+        <li><b>Grid coordinates</b> are shown in each cell (A1-I9).</li>
+      </ul>
+      
+      <h3 style="margin-top:1.5rem;margin-bottom:0.8rem;">Export & Sharing</h3>
+      <ul style="line-height:1.7;">
+        <li><b>Export JSON</b> - Save your map data to a file for backup.</li>
+        <li><b>Import JSON</b> - Load a previously saved map file.</li>
+        <li><b>Export PNG</b> - Generate a high-quality image with legends and timestamp.</li>
+        <li><b>Share Link</b> - Create a shortened URL to share your map with others.</li>
+        <li><b>Combine Maps</b> - Link to external tool for merging multiple maps.</li>
+      </ul>
+      
+      <h3 style="margin-top:1.5rem;margin-bottom:0.8rem;">Storm Timer</h3>
+      <ul style="line-height:1.7;">
+        <li>Shows countdown to the next storm for your selected <b>server region</b>.</li>
+        <li>Toggle between <b>UTC and Local time</b> display.</li>
+        <li>Storm phases: <span style="color:#80cbc4;">Normal</span>, <span style="color:#ff5252;">Active</span>.</li>
+        <li>Supported regions: Europe, North America, South America, Asia, Oceania.</li>
+      </ul>
+      
+      <h3 style="margin-top:1.5rem;margin-bottom:0.8rem;">Tips & Shortcuts</h3>
+      <ul style="line-height:1.7;">
+        <li>The map <b>auto-saves</b> to your browser's local storage.</li>
+        <li>PNG exports include transparent legend boxes with all icons labeled.</li>
+        <li>The tool is <b>mobile-responsive</b> with adjusted layouts for smaller screens.</li>
+        <li>Icons in subcells support up to 4 in specific layouts, 5+ in dynamic grid.</li>
+      </ul>
+      
+      <button id="close-help-btn" class="control-btn" style="margin-top:1.5rem;">Close</button>
     </div>
   </div>
   <div id="notification" style="display:none;position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#ffe082;color:#2d2211;font-weight:bold;padding:10px 32px;border-radius:8px;box-shadow:0 2px 8px #0006;z-index:5000;font-size:1.1em;pointer-events:none;min-width:180px;text-align:center;"></div>
@@ -1224,24 +1274,15 @@
       setInterval(updateStormTimer, 1000);
       updateStormTimer();
       // Icon Picker Modal Setup
-      if (!document.getElementById('iconPickerModal')) {
-        const modal = document.createElement('div');
-        modal.id = 'iconPickerModal';
-        modal.style.display = 'none';
-        modal.innerHTML = `
-          <div class="icon-picker-content">
-            <h3 style="margin-top:0;">Select an Icon</h3>
-            <div id="iconPickerGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
-            <div class="icon-picker-buttons" style="margin-top:10px;">
-              <button class="icon-picker-btn cancel" type="button" id="closeIconPickerBtn">Escape</button>
-            </div>
-            <div id="iconPickerFeedback" style="display:none; position:absolute; top:10px; right:20px; background:#ffe066; color:#222; font-weight:bold; padding:6px 18px; border-radius:8px; box-shadow:0 2px 8px #2224; z-index:10;"></div>
-          </div>`;
-        document.body.appendChild(modal);
+      // Remove this entire block since modal is already in HTML
+      
+      // This should be inside a check or after ensuring the modal exists
+      const closeBtn = document.getElementById('closeIconPickerBtn');
+      if (closeBtn) {
+        closeBtn.onclick = function() {
+          document.getElementById('iconPickerModal').style.display = 'none';
+        };
       }
-      document.getElementById('closeIconPickerBtn').onclick = function() {
-        document.getElementById('iconPickerModal').style.display = 'none';
-      };
       // Preload images for icon picker
       preloadImages();
     });
@@ -1252,71 +1293,57 @@
     let nextStorm;
     function updateStormTimer() {
       const now = new Date();
-      // Europe: Storm starts Monday 17:00 UTC, ends Tuesday 05:00 UTC
+      
       if (selectedServer === 'europe') {
-        // Find next Monday 17:00 UTC
-        const day = now.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-        const hour = now.getUTCHours();
-        let nextStormStart = new Date(now);
-        nextStormStart.setUTCMinutes(0, 0, 0);
-        // If today is Monday and before 17:00, storm is today
-        if (day === 1 && hour < 17) {
-          nextStormStart.setUTCHours(17, 0, 0, 0);
-        } else {
-          // Otherwise, find next Monday
-          const daysUntilMonday = (8 - day) % 7 || 7;
-          nextStormStart.setUTCDate(now.getUTCDate() + daysUntilMonday);
-          nextStormStart.setUTCHours(17, 0, 0, 0);
-        }
-        phase = 'normal';
-        diff = (nextStormStart - now) / 1000;
-      } else if (selectedServer === 'na') {
-        // North America: Storm active Tuesday 00:00–10:00 UTC, warning Monday 21:00–00:00 UTC
-        const utcDay = now.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+        // Europe: Storm starts Monday 17:00 UTC, ends Tuesday 05:00 UTC
+        const utcDay = now.getUTCDay();
         const utcHour = now.getUTCHours();
         const utcMinutes = now.getUTCMinutes();
-
-        // Minutes since week start
         const minutesOfWeek = utcDay * 24 * 60 + utcHour * 60 + utcMinutes;
-        const stormStart = 2 * 24 * 60 + 0;   // Tuesday 00:00 UTC
-        const stormEnd = 2 * 24 * 60 + 10 * 60; // Tuesday 10:00 UTC
-        const warningStart = stormStart - 3 * 60; // Monday 21:00 UTC
+        
+        const stormStart = 1 * 24 * 60 + 17 * 60; // Monday 17:00 UTC
+        const stormEnd = 2 * 24 * 60 + 5 * 60;    // Tuesday 05:00 UTC
+        
+        if (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) {
+          phase = 'active';
+          // Countdown to storm end
+          let stormEndDate = new Date(now);
+          if (utcDay === 2 && utcHour < 5) {
+            stormEndDate.setUTCHours(5, 0, 0, 0);
+          } else {
+            const daysUntilTuesday = (9 - utcDay) % 7 || 7;
+            stormEndDate.setUTCDate(now.getUTCDate() + daysUntilTuesday);
+            stormEndDate.setUTCHours(5, 0, 0, 0);
+          }
+          diff = (stormEndDate - now) / 1000;
+        } else {
+          phase = 'normal';
+          // Countdown to next storm start
+          nextStorm = getNextStorm(now, 'europe');
+          diff = (nextStorm - now) / 1000;
+        }
+      } else if (selectedServer === 'na') {
+        // North America: Storm active Tuesday 00:00–10:00 UTC
+        const utcDay = now.getUTCDay();
+        const utcHour = now.getUTCHours();
+        const utcMinutes = now.getUTCMinutes();
+        const minutesOfWeek = utcDay * 24 * 60 + utcHour * 60 + utcMinutes;
+        
+        const stormStart = 2 * 24 * 60 + 0;      // Tuesday 00:00 UTC
+        const stormEnd = 2 * 24 * 60 + 10 * 60;  // Tuesday 10:00 UTC
 
-        if (
-          (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) ||
-          (stormEnd < stormStart && (minutesOfWeek >= stormStart || minutesOfWeek < stormEnd))
-        ) {
+        if (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) {
           phase = 'active';
           // Countdown to storm end
           let stormEndDate = new Date(now);
           if (utcDay === 2 && utcHour < 10) {
-            // It's Tuesday before 10:00
             stormEndDate.setUTCHours(10, 0, 0, 0);
           } else {
-            // Find next Tuesday
             const daysUntilTuesday = (9 - utcDay) % 7 || 7;
             stormEndDate.setUTCDate(now.getUTCDate() + daysUntilTuesday);
             stormEndDate.setUTCHours(10, 0, 0, 0);
           }
           diff = (stormEndDate - now) / 1000;
-        } else if (
-          (minutesOfWeek >= warningStart && minutesOfWeek < stormStart) ||
-          (warningStart < stormStart && (minutesOfWeek >= warningStart || minutesOfWeek < stormStart))
-        ) {
-          phase = 'warning';
-          // Countdown to storm start
-          let stormStartDate = new Date(now);
-          if (utcDay === 1 && utcHour >= 21) {
-            // Monday after 21:00
-            stormStartDate.setUTCHours(0, 0, 0, 0);
-            stormStartDate.setUTCDate(now.getUTCDate() + 1);
-          } else {
-            // Find next Monday
-            const daysUntilMonday = (8 - utcDay) % 7 || 7;
-            stormStartDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
-            stormStartDate.setUTCHours(21, 0, 0, 0);
-          }
-          diff = (stormStartDate - now) / 1000;
         } else {
           phase = 'normal';
           // Countdown to next storm start
@@ -1324,160 +1351,89 @@
           diff = (nextStorm - now) / 1000;
         }
       } else if (selectedServer === 'sa') {
-        // South America: Storm starts Monday 22:00 UTC, ends Tuesday 08:00 UTC, warning 3 hours before (Monday 19:00 UTC)
+        // South America: Storm starts Monday 22:00 UTC, ends Tuesday 08:00 UTC
         const utcDay = now.getUTCDay();
         const utcHour = now.getUTCHours();
         const utcMinutes = now.getUTCMinutes();
         const minutesOfWeek = utcDay * 24 * 60 + utcHour * 60 + utcMinutes;
+        
         const stormStart = 1 * 24 * 60 + 22 * 60; // Monday 22:00 UTC
-        const stormEnd = 2 * 24 * 60 + 8 * 60;   // Tuesday 08:00 UTC
-        const warningStart = stormStart - 3 * 60; // Monday 19:00 UTC
+        const stormEnd = 2 * 24 * 60 + 8 * 60;    // Tuesday 08:00 UTC
 
-        if (
-          (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) ||
-          (stormEnd < stormStart && (minutesOfWeek >= stormStart || minutesOfWeek < stormEnd))
-        ) {
+        // Storm is active if we're between Monday 22:00 and Tuesday 08:00
+        if ((utcDay === 1 && utcHour >= 22) || (utcDay === 2 && utcHour < 8)) {
           phase = 'active';
           // Countdown to storm end
           let stormEndDate = new Date(now);
           if (utcDay === 2 && utcHour < 8) {
-            // It's Tuesday before 08:00
             stormEndDate.setUTCHours(8, 0, 0, 0);
-          } else {
-            // Find next Tuesday
-            const daysUntilTuesday = (9 - utcDay) % 7 || 7;
-            stormEndDate.setUTCDate(now.getUTCDate() + daysUntilTuesday);
+          } else if (utcDay === 1 && utcHour >= 22) {
+            stormEndDate.setUTCDate(now.getUTCDate() + 1);
             stormEndDate.setUTCHours(8, 0, 0, 0);
           }
           diff = (stormEndDate - now) / 1000;
-        } else if (
-          (minutesOfWeek >= warningStart && minutesOfWeek < stormStart) ||
-          (warningStart < stormStart && (minutesOfWeek >= warningStart || minutesOfWeek < stormStart))
-        ) {
-          phase = 'warning';
-          // Countdown to storm start
-          let stormStartDate = new Date(now);
-          if (utcDay === 1 && utcHour >= 19) {
-            // Monday after 19:00
-            stormStartDate.setUTCHours(22, 0, 0, 0);
-          } else {
-            // Find next Monday
-            const daysUntilMonday = (8 - utcDay) % 7 || 7;
-            stormStartDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
-            stormStartDate.setUTCHours(22, 0, 0, 0);
-          }
-          diff = (stormStartDate - now) / 1000;
         } else {
           phase = 'normal';
           // Countdown to next storm start
-          let nextStorm = getNextStorm(now, 'sa');
+          nextStorm = getNextStorm(now, 'sa');
           diff = (nextStorm - now) / 1000;
         }
       } else if (selectedServer === 'asia') {
-        // Asia: Storm starts Monday 11:00 UTC, ends Monday 21:00 UTC, warning 3 hours before (Monday 08:00 UTC)
+        // Asia: Storm starts Monday 11:00 UTC, ends Monday 21:00 UTC
         const utcDay = now.getUTCDay();
         const utcHour = now.getUTCHours();
         const utcMinutes = now.getUTCMinutes();
         const minutesOfWeek = utcDay * 24 * 60 + utcHour * 60 + utcMinutes;
+        
         const stormStart = 1 * 24 * 60 + 11 * 60; // Monday 11:00 UTC
         const stormEnd = 1 * 24 * 60 + 21 * 60;   // Monday 21:00 UTC
-        const warningStart = stormStart - 3 * 60; // Monday 08:00 UTC
 
-        if (
-          (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) ||
-          (stormEnd < stormStart && (minutesOfWeek >= stormStart || minutesOfWeek < stormEnd))
-        ) {
+        if (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) {
           phase = 'active';
           // Countdown to storm end
           let stormEndDate = new Date(now);
           if (utcDay === 1 && utcHour < 21) {
-            // It's Monday before 21:00
             stormEndDate.setUTCHours(21, 0, 0, 0);
           } else {
-            // Find next Monday
             const daysUntilMonday = (8 - utcDay) % 7 || 7;
             stormEndDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
             stormEndDate.setUTCHours(21, 0, 0, 0);
           }
           diff = (stormEndDate - now) / 1000;
-        } else if (
-          (minutesOfWeek >= warningStart && minutesOfWeek < stormStart) ||
-          (warningStart < stormStart && (minutesOfWeek >= warningStart || minutesOfWeek < stormStart))
-        ) {
-          phase = 'warning';
-          // Countdown to storm start
-          let stormStartDate = new Date(now);
-          if (utcDay === 1 && utcHour >= 8) {
-            // Monday after 08:00
-            stormStartDate.setUTCHours(11, 0, 0, 0);
-          } else {
-            // Find next Monday
-            const daysUntilMonday = (8 - utcDay) % 7 || 7;
-            stormStartDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
-            stormStartDate.setUTCHours(11, 0, 0, 0);
-          }
-          diff = (stormStartDate - now) / 1000;
         } else {
           phase = 'normal';
           // Countdown to next storm start
-          let nextStorm = getNextStorm(now, 'asia');
+          nextStorm = getNextStorm(now, 'asia');
           diff = (nextStorm - now) / 1000;
         }
       } else if (selectedServer === 'oceania') {
-        // Oceania: Storm starts Monday 09:00 UTC, ends Monday 19:00 UTC, warning 3 hours before (Monday 06:00 UTC)
+        // Oceania: Storm starts Monday 09:00 UTC, ends Monday 19:00 UTC
         const utcDay = now.getUTCDay();
         const utcHour = now.getUTCHours();
         const utcMinutes = now.getUTCMinutes();
         const minutesOfWeek = utcDay * 24 * 60 + utcHour * 60 + utcMinutes;
-        const stormStart = 1 * 24 * 60 + 9 * 60; // Monday 09:00 UTC
-        const stormEnd = 1 * 24 * 60 + 19 * 60;  // Monday 19:00 UTC
-        const warningStart = stormStart - 3 * 60; // Monday 06:00 UTC
+        
+        const stormStart = 1 * 24 * 60 + 9 * 60;  // Monday 09:00 UTC
+        const stormEnd = 1 * 24 * 60 + 19 * 60;   // Monday 19:00 UTC
 
-        if (
-          (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) ||
-          (stormEnd < stormStart && (minutesOfWeek >= stormStart || minutesOfWeek < stormEnd))
-        ) {
+        if (minutesOfWeek >= stormStart && minutesOfWeek < stormEnd) {
           phase = 'active';
           // Countdown to storm end
           let stormEndDate = new Date(now);
           if (utcDay === 1 && utcHour < 19) {
-            // It's Monday before 19:00
             stormEndDate.setUTCHours(19, 0, 0, 0);
           } else {
-            // Find next Monday
             const daysUntilMonday = (8 - utcDay) % 7 || 7;
             stormEndDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
             stormEndDate.setUTCHours(19, 0, 0, 0);
           }
           diff = (stormEndDate - now) / 1000;
-        } else if (
-          (minutesOfWeek >= warningStart && minutesOfWeek < stormStart) ||
-          (warningStart < stormStart && (minutesOfWeek >= warningStart || minutesOfWeek < stormStart))
-        ) {
-          phase = 'warning';
-          // Countdown to storm start
-          let stormStartDate = new Date(now);
-          if (utcDay === 1 && utcHour >= 6) {
-            // Monday after 06:00
-            stormStartDate.setUTCHours(9, 0, 0, 0);
-          } else {
-            // Find next Monday
-            const daysUntilMonday = (8 - utcDay) % 7 || 7;
-            stormStartDate.setUTCDate(now.getUTCDate() + daysUntilMonday);
-            stormStartDate.setUTCHours(9, 0, 0, 0);
-          }
-          diff = (stormStartDate - now) / 1000;
         } else {
           phase = 'normal';
           // Countdown to next storm start
-          let nextStorm = getNextStorm(now, 'oceania');
+          nextStorm = getNextStorm(now, 'oceania');
           diff = (nextStorm - now) / 1000;
         }
-      } else {
-        // Fallback: original logic for other servers
-        if (diff < 3600 * 1) phase = 'active';
-        else if (diff < 3600 * 3) phase = 'warning';
-        else phase = 'normal';
       }
 
       const days = Math.floor(diff / 86400);
@@ -1491,10 +1447,7 @@
       // Change the label to reflect the storm state
       const label = document.querySelector('.timer-label');
       if (phase === 'active') {
-
         label.textContent = 'Storm Active';
-      } else if (phase === 'warning') {
-        label.textContent = 'Storm Brewing';
       } else {
         label.textContent = 'Next Storm';
       }
@@ -1505,6 +1458,13 @@
         timezoneUTC = !timezoneUTC;
         updateStormTimer();
       };
+
+      // Add this to updateStormTimer function
+      const phaseLabel = document.getElementById('storm-phase-label');
+      if (phaseLabel) {
+        phaseLabel.textContent = phase === 'active' ? 'Active' : 'Normal';
+        phaseLabel.className = 'timer-phase-label timer-phase-' + phase;
+      }
     }
 
     // --- Icon Picker Modal Logic ---
@@ -1594,7 +1554,7 @@ function rebuildHouseCache() {
       cell.forEach(icon => {
         if (icon.name && icon.name.startsWith('House_')) {
           housePlacementCache.set(icon.name, true);
-        }
+               }
       });
     }
     // Check subcells
@@ -1697,6 +1657,7 @@ function rebuildHouseCache() {
         ctx.save();
         
                        
+
         // Create clipping region for grid area only
         const gridX = legendWidth + legendPadding;
                const gridY = topBarHeight;
@@ -1721,8 +1682,8 @@ function rebuildHouseCache() {
 
         // Draw logo
         const fwbImg = getCachedImage('fwb.png') || new Image();
+        const logoSize = 40; // Move this before usage
         if (fwbImg.complete && fwbImg.naturalWidth > 0) {
-          const logoSize = 40;
           ctx.drawImage(fwbImg, 20, 10, logoSize, logoSize);
         } else {
           imagesToLoad++;
@@ -1734,13 +1695,11 @@ function rebuildHouseCache() {
             console.warn('Failed to load logo image');
             imageLoadHandler();
           };
-          if (!fwbImg.src) {
-            fwbImg.src = 'fwb.png';
-          }
-        }
 
-        // Draw timestamp instead of title
-        ctx.fillStyle = '#ffffff';
+        }
+        
+        // Draw timestamp
+        ctx.fillStyle = '#ffe082';
         ctx.font = 'bold 20px sans-serif';
         ctx.textAlign = 'center';
         const now = new Date();
@@ -1898,7 +1857,7 @@ function rebuildHouseCache() {
                   };
                   img.onerror = () => {
                     console.warn('Failed to load subcell icon:', icon.file);
-                    imageLoadHandler();
+                    imageLoadHandler(); // This increments even on error
                   };
                   if (!img.src) {
                     img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
@@ -1925,7 +1884,7 @@ function rebuildHouseCache() {
                     };
                     img.onerror = () => {
                       console.warn('Failed to load subcell icon:', icon.file);
-                      imageLoadHandler();
+                      imageLoadHandler(); // This increments even on error
                     };
                     if (!img.src) {
                       img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
@@ -1954,7 +1913,7 @@ function rebuildHouseCache() {
                     };
                     img.onerror = () => {
                       console.warn('Failed to load subcell icon:', icon.file);
-                      imageLoadHandler();
+                      imageLoadHandler(); // This increments even on error
                     };
                     if (!img.src) {
                       img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
@@ -1984,7 +1943,7 @@ function rebuildHouseCache() {
                     };
                     img.onerror = () => {
                       console.warn('Failed to load subcell icon:', icon.file);
-                      imageLoadHandler();
+                      imageLoadHandler(); // This increments even on error
                     };
                     if (!img.src) {
                       img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
@@ -2013,7 +1972,7 @@ function rebuildHouseCache() {
                     };
                     img.onerror = () => {
                       console.warn('Failed to load subcell icon:', icon.file);
-                      imageLoadHandler();
+                      imageLoadHandler(); // This increments even on error
                     };
                     if (!img.src) {
                       img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
@@ -2092,10 +2051,10 @@ function rebuildHouseCache() {
       if (imagesToLoad === 0) {
         checkAllImagesLoaded();
       }
-    } // <-- Add this closing brace to end exportPNG function
+    } // <-- Correctly closes exportPNG function
 
-    // Helper function to get next storm time (if not already defined)
-    function getNextStorm(now, server) {
+// Helper function to get next storm time (if not already defined)
+function getNextStorm(now, server) {
   const nextWeek = new Date(now);
   
   if (server === 'na') {
@@ -2146,6 +2105,6 @@ function preloadImages() {
 function getCachedImage(filename) {
   return imageCache.get(filename) || null;
 }
-  </script>
+</script>
 </body>
 </html>
