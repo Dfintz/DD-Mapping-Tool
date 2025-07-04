@@ -478,6 +478,14 @@
   <!-- Help Button -->
   <button id="help-btn" class="control-btn" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:3000;" aria-label="Help">?</button>
 
+  <!-- Footer -->
+  <footer style="position:fixed;bottom:0;left:0;right:0;background:rgba(30,20,10,0.95);padding:0.8rem 0;border-top:1px solid #c2b280;display:flex;align-items:center;justify-content:center;gap:0.8rem;z-index:2000;">
+    <img src="fwb.png" alt="FWB Logo" style="height:32px;width:32px;">
+    <a href="https://discord.gg/Tra2FvHCXn" target="_blank" rel="noopener" style="color:#ffe082;text-decoration:none;font-size:1rem;font-weight:600;transition:color 0.2s;">
+      Provided by Fremen with Benefits
+    </a>
+  </footer>
+
   <!-- Help Modal -->
   <div id="help-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:4000;">
     <div style="background:#2d2211;color:#ffe082;padding:2rem 2.5rem;border-radius:14px;max-width:600px;width:90vw;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px #000a;position:relative;">
@@ -489,7 +497,7 @@
         <li><b>Right-click</b> a grid cell to toggle explored/unexplored status.</li>
         <li><b>Double-click</b> a grid cell to toggle explored/unexplored status.</li>
         <li><b>Drag & Drop</b> icons from the legend panels to place them on the map.</li>
-        <li><b>Shift-click</b> to select multiple cells at once.</li>
+        <li><b>Escape key</b> closes any open modal (icon picker or help).</li>
       </ul>
       
       <h3 style="margin-top:1.5rem;margin-bottom:0.8rem;">Icon Management</h3>
@@ -1021,7 +1029,7 @@
           }
         }
       });
-      
+
       // Render UI
       renderLegend();
       renderGrid();

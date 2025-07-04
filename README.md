@@ -1,70 +1,87 @@
-# Dune Awakening Deep Desert Mapping Tool
+# DD-Mapping-Tool
 
-## Project Description
-
-This project is a web-based interactive mapping tool designed for the game **Dune: Awakening**. It allows players to collaboratively map, annotate, and share information about the Deep Desert region, including resources, points of interest (POIs), and house locations. The tool is optimized for usability, accessibility, and performance, making it suitable for both individual and group use.
+A comprehensive web-based mapping tool for Dune Awakening's Deep Desert region. Track resources, POIs, and house locations with an intuitive 9x9 grid interface.
 
 ## Features
 
-### Interactive 9x9 Grid Map
-- Large, visually clear 9x9 grid representing the Deep Desert.
-- Each cell can hold multiple icons representing resources, POIs, or house locations.
-- Click or keyboard navigation to select, annotate, and explore cells.
-- Multi-cell selection for batch operations.
+### Interactive Map Grid
+- **9x9 Grid System**: Each cell represents a map region (A1-I9)
+- **Subcell Precision**: Each cell contains a 3x3 subcell grid for precise icon placement
+- **Drag & Drop**: Easily place icons by dragging from the legend panels
+- **Multi-Select**: Shift-click to select multiple cells at once
+- **Explored/Unexplored States**: Track which areas you've visited
 
-### Icon Placement & Management
-- Drag-and-drop or click-to-select icons from a categorized legend.
-- Icons include resources (Spice, Titanium, Stravidium, etc.), POIs (Shipwrecks, Caves, Testing Stations), and all major Houses.
-- Icons can be toggled on/off per cell.
-- Visual feedback for icon placement and removal.
+### Icon Management
+- **Resource Icons**: Spice, Titanium/Stravidium Islands, Caves, Testing Stations, Shipwrecks, POIs
+- **House Icons**: 25 unique house faction icons
+- **Smart Scaling**: Icons automatically resize based on quantity (1-4+ icons per subcell)
+- **House Restrictions**: Each house can only be placed once per map
 
-### Legend Panel
-- Compact, categorized legend for quick icon access.
-- Houses and resources/POIs are separated for clarity.
-
-### Map Exploration & State
-- Mark cells as explored/unexplored with a single click.
-- Visual overlay for unexplored cells.
-- "Explore All" button to mark the entire map as explored.
-
-### Undo/Redo & Versioning
-- Full undo/redo stack for all map actions.
-- Save and load named map versions for easy progress tracking.
-- Autosave and periodic memory cleanup for performance.
-
-### Import/Export
-- Export map data as JSON or a formatted PNG image (with legend and timestamp).
-- Import map data from JSON files (with validation and error handling).
-- Drag-and-drop or file input for importing JSON.
+### Controls & Navigation
+- **Left-click** subcells to open the icon picker
+- **Right-click** or **Double-click** cells to toggle explored status
+- **Escape key** closes any open modal (icon picker or help)
+- **Keyboard navigation** with arrow keys
+- **Undo/Redo** functionality (up to 100 steps)
 
 ### Storm Timer
-- Displays the next storm buildup and hit times for Europe (Monday 05:00 UTC and Wednesday 04:00 UTC).
-- Real-time countdowns with phase highlighting (active, warning, critical).
-- Toggle between UTC and local time display.
-- Server location selector.
+- Real-time countdown to next storm event
+- Support for all server regions:
+  - Europe: Monday 17:00 - Tuesday 05:00 UTC
+  - North America: Tuesday 00:00 - 10:00 UTC
+  - South America: Monday 22:00 - Tuesday 08:00 UTC
+  - Asia: Monday 11:00 - 21:00 UTC
+  - Oceania: Monday 09:00 - 19:00 UTC
+- Toggle between UTC and local time display
 
-### Accessibility & Usability
-- ARIA roles and labels for screen reader support.
-- Tooltips and clear button labels for all controls.
-- Responsive layout for various screen sizes.
+### Export & Sharing
+- **Export JSON**: Save your map data for backup
+- **Import JSON**: Load previously saved maps
+- **Export PNG**: Generate high-quality images with legends and timestamp
+- **Share Link**: Create shortened URLs to share maps with others
+- **Auto-save**: Maps automatically save to browser local storage
 
 ### Additional Features
-- Shareable map links.
-- Notification system for user feedback.
-- Data validation for safe imports and exports.
-- Customizable icon set (SVG-based for clarity and scalability).
+- **Responsive Design**: Works on desktop and mobile devices
+- **Help Modal**: Built-in guide accessible via the "?" button
+- **Combine Maps**: Link to external tool for merging multiple maps
+- **Visual Feedback**: Notifications for actions and confirmations
 
-## Getting Started
+## Usage
 
-1. Use the legend to drag or click icons onto the grid.
-2. Use the control buttons to explore, undo/redo, save/load, or export your map.
-3. Monitor storm phases with the built-in timer.
+1. **Open the tool** in any modern web browser
+2. **Select icons** from the legend panels or use the icon picker
+3. **Place icons** by clicking subcells or dragging onto the map
+4. **Mark areas** as explored by right-clicking cells
+5. **Export your map** as JSON or PNG when ready
 
-## File Structure
-- `index.html` – Main application file (HTML, CSS, JavaScript).
-- `Icons/` – Folder containing all SVG icons for resources, POIs, and houses.
-- `background.jpg`, `arrakis.png`, `fwb.png` – Visual assets for the UI.
-- `README.md` – Project documentation (this file).
+## Technical Details
+
+- Pure HTML/CSS/JavaScript (no build process required)
+- Uses LZ-String for URL compression
+- Canvas-based PNG export with high DPI support
+- Local storage for persistence
+- Responsive grid layout
+
+## Browser Compatibility
+
+- Chrome/Edge 88+
+- Firefox 85+
+- Safari 14+
+- Mobile browsers (iOS Safari, Chrome Android)
+
+## Installation
+
+Simply download and open `index.html` in your web browser. All assets are included or loaded from CDN.
+
+## Contributing
+
+Feel free to submit issues and pull requests. The codebase is self-contained in `index.html` for easy modification.
 
 ## License
-This project is provided for community use and is not affiliated with the official Dune: Awakening game or its developers.
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## Credits
+
+Created for the Dune Awakening community to enhance Deep Desert exploration and coordination.
