@@ -1006,6 +1006,22 @@
       mapState = Array(GRID_SIZE * GRID_SIZE).fill().map(() => []);
       exploredState = Array(GRID_SIZE * GRID_SIZE).fill(false);
 
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          // Close icon picker modal if open
+          const iconPickerModal = document.getElementById('iconPickerModal');
+          if (iconPickerModal && iconPickerModal.style.display === 'flex') {
+            iconPickerModal.style.display = 'none';
+          }
+          
+          // Close help modal if open
+          const helpModal = document.getElementById('help-modal');
+          if (helpModal && helpModal.style.display === 'flex') {
+            helpModal.style.display = 'none';
+          }
+        }
+      });
+      
       // Render UI
       renderLegend();
       renderGrid();
