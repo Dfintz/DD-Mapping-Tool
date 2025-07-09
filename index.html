@@ -1788,15 +1788,8 @@ function rebuildHouseCache() {
             }
             // Removed the green tint for explored cells
 
-            // Draw cell icons
-            const cell = mapState[idx];
-            if (cell && cell.icons && cell.icons.length > 0) {
-              cell.icons.forEach((icon, iconIdx) => {
-                drawIconOnCanvas(ctx, icon, cellX, cellY, iconIdx);
-              });
-            }
-
             // Draw subcell icons
+            const cell = mapState[idx];
             if (cell && cell.subcells) {
               drawSubcellIcons(ctx, cell.subcells, cellX, cellY);
             }
@@ -1815,38 +1808,6 @@ function rebuildHouseCache() {
               cellY + cellSize - 4
             );
             ctx.restore();
-          }
-        }
-      }
-
-      function drawIconOnCanvas(ctx, icon, cellX, cellY, iconIdx) {
-        if (!icon || !icon.file) return;
-        
-        const iconSize = 30;
-        const positions = [
-          { x: cellX + 15, y: cellY + 15 },
-          { x: cellX + cellSize - 15, y: cellY + 15 },
-          { x: cellX + 15, y: cellY + cellSize - 15 },
-          { x: cellX + cellSize - 15, y: cellY + cellSize - 15 }
-        ];
-        
-        const pos = positions[iconIdx % positions.length];
-        
-        const img = getCachedImage(icon.file) || new Image();
-        if (img.complete && img.naturalWidth > 0) {
-          ctx.drawImage(img, pos.x - iconSize/2, pos.y - iconSize/2, iconSize, iconSize);
-        } else {
-          imagesToLoad++;
-          img.onload = () => {
-            ctx.drawImage(img, pos.x - iconSize/2, pos.y - iconSize/2, iconSize, iconSize);
-            imageLoadHandler();
-          };
-          img.onerror = () => {
-            console.warn('Failed to load icon:', icon.file);
-            imageLoadHandler();
-          };
-          if (!img.src) {
-            img.src = icon.file.startsWith('..') ? icon.file : `Icons/${icon.file}`;
           }
         }
       }
